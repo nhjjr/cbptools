@@ -1,0 +1,46 @@
+input_data_type: dmri
+input_data:
+  participants: 
+    file: /home/nreuter/participants.tsv
+    sep: "\t"
+    index_col: participant_id
+  bet_binary_mask: /home/nreuter/Data/HCP_test/{participant_id}/dwi/bet_binary_mask.nii
+  xfm: /home/nreuter/Data/HCP_test/{participant_id}/dwi/xfm.nii
+  inv_xfm: /home/nreuter/Data/HCP_test/{participant_id}/dwi/inv_xfm.nii
+  samples: /home/nreuter/Data/HCP_test/{participant_id}/dwi/samples/sample
+  seed_mask: /home/nreuter/Data/CYTO_Right_preSMA_SMA_MNI152.nii.gz
+  target_mask: /home/nreuter/Data/MNI152GM.nii
+
+parameters:
+  masking:
+    median_filter: false
+    median_filter_dist: 1
+    resample_to_mni: true
+    threshold: 0.0
+    upsample_seed_to: [1, 1, 1]
+    downsample_target_to: [3, 3, 3]
+  connectivity:
+    pca_transform: 0.95
+    dist_thresh: 5.0
+    loop_check: true
+    c_thresh: 0.2
+    step_length: 0.5
+    n_samples: 200
+    n_steps: 2000
+    correct_path_distribution: true
+    wait_for_file: 240
+    cleanup_fsl: true
+    cubic_transform: true
+  clustering:
+    algorithm: auto
+    group_method: mode
+    init: random
+    internal_validity_metrics: ['silhouette', 'davies-bouldin', 'calinski-harabasz']
+    linkage: complete
+    max_iter: 10000
+    n_clusters: [2, 3, 4, 5]
+    n_init: 256
+    similarity_metric: adjusted rand index
+  summary:
+    figure_format: png
+

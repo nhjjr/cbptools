@@ -1,0 +1,4 @@
+[console_scripts]
+cbptools = cbptools.cbptools:main
+cbptools create = cbptools.cbptools:create
+

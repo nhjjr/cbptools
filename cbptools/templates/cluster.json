@@ -1,0 +1,61 @@
+{
+  "__default__" :
+  {
+    "account" : "unknown",
+    "time" : "01:00:00",
+    "n" : 1,
+    "N" : 1,
+    "c" : 1,
+    "partition" : "large",
+    "out" : "log/{rule}-%j.out",
+    "name" : "unknown",
+    "mem" : "1000M"
+  },
+
+  "connectivity" :
+  {
+    "time" : "01:00:00",
+    "out"  : "log/{rule}_{wildcards.participant_id}-%j.out",
+    "name" : "connectivity",
+    "mem" : "{resources.mem_mb}M"
+  },
+
+  "participant_level_clustering" :
+  {
+    "out"  : "log/{rule}_{wildcards.participant_id}_{wildcards.k}clusters-%j.out",
+    "name" : "sglclust",
+    "mem" : "{resources.mem_mb}M"
+  },
+
+  "group_level_clustering" :
+  {
+    "out"  : "log/{rule}_{wildcards.k}-%j.out",
+    "name" : "grpclust"
+  },
+
+  "internal_validity" :
+  {
+    "out"  : "log/{rule}_{wildcards.participant_id}-%j.out",
+    "name" : "validity"
+  },
+
+  "summary_internal_validity" :
+  {
+    "out"  : "log/{rule}-%j.out",
+    "name" : "validity"
+  },
+
+  "individual_similarity" :
+  {
+    "out"  : "log/{rule}_{wildcards.k}clusters-%j.out",
+    "name" : "similarity"
+  },
+
+  "group_similarity" :
+  {
+    "out"  : "log/{rule}-%j.out",
+    "name" : "similarity"
+  },
+
+
+}

@@ -1,0 +1,248 @@
+input_data_types: ['rsfmri', 'dmri', 'connectivity']
+
+input:
+  connectivity_matrix:
+    required: true
+    template: true
+    input_type: ['connectivity']
+    file_type: ['.npy']
+  seed_coordinates:
+    required: true
+    temlate: false
+    input_type: ['connectivity']
+    file_type: ['.npy']
+  seed_mask:
+    required: true
+    template: false
+    input_type: ['rsfmri', 'dmri']
+    file_type: ['.nii', '.nii.gz']
+  target_mask:
+    required: false
+    template: false
+    input_type: ['rsfmri', 'dmri']
+    file_type: ['.nii', '.nii.gz']
+  time_series:
+    required: true
+    template: true
+    input_type: ['rsfmri']
+  confounds:
+    required: false
+    template: true
+    input_type: ['rsfmri']
+  bet_binary_mask:
+    required: true
+    template: true
+    input_type: ['dmri']
+    file_type: ['.nii', '.nii.gz']
+  xfm:
+    required: true
+    template: true
+    input_type: ['dmri']
+    file_type: ['.nii', '.nii.gz']
+  inv_xfm:
+    required: true
+    template: true
+    input_type: ['dmri']
+    file_type: ['.nii', '.nii.gz']
+  samples:
+    required: true
+    template: true
+    input_type: ['dmri']
+    expand: true
+
+parameters:
+  masking:
+    threshold:
+      required: false
+      instance_type: float
+      input_type: ['dmri', 'rsfmri']
+      default: 0.0
+    median_filter:
+      required: false
+      instance_type: bool
+      input_type: ['dmri', 'rsfmri']
+      default: false
+    median_filter_dist:
+      required: false
+      instance_type: int
+      input_type: 'all'
+      default: 1
+    del_seed_from_target:
+      required: false
+      input_type: ['rsfmri']
+      instance_type: bool
+      default: false
+    del_seed_expand:
+      required: false
+      input_type: ['rsfmri']
+      instance_type: int
+      default: 0
+    subsample:
+      required: false
+      input_type: ['rsfmri']
+      instance_type: bool
+      default: false
+    resample_to_mni:
+      required: false
+      input_type: ['dmri', 'rsfmri']
+      instance_type: bool
+      default: true
+    upsample_seed_to:
+      required: false
+      input_type: ['dmri']
+      instance_type: list
+      default: null
+    downsample_target_to:
+      required: false
+      input_type: ['dmri']
+      instance_type: list
+      default: null
+  connectivity:
+    seed_low_variance_threshold:
+      required: false
+      input_type: ['rsfmri']
+      instance_type: float
+      default: 0.05
+    target_low_variance_threshold:
+      required: false
+      input_type: ['rsfmri']
+      instance_type: float
+      default: 0.1
+    high_pass:
+      required: false
+      input_type: ['rsfmri']
+      instance_type: float
+      default: null
+    low_pass:
+      required: false
+      input_type: ['rsfmri']
+      instance_type: float
+      default: null
+    tr:
+      required: false
+      input_type: ['rsfmri']
+      instance_type: float
+      default: null
+    smoothing_fwhm:
+      required: false
+      input_type: ['rsfmri']
+      instance_type: int
+      default: null
+    arctanh_transform:
+      required: false
+      input_type: ['rsfmri']
+      instance_type: bool
+      default: true
+    pca_transform:
+      required: false
+      input_type: ['dmri', 'rsfmri']
+      instance_type: float
+      default: null
+    dist_thresh:
+      required: false
+      input_type: ['dmri']
+      instance_type: float
+      default: 5.0
+    loop_check:
+      required: false
+      input_type: ['dmri']
+      instance_type: bool
+      default: true
+    c_thresh:
+      required: false
+      input_type: ['dmri']
+      instance_type: float
+      default: 0.2
+    step_length:
+      required: false
+      input_type: ['dmri']
+      instance_type: float
+      default: 0.5
+    n_samples:
+      required: false
+      input_type: ['dmri']
+      instance_type: int
+      default: 200
+    n_steps:
+      required: false
+      input_type: ['dmri']
+      instance_type: int
+      default: 2000
+    correct_path_distribution:
+      required: false
+      input_type: ['dmri']
+      instance_type: bool
+      default: true
+    wait_for_file:
+      required: false
+      input_type: ['dmri']
+      default: 240
+      instance_type: int
+    cleanup_fsl:
+      required: false
+      input_type: ['dmri']
+      default: true
+      instance_type: bool
+    cubic_transform:
+      required: false
+      input_type: ['dmri']
+      default: true
+      instance_type: bool
+  clustering:
+    n_clusters:
+      required: true
+      input_type: ['dmri', 'rsfmri', 'connectivity']
+      instance_type: list
+    algorithm:
+      required: false
+      input_type: ['dmri', 'rsfmri', 'connectivity']
+      default: 'auto'
+      instance_type: str
+      allowed: ['auto', 'full', 'elkan']
+    init:
+      required: false
+      input_type: ['dmri', 'rsfmri', 'connectivity']
+      default: 'random'
+      instance_type: str
+      allowed: ['random', 'k-means++']
+    max_iter:
+      required: false
+      input_type: ['dmri', 'rsfmri', 'connectivity']
+      default: 10000
+      instance_type: int
+    n_init:
+      required: false
+      input_type: ['dmri', 'rsfmri', 'connectivity']
+      default: 100
+      instance_type: int
+    linkage:
+      required: false
+      input_type: ['dmri', 'rsfmri', 'connectivity']
+      default: 'complete'
+      allowed: ['complete', 'average', 'single']
+      instance_type: str
+    group_method:
+      required: false
+      input_type: ['dmri', 'rsfmri', 'connectivity']
+      default: 'agglomerative'
+      allowed: ['agglomerative', 'mode']
+      instance_type: str
+    internal_validity_metrics:
+      required: false
+      input_type: ['dmri', 'rsfmri', 'connectivity']
+      default: ['silhouette']
+      allowed: ['silhouette', 'davies-bouldin', 'calinski-harabasz', 'gap score', 'weak deletion stability']
+      instance_type: list
+    similarity_metric:
+      required: false
+      input_type: ['dmri', 'rsfmri', 'connectivity']
+      default: 'adjusted rand index'
+      allowed: ['adjusted rand index', 'adjusted mutual information', 'v measure']
+      instance_type: str
+  summary:
+    figure_format:
+      required: false
+      input_type: ['dmri', 'rsfmri', 'connectivity']
+      default: 'png'
+      allowed: ['png', 'svg', 'pdf', 'ps', 'eps']
+      instance_type: str

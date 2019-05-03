@@ -1,0 +1,7 @@
+include cbptools/dataset.yaml
+include cbptools/parameters.yaml
+include cbptools/templates/*
+include cbptools/project_files/scripts/*
+include cbptools/project_files/Snakefile
+include cbptools/project_files/cluster.json
+include examples/*
