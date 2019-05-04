@@ -7,7 +7,7 @@ def get_participant_ids(file: pd.DataFrame, sep: str = None, index_col: str = 'p
     return participant_ids
 
 
-def expected_output(n_clusters: list, ext: str = 'png', metrics: list = None):
+def expected_output(n_clusters: list, figure_format: str = 'png', internal_validity_metrics: list = None):
     out = []
 
     for k in n_clusters:
@@ -15,23 +15,23 @@ def expected_output(n_clusters: list, ext: str = 'png', metrics: list = None):
             f'clustering/clustering_group_k{k}.npz',
             f'summary/niftis/group_clustering_k{k}.nii',
             f'summary/individual_similarity_{k}_clusters.npy',
-            f'summary/figures/individual_similarity_{k}clusters_unordered.{ext}',
-            f'summary/figures/individual_similarity_{k}clusters_ordered.{ext}'
+            f'summary/figures/individual_similarity_{k}clusters_unordered.{figure_format}',
+            f'summary/figures/individual_similarity_{k}clusters_ordered.{figure_format}'
         ]
         out += files
 
     out += [
         'summary/group_similarity.tsv',
         'summary/cophenetic_correlation.tsv',
-        f'summary/figures/group_similarity.{ext}',
-        f'summary/figures/relabel_accuracy.{ext}',
-        f'summary/figures/cophenetic_correlation.{ext}'
+        f'summary/figures/group_similarity.{figure_format}',
+        f'summary/figures/relabel_accuracy.{figure_format}',
+        f'summary/figures/cophenetic_correlation.{figure_format}'
     ]
 
-    if metrics:
+    if internal_validity_metrics:
         out += [
             'summary/internal_validity.tsv',
-            'summary/figures/internal_validity.{ext}'
+            f'summary/figures/internal_validity.{figure_format}'
         ]
 
     return sorted(out)

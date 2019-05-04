@@ -1,15 +1,15 @@
 input_data_type: dmri
 input_data:
   participants: 
-    file: /home/nreuter/participants.tsv
+    file: /path/to/participants.tsv
     sep: "\t"
     index_col: participant_id
-  bet_binary_mask: /home/nreuter/Data/HCP_test/{participant_id}/dwi/bet_binary_mask.nii
-  xfm: /home/nreuter/Data/HCP_test/{participant_id}/dwi/xfm.nii
-  inv_xfm: /home/nreuter/Data/HCP_test/{participant_id}/dwi/inv_xfm.nii
-  samples: /home/nreuter/Data/HCP_test/{participant_id}/dwi/samples/sample
-  seed_mask: /home/nreuter/Data/CYTO_Right_preSMA_SMA_MNI152.nii.gz
-  target_mask: /home/nreuter/Data/MNI152GM.nii
+  bet_binary_mask: /path/to/dataset/{participant_id}/bet_binary_mask.nii.gz
+  xfm: /path/to/dataset/{participant_id}/xfm.nii.gz
+  inv_xfm: /path/to/dataset/{participant_id}/inv_xfm.nii.gz
+  samples: /path/to/dataset/{participant_id}/samples/merged
+  seed_mask: /path/to/region_of_interest.nii.gz
+  target_mask: /path/to/MNI152GM.nii.gz
 
 parameters:
   masking:

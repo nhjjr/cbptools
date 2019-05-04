@@ -2,6 +2,8 @@ from cbptools.cluster import davies_bouldin_score, find_centers, weak_deletion_s
 from cbptools.utils import sort_files
 from sklearn.metrics import silhouette_score, calinski_harabaz_score, adjusted_rand_score, v_measure_score, adjusted_mutual_info_score
 from scipy.cluster import hierarchy
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import itertools
@@ -24,7 +26,7 @@ def internal_validity(connectivity: str, labels: list, participant_id: str, metr
     metrics : list
         List of the metrics that should be computed. ['silhouette', 'davies-bouldin', 'calinski-harabasz',
         'weak deletion stability'].
-    file : str
+    out : str
         Output path for a spreadsheet of the various internal validity metrics
     """
 

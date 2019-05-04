@@ -1,7 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="33ceabcc-33cb-4504-9c38-3782fbaafe83" name="Default Changelist" comment="" />
+    <list default="true" id="33ceabcc-33cb-4504-9c38-3782fbaafe83" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools.egg-info/SOURCES.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools.egg-info/SOURCES.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools.egg-info/entry_points.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools.egg-info/entry_points.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools.egg-info/requires.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools.egg-info/requires.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/cbptools-gui/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/cbptools-gui/wizard.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/cbptools.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/cbptools.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/connectivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/connectivity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/defaults.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/defaults.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/image.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/image.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/input_validation.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/input_validation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/project_files/Snakefile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/00_fetch_dataset.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/01_connectivity.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/02_participant_level_clustering.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/03_group_level_clustering.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/04_internal_validity.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/05_summary_internal_validity.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/06_individual_similarity.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/07_group_similarity.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/tasks/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/tasks/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/tasks/clustering.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/tasks/clustering.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/tasks/connectivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/tasks/connectivity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/tasks/validity.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/tasks/validity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/taskutils.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/taskutils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/templates/body.Snakefile" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/templates/body.Snakefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/templates/dmri.Snakefile" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/templates/dmri.Snakefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/templates/header.Snakefile" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/templates/header.Snakefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cbptools/templates/rsfmri.Snakefile" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/templates/rsfmri.Snakefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/config_dmri.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/examples/config_dmri.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/config_rsfmri.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/examples/config_rsfmri.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -13,50 +47,20 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/cbptools/input_validation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="504">
-              <caret line="61" lean-forward="true" selection-start-line="61" selection-end-line="61" />
+            <state relative-caret-position="336">
+              <caret line="374" column="60" lean-forward="true" selection-start-line="374" selection-start-column="60" selection-end-line="374" selection-end-column="60" />
               <folding>
-                <element signature="e#111#115#0" expanded="true" />
+                <element signature="e#111#136#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/cbptools/defaults.yaml">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/.gitignore">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="216">
-              <caret line="12" column="22" selection-start-line="12" selection-start-column="22" selection-end-line="12" selection-end-column="22" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/setup.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="288">
-              <caret line="37" column="46" selection-start-line="37" selection-start-column="46" selection-end-line="37" selection-end-column="46" />
-              <folding>
-                <element signature="e#23#66#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/cbptools/templates/body.Snakefile">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1782">
-              <caret line="99" column="48" selection-start-line="99" selection-start-column="48" selection-end-line="99" selection-end-column="48" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/cbptools/templates/header.Snakefile">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="180">
-              <caret line="10" column="21" selection-start-line="10" selection-start-column="21" selection-end-line="10" selection-end-column="21" />
+            <state relative-caret-position="270">
+              <caret line="15" column="17" selection-start-line="15" selection-start-column="17" selection-end-line="15" selection-end-column="17" />
             </state>
           </provider>
         </entry>
@@ -64,32 +68,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/cbptools/templates/rsfmri.Snakefile">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="108">
-              <caret line="6" column="60" selection-start-line="6" selection-start-column="60" selection-end-line="6" selection-end-column="60" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/cbptools/cbptools.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="348">
-              <caret line="91" column="20" lean-forward="true" selection-start-line="91" selection-start-column="20" selection-end-line="91" selection-end-column="20" />
-              <folding>
-                <element signature="e#0#78#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/cbptools/__init__.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="20" lean-forward="true" selection-start-line="20" selection-end-line="20" />
-              <folding>
-                <element signature="e#897#965#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="36">
+              <caret line="35" lean-forward="true" selection-start-line="35" selection-end-line="35" />
             </state>
           </provider>
         </entry>
@@ -121,11 +101,19 @@
       <find>ext</find>
       <find>Resampling</find>
       <find>get_version</find>
+      <find>nib.save</find>
+      <find>apply_mask</find>
+      <find>img_get</find>
+      <find>{ext}</find>
+      <find>Unable to read contents of file</find>
     </findStrings>
     <replaceStrings>
       <replace>required</replace>
       <replace>allowed</replace>
     </replaceStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
@@ -140,26 +128,34 @@
         <option value="$PROJECT_DIR$/project.log" />
         <option value="$PROJECT_DIR$/cbptools/project_setup.py" />
         <option value="$PROJECT_DIR$/cbptools/tasks/participant_level_clustering.py" />
-        <option value="$PROJECT_DIR$/cbptools/tasks/clustering.py" />
-        <option value="$PROJECT_DIR$/cbptools/tasks/validity.py" />
         <option value="$PROJECT_DIR$/configfile.py" />
-        <option value="$PROJECT_DIR$/cbptools/tasks/__init__.py" />
         <option value="$PROJECT_DIR$/cbptools/templates/Snakefile" />
-        <option value="$PROJECT_DIR$/cbptools/tasks/connectivity.py" />
-        <option value="$PROJECT_DIR$/cbptools/taskutils.py" />
-        <option value="$PROJECT_DIR$/cbptools/templates/dmri.Snakefile" />
-        <option value="$PROJECT_DIR$/cbptools/templates/rsfmri.Snakefile" />
         <option value="$PROJECT_DIR$/cbptools/create_project.py" />
-        <option value="$PROJECT_DIR$/cbptools/templates/body.Snakefile" />
-        <option value="$PROJECT_DIR$/cbptools/templates/header.Snakefile" />
-        <option value="$PROJECT_DIR$/cbptools/defaults.yaml" />
         <option value="$PROJECT_DIR$/cbptools/commands.py" />
         <option value="$PROJECT_DIR$/cbptools/_version.py" />
         <option value="$PROJECT_DIR$/cbptools/utils.py" />
-        <option value="$PROJECT_DIR$/setup.py" />
         <option value="$PROJECT_DIR$/cbptools/__init__.py" />
-        <option value="$PROJECT_DIR$/cbptools/input_validation.py" />
+        <option value="$PROJECT_DIR$/examples/config_dmri.yaml" />
+        <option value="$PROJECT_DIR$/examples/config_rsfmri.yaml" />
         <option value="$PROJECT_DIR$/cbptools/cbptools.py" />
+        <option value="$PROJECT_DIR$/cbptools/connectivity.py" />
+        <option value="$PROJECT_DIR$/examples/config_connectivity.yaml" />
+        <option value="$PROJECT_DIR$/cbptools/taskutils.py" />
+        <option value="$PROJECT_DIR$/cbptools/templates/header.Snakefile" />
+        <option value="$PROJECT_DIR$/cbptools/templates/dmri.Snakefile" />
+        <option value="$USER_HOME$/cbp_test_rsfmri/Snakefile" />
+        <option value="$PROJECT_DIR$/cbptools/image.py" />
+        <option value="$PROJECT_DIR$/cbptools/tasks/validity.py" />
+        <option value="$PROJECT_DIR$/cbptools/defaults.yaml" />
+        <option value="$PROJECT_DIR$/setup.py" />
+        <option value="$USER_HOME$/cbp_test_rsfmri2/Snakefile" />
+        <option value="$PROJECT_DIR$/cbptools/tasks/clustering.py" />
+        <option value="$PROJECT_DIR$/cbptools/tasks/__init__.py" />
+        <option value="$PROJECT_DIR$/cbptools/input_validation.py" />
+        <option value="$PROJECT_DIR$/cbptools/templates/body.Snakefile" />
+        <option value="$PROJECT_DIR$/cbptools/templates/rsfmri.Snakefile" />
+        <option value="$PROJECT_DIR$/cbptools/tasks/connectivity.py" />
+        <option value="$PROJECT_DIR$/.gitignore" />
       </list>
     </option>
   </component>
@@ -169,6 +165,7 @@
     <option name="width" value="1400" />
     <option name="height" value="1000" />
   </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
     <navigator proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
@@ -182,6 +179,11 @@
               <item name="cbptools" type="b2602c69:ProjectViewProjectNode" />
               <item name="cbptools" type="462c0819:PsiDirectoryNode" />
             </path>
+            <path>
+              <item name="cbptools" type="b2602c69:ProjectViewProjectNode" />
+              <item name="cbptools" type="462c0819:PsiDirectoryNode" />
+              <item name="examples" type="462c0819:PsiDirectoryNode" />
+            </path>
           </expand>
           <select />
         </subPane>
@@ -189,6 +191,7 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$USER_HOME$/environments" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
@@ -289,9 +292,9 @@
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Terminal" order="8" visible="true" weight="0.40892193" />
+      <window_info anchor="bottom" id="Terminal" order="8" visible="true" weight="0.41006523" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" weight="0.32992566" />
-      <window_info anchor="bottom" id="Python Console" order="10" weight="0.2472119" />
+      <window_info anchor="bottom" id="Python Console" order="10" weight="0.31314072" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -409,16 +412,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cbptools/tasks/clustering.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2034">
-          <caret line="113" column="101" lean-forward="true" selection-start-line="113" selection-start-column="101" selection-end-line="113" selection-end-column="101" />
-          <folding>
-            <element signature="e#0#37#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/cbptools/project_files/scripts/05_summary_internal_validity.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-611">
@@ -474,80 +467,8 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cbptools/tasks/validity.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-3683">
-          <caret line="8" column="21" selection-start-line="8" selection-start-column="21" selection-end-line="8" selection-end-column="21" />
-          <folding>
-            <element signature="e#0#99#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cbptools/tasks/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="162">
-          <caret line="9" selection-start-line="9" selection-end-line="9" />
-          <folding>
-            <element signature="e#47#109#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/cbptools/version.py">
       <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cbptools/taskutils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="54">
-          <caret line="3" column="104" selection-start-line="3" selection-start-column="104" selection-end-line="3" selection-end-column="104" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cbptools/tasks/connectivity.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="213">
-          <caret line="134" column="34" selection-start-line="134" selection-start-column="32" selection-end-line="134" selection-end-column="34" />
-          <folding>
-            <element signature="e#46#92#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cbptools/templates/dmri.Snakefile">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="18">
-          <caret line="1" column="4" selection-start-line="1" selection-start-column="4" selection-end-line="1" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cbptools/templates/body.Snakefile">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1782">
-          <caret line="99" column="48" selection-start-line="99" selection-start-column="48" selection-end-line="99" selection-end-column="48" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cbptools/templates/header.Snakefile">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="10" column="21" selection-start-line="10" selection-start-column="21" selection-end-line="10" selection-end-column="21" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cbptools/defaults.yaml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="216">
-          <caret line="12" column="22" selection-start-line="12" selection-start-column="22" selection-end-line="12" selection-end-column="22" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cbptools/templates/rsfmri.Snakefile">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="108">
-          <caret line="6" column="60" selection-start-line="6" selection-start-column="60" selection-end-line="6" selection-end-column="60" />
-        </state>
-      </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/cbptools/_version.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -566,43 +487,204 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/setup.py">
+    <entry file="file://$PROJECT_DIR$/examples/config_rsfmri.yaml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="288">
-          <caret line="37" column="46" selection-start-line="37" selection-start-column="46" selection-end-line="37" selection-end-column="46" />
-          <folding>
-            <element signature="e#23#66#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="216">
+          <caret line="12" column="39" selection-start-line="12" selection-start-column="39" selection-end-line="12" selection-end-column="39" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/examples/config_dmri.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="10" selection-start-line="10" selection-end-line="11" selection-end-column="39" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/cbptools/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="20" lean-forward="true" selection-start-line="20" selection-end-line="20" />
+        <state relative-caret-position="396">
+          <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
           <folding>
             <element signature="e#897#965#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cbptools/input_validation.py">
+    <entry file="file://$PROJECT_DIR$/cbptools/clean.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="504">
-          <caret line="61" lean-forward="true" selection-start-line="61" selection-end-line="61" />
-          <folding>
-            <element signature="e#111#115#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="-343" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/connectivity.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-253">
+          <caret line="1" column="23" selection-start-line="1" selection-start-column="23" selection-end-line="1" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/examples/config_connectivity.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="162">
+          <caret line="9" column="41" selection-start-line="9" selection-start-column="41" selection-end-line="9" selection-end-column="41" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/templates/dmri.Snakefile">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="414">
+          <caret line="23" column="62" selection-start-line="23" selection-start-column="62" selection-end-line="23" selection-end-column="62" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/cbp_test_rsfmri/Snakefile">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="432">
+          <caret line="39" column="107" selection-start-line="39" selection-start-column="107" selection-end-line="39" selection-end-column="107" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/cbptools/cbptools.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="348">
-          <caret line="91" column="20" lean-forward="true" selection-start-line="91" selection-start-column="20" selection-end-line="91" selection-end-column="20" />
+        <state relative-caret-position="414">
+          <caret line="95" column="46" selection-start-line="95" selection-start-column="31" selection-end-line="95" selection-end-column="46" />
           <folding>
             <element signature="e#0#78#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/defaults.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="288">
+          <caret line="16" column="49" selection-start-line="16" selection-start-column="49" selection-end-line="16" selection-end-column="49" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/image.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="252">
+          <caret line="14" column="15" lean-forward="true" selection-start-line="14" selection-start-column="15" selection-end-line="14" selection-end-column="45" />
+          <folding>
+            <element signature="e#292#342#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/tasks/validity.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="18">
+          <caret line="5" selection-start-line="5" selection-end-line="5" selection-end-column="21" />
+          <folding>
+            <element signature="e#0#99#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/exceptions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-216" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/setup.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1062">
+          <caret line="59" column="6" lean-forward="true" selection-start-line="59" selection-start-column="6" selection-end-line="59" selection-end-column="6" />
+          <folding>
+            <element signature="e#23#66#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/taskutils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="432">
+          <caret line="24" column="45" lean-forward="true" selection-start-line="24" selection-start-column="45" selection-end-line="24" selection-end-column="45" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/fslconf.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="3" lean-forward="true" selection-start-column="3" selection-end-column="3" />
+          <folding>
+            <element signature="e#36#60#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/cbp_test_rsfmri2/Snakefile">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="62" selection-start-line="62" selection-end-line="63" selection-end-column="102" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/tasks/clustering.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="35" column="105" selection-start-line="35" selection-start-column="105" selection-end-line="35" selection-end-column="105" />
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/tasks/connectivity.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1905">
+          <caret line="135" column="81" lean-forward="true" selection-start-line="135" selection-start-column="81" selection-end-line="135" selection-end-column="81" />
+          <folding>
+            <element signature="e#46#92#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/tasks/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="10" lean-forward="true" selection-start-line="10" selection-end-line="10" />
+          <folding>
+            <element signature="e#47#132#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/templates/rsfmri.Snakefile">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="36">
+          <caret line="35" lean-forward="true" selection-start-line="35" selection-end-line="35" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/templates/header.Snakefile">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="90">
+          <caret line="5" lean-forward="true" selection-start-line="5" selection-end-line="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/templates/body.Snakefile">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="162">
+          <caret line="9" column="54" lean-forward="true" selection-start-line="9" selection-start-column="54" selection-end-line="9" selection-end-column="54" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cbptools/input_validation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="336">
+          <caret line="374" column="60" lean-forward="true" selection-start-line="374" selection-start-column="60" selection-end-line="374" selection-end-column="60" />
+          <folding>
+            <element signature="e#111#136#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="270">
+          <caret line="15" column="17" selection-start-line="15" selection-start-column="17" selection-end-line="15" selection-end-column="17" />
         </state>
       </provider>
     </entry>

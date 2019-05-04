@@ -1,6 +1,6 @@
 from cbptools.utils import sort_files
 from cbptools.cluster import relabel
-from cbptools.image import unmask
+from cbptools.image import map_labels
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import pdist
 from scipy.cluster import hierarchy
@@ -32,13 +32,20 @@ def participant_level_clustering(connectivity, out: str, n_clusters: int, algori
     """
 
     connectivity = np.load(connectivity)
+
+    # If the connectivity file is empty (connectivity could not be computed), create an empty labels file
+    if connectivity.size == 0:
+        np.save(out, np.array([]))
+        return
+
     kmeans = KMeans(algorithm=algorithm, init=init, max_iter=max_iter, n_clusters=n_clusters, n_init=n_init)
     kmeans.fit(connectivity)
     np.save(out, kmeans.labels_)  # cluster labels are 0-indexed
 
 
 def group_level_clustering(seed_img: str, participants: str, individual_labels: list, linkage: str,
-                           input_data_type: str, out_labels: str, out_img: str, method: str = 'mode'):
+                           input_data_type: str, out_labels: str, out_img: str, method: str = 'mode',
+                           seed_indices: str = None):
     """ Perform group-level analysis on all individual participant clustering results.
 
     Parameters
@@ -69,6 +76,8 @@ def group_level_clustering(seed_img: str, participants: str, individual_labels: 
         the mode method, the individual participant labels are relabeled using the hierarchical clustering results as
         a reference. The mode is then taken from all relabeled participant clusterings and used as a group level
         clustering.
+    seed_indices : str
+        Path to the numpy file containing the indices of the seed voxels.
     """
 
     methods = ('agglomerative', 'mode')
@@ -111,15 +120,12 @@ def group_level_clustering(seed_img: str, participants: str, individual_labels: 
                  hierarchical_group_labels=group_labels, cophenetic_correlation=cophenetic_correlation,
                  group_labels=np.squeeze(mode), mode_count=np.squeeze(count), method='mode')
 
-    # F order is used on the masks in probtrackx2, so projecting back upon the masks requires F order
-    if input_data_type == 'fmri':
-        order = 'C'
+    # Map labels to seed-mask image based on indices
+    if seed_indices:
+        seed_indices = np.load(seed_indices)
 
-    elif input_data_type == 'dmri':
-        order = 'F'
-
-    # Project the group-level labels back on the seed image
+    order = 'F' if input_data_type == 'dmri' else 'C'
     seed_img = nib.load(seed_img)
     group_labels += 1  # avoid 0-labeling
-    group_img = unmask(group_labels, seed_img, order=order)
+    group_img = map_labels(img=seed_img, labels=group_labels, seed_indices=seed_indices, order=order)
     nib.save(group_img, out_img)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from cbptools.exceptions import DimensionError
-from cbptools.image import img_is_4d, apply_mask
+from cbptools.image import img_is_4d, get_masked_series, find_low_variance_voxels
 from cbptools.connectivity import seed_based_correlation
 from cbptools.clean import nuisance_signal_regression, fft_filter
 from cbptools import FSL
@@ -9,16 +9,18 @@ from scipy.signal import detrend
 from sklearn.decomposition import PCA
 from nibabel.processing import smooth_image
 from fnmatch import fnmatch
+from pathlib import Path
 import pandas as pd
 import nibabel as nib
 import numpy as np
 import gc
+import os
 
 
-def connectivity_fmri(time_series: str, seed: str, target: str, participant_id: str, out: str, log_file: str,
-                      seed_low_variance: float = 0.05, target_low_variance: float = 0.1, smoothing_fwhm: int = None,
-                      confounds: dict = None, band_pass: tuple = None, arctanh_transform: bool = True,
-                      pca_transform: float = None) -> None:
+def connectivity_fmri(time_series: str, seed: str, target: str, participant_id: str, out: str,
+                      log_file: str, seed_low_variance: float = 0.05, target_low_variance: float = 0.1,
+                      smoothing_fwhm: int = None, confounds: str = None, sep: str = None, usecols: list=[],
+                      band_pass: tuple = None, arctanh_transform: bool = True, pca_transform: float = None) -> None:
     """ Compute a connectivity matrix from functional data.
 
     Processing steps:
@@ -35,9 +37,9 @@ def connectivity_fmri(time_series: str, seed: str, target: str, participant_id: 
     time_series: str
         Path to the time-series nifti image
     seed: str
-        Path to the region-of-interest mask nifti image
+        Path to the seed mask nifti image
     target: str
-        Path to the (whole-brain) target mask nifti image
+        Path to the target mask nifti image
     participant_id: str
         Unique identifier of the participant currently being processed
     out: str
@@ -50,11 +52,14 @@ def connectivity_fmri(time_series: str, seed: str, target: str, participant_id: 
         Percentage of low-variance voxels (tolerance of np.finfo(np.float32).eps) allowed to be within the target
     smoothing_fwhm: int, optional
         Smoothing kernel at FWHM in milimeters. If None, smoothing is skipped.
-    confounds: dict, optional
-        Confounds file and reading parameters for nuisance signal regression:
-          'file': str, path to the confounds file (must be a tabular plain-text file with a header)
-          'sep': str, separator used (e.g., .tsv has '\t', .csv has ',' or ';')
-          'usecols': list, containing all columns to be used. If this is not given, all columns are used.
+    confounds : str, optional
+        Path to a tabular confounds file.
+    sep : str, optional
+        Separator used for reading the confounds file (e.g., .tsv has '\t', .csv has ',' or ';')
+    usecols : list, optional
+        List containing the names of all columns that will be used for nuisance signal regression. If a confounds file
+        is given, but this argument is not, all columns will be used. Wildcards are allowed (e.g., 'motion-*' will
+        include all columns that start with 'motion-')
     band_pass: tuple, optional
         Band-pass filter parameters. The following order should be maintained for the tuple: (high_pass, low_pass, tr).
         If one is not given, band-pass filtering cannot proceed.
@@ -67,9 +72,6 @@ def connectivity_fmri(time_series: str, seed: str, target: str, participant_id: 
         to None, this step will be ignored.
     """
 
-    def _find_low_variance_voxels(data, tol: float = np.finfo(np.float32).eps):
-        return np.where(data.var(axis=0) < tol)[0]
-
     time_series = nib.load(time_series)
     seed_img = nib.load(seed)
     target_img = nib.load(target)
@@ -80,36 +82,36 @@ def connectivity_fmri(time_series: str, seed: str, target: str, participant_id: 
     if smoothing_fwhm is not None:
         time_series = smooth_image(time_series, fwhm=smoothing_fwhm)
 
-    seed_series = apply_mask(time_series, mask_img=seed_img, as_array=True)
-    target_series = apply_mask(time_series, mask_img=target_img, as_array=True)
+    seed_series = get_masked_series(time_series, seed_img)
+    target_series = get_masked_series(time_series, target_img)
     del time_series
     gc.collect()
 
     # Identify low-variance voxels and log them
-    in_seed = _find_low_variance_voxels(data=seed_series)
-    in_target = _find_low_variance_voxels(data=target_series)
-    bad_seed = in_seed.size / np.sum(seed_img.get_data() > 0) > seed_low_variance
-    bad_target = in_target.size / np.sum(target_img.get_data() > 0) > target_low_variance
+    in_seed = find_low_variance_voxels(data=seed_series)
+    in_target = find_low_variance_voxels(data=target_series)
+    bad_seed = in_seed.size / np.count_nonzero(seed_img.get_data()) > seed_low_variance
+    bad_target = in_target.size / np.count_nonzero(target_img.get_data()) > target_low_variance
+
     pd.DataFrame(
         data=[[participant_id, in_seed, in_target, bad_seed or bad_target]],
         columns=['participant_id', 'low_variance_in_seed', 'low_variance_in_target', 'low_variance_excluded']
     ).to_csv(log_file, sep='\t', index=False)
 
+    # If the participant has data exceeding the seed- or target low variance threshold, output an empty file
     if bad_seed or bad_target:
-        raise ValueError(f'{participant_id}: Too many low-variance voxels in seed ({len(in_seed)}) or target '
-                         f'({len(in_target)})')
+        np.save(out, np.array([]))
+        return
 
     if confounds is not None:  # Nuisance Signal Regression
-        confounds_file = confounds.get('file')
-        sep = confounds.get('sep')
-        usecols = set(confounds.get('usecols'))
+        usecols = set(usecols)
 
         # Check if usecols contains wildcards to extend upon the header
         if usecols is not None:
-            header = pd.read_csv(confounds_file, sep=sep, header=None, nrows=1).values.tolist()[0]
+            header = pd.read_csv(confounds, sep=sep, header=None, nrows=1).values.tolist()[0]
             usecols = [x for x in header if any(fnmatch(x, p) for p in usecols)]
 
-        confounds = pd.read_csv(confounds_file, sep=sep, usecols=usecols).values
+        confounds = pd.read_csv(confounds, sep=sep, usecols=usecols).values
         seed_series = nuisance_signal_regression(seed_series, confounds=confounds, demean=False)
         target_series = nuisance_signal_regression(target_series, confounds=confounds, demean=False)
 
@@ -129,6 +131,46 @@ def connectivity_fmri(time_series: str, seed: str, target: str, participant_id: 
         connectivity = pca.fit_transform(connectivity)
 
     np.save(out, connectivity)
+
+
+def merge_connectivity_logs(log_file: str, participants: list, out: str) -> None:
+    log_files = [log_file.format(participant_id=participant) for participant in participants]
+    df = pd.concat((pd.read_csv(f, sep='\t', index_col=False) for f in log_files), axis=0).reset_index(drop=True)
+
+    for file in log_files:
+        os.remove(file)
+
+    df.to_csv(out, sep='\t', index=False)
+
+
+def validate_connectivity(log_file: str, connectivity: str, labels: str, n_clusters: list, out: str) -> None:
+    df = pd.read_csv(log_file, sep='\t')
+    bad_participants = df[df['low_variance_excluded']]['participant_id'].tolist()
+
+    # Remove files with erroneous or no data
+    if bad_participants:
+        print('--------------------------------------------------------------')
+        print(f' {len(bad_participants)} participants with bad data found.')
+        print('--------------------------------------------------------------')
+
+        for bad_participant in bad_participants:
+            connectivity_file = connectivity.format(participant_id=bad_participant)
+            labels_files = [labels.format(participant_id=bad_participant, n_clusters=k) for k in n_clusters]
+            if os.path.exists(connectivity_file):
+                os.remove(connectivity_file)
+                print(f'Removing output file {connectivity_file}.')
+
+            for file in labels_files:
+                if os.path.exists(file):
+                    os.remove(file)
+                    print(f'Removing output file {file}.')
+
+        print('\nOpen log/connectivity_log.tsv to find problematic participants in the low_variance_excluded column\n')
+        raise ValueError('Participants with bad data found. Open log/connectivity_log.tsv for more details.')
+
+    else:
+        # Touch an output file that subsequent rules depend on
+        Path(out).touch()
 
 
 def connectivity_dmri(seed: str, target: str, samples: str, bet_binary_mask: str, tmp_dir: str, xfm: str, inv_xfm: str,

@@ -66,6 +66,8 @@ def create(params):
     work_dir = params.workdir
     force = params.force
 
+    # TODO: Check first if work_dir already exists and is not empty
+
     if not os.path.isfile(configfile):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), configfile)
 

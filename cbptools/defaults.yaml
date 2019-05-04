@@ -6,7 +6,7 @@ input:
     template: true
     input_type: ['connectivity']
     file_type: ['.npy']
-  seed_coordinates:
+  seed_indices:
     required: true
     temlate: false
     input_type: ['connectivity']
@@ -14,7 +14,7 @@ input:
   seed_mask:
     required: true
     template: false
-    input_type: ['rsfmri', 'dmri']
+    input_type: ['rsfmri', 'dmri', 'connectivity']
     file_type: ['.nii', '.nii.gz']
   target_mask:
     required: false

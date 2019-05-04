@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Compute various metrics for connectivity between two arrays"""
 from .exceptions import ShapeError
 import numpy as np
 

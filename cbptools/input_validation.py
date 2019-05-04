@@ -6,7 +6,7 @@
 
 from . import __version__
 from .utils import get_disk_size, CallCountDecorator, TColor, pyyaml_ordereddict
-from .image import binarize_3d, stretch_img, median_filter_img, subtract_img, subsample_img, map_voxels
+from .image import binarize_3d, stretch_img, median_filter_img, subtract_img, subsample_img, map_voxels, get_mask_indices
 from .fslconf import FSL
 from pydoc import locate
 from typing import Union
@@ -153,6 +153,9 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
         keys = [key for key, value in d[task].items() if input_type in value.get('input_type')]
 
         for key in keys:
+            if not data.get(task, None):
+                data[task] = dict()
+
             value = data.get(task, {}).get(key, None)
             required = d.get(task, {}).get(key, {}).get('required', False)
             instance_type = d.get(task, {}).get(key, {}).get('instance_type', False)
@@ -181,7 +184,7 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
                 logging.error(f'TypeError: [{task}->{key}] Must be {type(value).__name__}, not {instance_type}')
                 continue
 
-        data[task] = {key: data[task][key] for key in keys}
+        data[task] = {key: data.get(task, {}).get(key, None) for key in keys}
 
     if input_type == 'rsfmri':
         # Ensure low_pass > high_pass
@@ -200,8 +203,38 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
     return data
 
 
+def load_img(name: str, mask: str) -> Union[nib.spatialimages.SpatialImage, bool]:
+    """Check if the input mask can be read using nibabel"""
+    try:
+        return nib.load(mask)
+    except Exception as e:
+        logging.error(f'ValueError: [{name}_mask] Unable to read contents of file: {mask}')
+        return False
+
+
+def process_seed_indices(config: dict) -> Union[dict, bool]:
+    indices_file = config.get('input_data', {}).get('seed_indices', None)
+    seed = config.get('input_data', {}).get('seed_mask', None)
+
+    try:
+        indices = np.load(indices_file)
+    except Exception as e:
+        logging.error(f'ValueError: [seed_indices] Unable to read contents of file: {indices_file}')
+        return False
+
+    seed_img = load_img('seed', seed)
+    n_voxels = np.count_nonzero(seed_img.get_data())
+
+    if indices.shape != (n_voxels, 3):
+        logging.error(f'ValueError: [seed_indices] Expected shape ({n_voxels}, 3), not {indices.shape}')
+        return False
+
+    files = {'seed_mask': seed_img, 'seed_indices': indices}
+    return files
+
+
 def process_masks(config: dict) -> Union[dict, bool]:
-    def _base_processing(file, img, resample_to_mni: bool=False, bin_threshold: float=0.0):
+    def _base_processing(file, img, resample_to_mni: bool = False, bin_threshold: float = 0.0):
         mni_mapped_voxels = map_voxels(
             voxel_size=[2, 2, 2],
             origin=[90, -126, -72],
@@ -246,11 +279,7 @@ def process_masks(config: dict) -> Union[dict, bool]:
     downsample = options.get('downsample_target_to', None)
 
     # Load images
-    try:
-        seed_img = nib.load(seed)
-    except Exception as e:
-        logging.error(f'ValueError: [seed_mask] Unable to read contents of file: {seed}')
-        return False
+    seed_img = load_img('seed', seed)
 
     if target is None:
         # Load default MNI152GM template
@@ -259,11 +288,7 @@ def process_masks(config: dict) -> Union[dict, bool]:
         logging.warning(f'DefaultValue: [target_mask] Using default MNI152 Gray Matter template')
 
     else:
-        try:
-            target_img = nib.load(target)
-        except Exception as e:
-            logging.error(f'ValueError: [target_mask] Unable to read contents of file: {target}')
-            return False
+        target_img = load_img('target', target)
 
     seed_img = _base_processing(seed, seed_img, resample_to_mni=resample_to_mni, bin_threshold=bin_threshold)
     target_img = _base_processing(target, target_img, resample_to_mni=resample_to_mni, bin_threshold=bin_threshold)
@@ -344,36 +369,61 @@ def create_workflow(config: dict, work_dir: str) -> None:
     if input_data_type in ('rsfmri', 'dmri'):
         snakefiles.insert(1, f'{input_data_type}.Snakefile')
         config['input_data']['connectivity_matrix'] = 'connectivity/connectivity_{participant_id}.npy'
+        config['input_data']['seed_indices'] = ''
+
+    if input_data_type == 'rsfmri':
+        config['input_data']['touchfile'] = 'log/.touchfile'
 
     with open(os.path.join(work_dir, 'Snakefile'), 'w') as of:
         for snakefile in snakefiles:
             with open(os.path.join(templates, snakefile), 'r') as f:
                 for line in f:
                     if line.find('<cbptools[') != -1:
-                        keys = line[line.find("<cbptools['") + 11:line.find("']>")]
-                        value = get_value(config, *keys.split(':'))
-                        value = f"'{value}'" if isinstance(value, str) else str(value)
-                        line = line.replace(f"<cbptools['{keys}']>", value)
+                        template = line[line.find("<cbptools['") + 11:line.find("']>")]
+                        keys = template.split(':')
+                        value = get_value(config, *keys)
 
-                    of.write(line)
+                        if isinstance(value, dict):
+                            value = value if not value.get('file', None) else value.get('file')
+
+                        if not (keys[0] == 'input_data' and not value):
+                            value = repr(value) if isinstance(value, str) else str(value)
+                            line = line.replace(f"<cbptools['{template}']>", f'{keys[-1]} = {value}')
+                            of.write(line)
+
+                    elif line.find('<!cbptools[') != -1:
+                        template = line[line.find("<!cbptools['") + 12:line.find("']>")]
+                        keys = template.split(':')
+                        value = get_value(config, *keys)
+                        line = line.replace(f"<!cbptools['{template}']>", str(value))
+                        of.write(line)
+
+                    else:
+                        of.write(line)
 
     shutil.copy(os.path.join(templates, 'cluster.json'), work_dir)
 
 
-def create_project(work_dir, config, masks: dict, participants: pd.DataFrame) -> dict:
-    # Save config
-    with open(os.path.join(work_dir, 'project.yaml'), 'w') as stream:
-        yaml.dump(config, stream, default_flow_style=False)
+def create_project(work_dir, config, participants: pd.DataFrame, files: dict = None) -> dict:
+    # # Save config
+    # with open(os.path.join(work_dir, 'project.yaml'), 'w') as stream:
+    #     yaml.dump(config, stream, default_flow_style=False)
 
-    # Save masks
-    for key, value in masks.items():
-        nib.save(value, os.path.join(work_dir, key + '.nii'))
-        logging.info(f'Created file {os.path.join(work_dir, key + ".nii")}')
+    # Save files
+    for key, value in files.items():
+        if isinstance(value, nib.spatialimages.SpatialImage):
+            nib.save(value, os.path.join(work_dir, key + '.nii'))
+            logging.info(f'Created file {os.path.join(work_dir, key + ".nii")}')
+
+        elif isinstance(value, np.ndarray):
+            np.save(os.path.join(work_dir, key + '.npy'), value)
+            logging.info(f'Created file {os.path.join(work_dir, key + ".npy")}')
 
     # Save participant info
     n_bad_participants = np.count_nonzero(participants.invalid)
     n_participants = participants.participant_id.count()
-    participants.to_csv(os.path.join(work_dir, 'participants.tsv'), sep='\t')
+    participants = pd.DataFrame(participants[~participants['invalid']]['participant_id'])
+    participants.to_csv(os.path.join(work_dir, 'participants.tsv'), sep='\t', index=False)
 
     # Create workflow (snakefile)
     create_workflow(config=config, work_dir=work_dir)
@@ -507,12 +557,16 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     })
 
     # Process Masks
-    masks = process_masks(config=config)
+    if input_data_type in ('rsfmri', 'dmri'):
+        files = process_masks(config=config)
 
-    if not masks or logging.error.count > 0:
+    else:
+        files = process_seed_indices(config=config)
+
+    if not files or logging.error.count > 0:
         return False
 
-    info = create_project(work_dir=work_dir, config=config, masks=masks, participants=participants)
+    info = create_project(work_dir=work_dir, config=config, files=files, participants=participants)
     logging.info(f'Project setup completed on {time.strftime("%b %d %Y %H:%M:%S")}')
     logging.shutdown()  # no more log entries are made
 

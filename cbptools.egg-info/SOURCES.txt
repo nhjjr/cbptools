@@ -41,8 +41,6 @@ cbptools/templates/cluster.json
 cbptools/templates/dmri.Snakefile
 cbptools/templates/header.Snakefile
 cbptools/templates/rsfmri.Snakefile
-examples/1000brains_insula_dmri.py
-examples/1000brains_insula_fmri.py
-examples/example.py
-examples/hcp_setup_insula_dmri.py
-examples/hcp_setup_insula_fmri.py
+examples/config_connectivity.yaml
+examples/config_dmri.yaml
+examples/config_rsfmri.yaml

@@ -38,6 +38,9 @@ setup(
             'cbptools=cbptools.cbptools:main',
         ],
     },
+    dependency_links=[
+        'https://github.com/pytries/datrie.git'
+    ],
     install_requires=[
         'matplotlib>=2.2.2',
         'nibabel>=2.2.1',
@@ -47,7 +50,7 @@ setup(
         'scikit-learn>=0.19.1',
         'scipy>=1.1.0',
         'seaborn>=0.8.1',
-        'snakemake==4.5.1'  # change to snakemake>=5.4.5 once the pip version is fixed
+        'snakemake>=5.4.5'
     ],
     extras_require={
         'devel-docs': [
