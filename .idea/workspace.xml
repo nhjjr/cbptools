@@ -1,41 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="33ceabcc-33cb-4504-9c38-3782fbaafe83" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools.egg-info/SOURCES.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools.egg-info/SOURCES.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools.egg-info/entry_points.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools.egg-info/entry_points.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools.egg-info/requires.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools.egg-info/requires.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/cbptools-gui/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/cbptools-gui/wizard.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/cbptools.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/cbptools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/connectivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/connectivity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/defaults.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/defaults.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/image.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/image.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/input_validation.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/input_validation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/project_files/Snakefile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/00_fetch_dataset.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/01_connectivity.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/02_participant_level_clustering.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/03_group_level_clustering.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/04_internal_validity.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/05_summary_internal_validity.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/06_individual_similarity.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/project_files/scripts/07_group_similarity.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/tasks/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/tasks/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/tasks/clustering.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/tasks/clustering.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/tasks/connectivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/tasks/connectivity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/tasks/validity.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/tasks/validity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/taskutils.py" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/taskutils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/templates/body.Snakefile" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/templates/body.Snakefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/templates/dmri.Snakefile" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/templates/dmri.Snakefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/templates/header.Snakefile" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/templates/header.Snakefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cbptools/templates/rsfmri.Snakefile" beforeDir="false" afterPath="$PROJECT_DIR$/cbptools/templates/rsfmri.Snakefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/config_dmri.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/examples/config_dmri.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/config_rsfmri.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/examples/config_rsfmri.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
-    </list>
+    <list default="true" id="33ceabcc-33cb-4504-9c38-3782fbaafe83" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -56,11 +22,23 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/.gitignore">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="270">
-              <caret line="15" column="17" selection-start-line="15" selection-start-column="17" selection-end-line="15" selection-end-column="17" />
+            <state relative-caret-position="378">
+              <caret line="21" column="7" lean-forward="true" selection-start-line="21" selection-start-column="7" selection-end-line="21" selection-end-column="7" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/setup.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="245">
+              <caret line="41" column="47" lean-forward="true" selection-start-line="41" selection-start-column="47" selection-end-line="41" selection-end-column="47" />
+              <folding>
+                <element signature="e#23#66#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -586,16 +564,6 @@
         <state relative-caret-position="-216" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/setup.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1062">
-          <caret line="59" column="6" lean-forward="true" selection-start-line="59" selection-start-column="6" selection-end-line="59" selection-end-column="6" />
-          <folding>
-            <element signature="e#23#66#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/cbptools/taskutils.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="432">
@@ -683,8 +651,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="15" column="17" selection-start-line="15" selection-start-column="17" selection-end-line="15" selection-end-column="17" />
+        <state relative-caret-position="378">
+          <caret line="21" column="7" lean-forward="true" selection-start-line="21" selection-start-column="7" selection-end-line="21" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/setup.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="245">
+          <caret line="41" column="47" lean-forward="true" selection-start-line="41" selection-start-column="47" selection-end-line="41" selection-end-column="47" />
+          <folding>
+            <element signature="e#23#66#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
