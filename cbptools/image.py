@@ -66,12 +66,18 @@ def img_is_mask(img: np.ndarray, allow_empty: bool = True) -> bool:
 
 
 def get_mask_indices(img: spatialimage) -> np.ndarray:
-    """Get voxel space coordinates (indices) of seed voxels"""
+    """Get voxel space coordinates (indices) of seed voxels
+
+    Parameters
+    ----------
+    img : spatialimage
+        nibabel.spatialimages.SpatialImage object containing the mask image
+    """
     return np.asarray(tuple(zip(*np.where(img.get_data() == 1))))
 
 
 def binarize_3d(img: spatialimage, threshold: float = 0.0) -> spatialimage:
-    """ binarize 3D spatial image """
+    """binarize 3D spatial image"""
     if not img_is_3d(img):
         raise ShapeError(3, len(img.shape))
 
@@ -197,7 +203,7 @@ def find_low_variance_voxels(data, tol: float = np.finfo(np.float32).eps):
 
 def map_labels(img: spatialimage, labels: np.ndarray, indices: np.ndarray = None, order: str = 'C'):
     """Map cluster labels onto the seed mask"""
-    if not indices:
+    if indices is not None:
         indices = get_mask_indices(img)
 
     mapped_img = np.zeros(img.shape)

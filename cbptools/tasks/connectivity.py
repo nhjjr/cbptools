@@ -131,6 +131,7 @@ def connectivity_fmri(time_series: str, seed: str, target: str, participant_id: 
         pca = PCA(n_components=pca_transform)
         connectivity = pca.fit_transform(connectivity)
 
+    connectivity = np.ascontiguousarray(connectivity)
     np.save(out, connectivity)
 
 
@@ -205,7 +206,7 @@ def connectivity_dmri(fdt_matrix2: str, out: str, cleanup_fsl: bool = True, pca_
     j = j.astype(int) - 1  # FSL indexes from 1, but we need 0-indexing
 
     connectivity = coo_matrix((value, (i, j)))
-    connectivity = connectivity.todense(order='C')
+    connectivity = connectivity.todense(order='F')
 
     if cubic_transform:
         connectivity = np.power(connectivity, 1 / 3)

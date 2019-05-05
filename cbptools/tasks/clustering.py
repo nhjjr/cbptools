@@ -45,7 +45,7 @@ def participant_level_clustering(connectivity, out: str, n_clusters: int, algori
 
 def group_level_clustering(seed_img: str, participants: str, individual_labels: list, linkage: str,
                            input_data_type: str, out_labels: str, out_img: str, method: str = 'mode',
-                           seed_indices: str = None):
+                           seed_indices: str = None, order: str = None):
     """ Perform group-level analysis on all individual participant clustering results.
 
     Parameters
@@ -78,6 +78,9 @@ def group_level_clustering(seed_img: str, participants: str, individual_labels: 
         clustering.
     seed_indices : str
         Path to the numpy file containing the indices of the seed voxels.
+    order : str, optional
+        Fortran or C memory order of the connectivity matrices. This is important for mapping cluster labels onto the
+        seed mask. If the input data type is rsfMRI or dMRI, the order will be defined automatically.
     """
 
     methods = ('agglomerative', 'mode')
@@ -121,7 +124,12 @@ def group_level_clustering(seed_img: str, participants: str, individual_labels: 
                  group_labels=np.squeeze(mode), mode_count=np.squeeze(count), method='mode')
 
     # Map labels to seed-mask image based on indices
-    order = 'F' if input_data_type == 'dmri' else 'C'
+    if input_data_type == 'rsfmri':
+        order = 'C'
+
+    elif input_data_type == 'dmri':
+        order = 'F'
+
     seed_indices = np.load(seed_indices) if seed_indices else np.array([])
     seed_img = nib.load(seed_img)
     group_labels += 1  # avoid 0-labeling

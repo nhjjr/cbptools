@@ -39,12 +39,14 @@ rule group_level_clustering:
     params:
         <cbptools['input_data_type']>,
         <cbptools['parameters:clustering:linkage']>,
-        <cbptools['parameters:clustering:group_method']>
+        <cbptools['parameters:clustering:group_method']>,
+        <cbptools['input_data:seed_indices:order']>
     run:
         tasks.group_level_clustering(
             seed_img=input.seed_img, participants=input.participants, individual_labels=input.labels,
             seed_indices=input.get('seed_indices', None), linkage=params.linkage, method=params.group_method,
-            input_data_type=params.input_data_type, out_labels=output.group_labels, out_img=output.group_img
+            input_data_type=params.input_data_type, out_labels=output.group_labels, out_img=output.group_img,
+            order=params.order
         )
 
 

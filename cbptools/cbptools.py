@@ -260,7 +260,12 @@ def load_img(name: str, mask: str) -> Union[nib.spatialimages.SpatialImage, bool
 
 
 def process_seed_indices(config: dict) -> Union[dict, bool]:
-    indices_file = config.get('input_data', {}).get('seed_indices', None)
+    if isinstance(config.get('input_data', {}).get('seed_indices', None), dict):
+        indices_file = config.get('input_data', {}).get('seed_indices', {}).get('file', None)
+
+    else:
+        indices_file = config.get('input_data', {}).get('seed_indices')
+
     seed = config.get('input_data', {}).get('seed_mask', None)
 
     try:
