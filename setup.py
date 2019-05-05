@@ -40,14 +40,14 @@ setup(
     },
     install_requires=[
         'datrie@git+https://github.com/pytries/datrie.git',
-        'matplotlib>=2.2.2',
-        'nibabel>=2.2.1',
-        'numpy>=1.14.5',
-        'pandas>=0.23.2',
-        'pyyaml>=3.12',
-        'scikit-learn>=0.19.1',
-        'scipy>=1.1.0',
-        'seaborn>=0.8.1',
+        'matplotlib>=3.0.3',
+        'nibabel>=2.4.0',
+        'numpy>=1.16.3',
+        'pandas>=0.24.2',
+        'pyyaml>=5.1',
+        'scikit-learn>=0.20.3',
+        'scipy>=1.2.1',
+        'seaborn>=0.9.0',
         'snakemake>=5.4.5'
     ],
     extras_require={
