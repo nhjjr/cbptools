@@ -7,7 +7,6 @@
 from . import __version__
 from .utils import readable_bytesize, CallCountDecorator, TColor, pyyaml_ordereddict, bytes_to
 from .image import binarize_3d, stretch_img, median_filter_img, subtract_img, subsample_img, map_voxels
-from .fslconf import FSL
 from pydoc import locate
 from typing import Union
 from collections import OrderedDict
@@ -581,12 +580,16 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
 
     # Check if FSL is accessible
     if input_data_type == 'dmri':
-        fsl = FSL()
-        if fsl.has_probtrackx2():
-            logging.info(f'FSLInfo: Executable path is \'{fsl.fsl}\'')
-            logging.info(f'FSLInfo: probtrackx2 executable path is \'{fsl.probtrackx2}\'')
-            logging.info(f'FSLInfo: Directory is {fsl.fsl_dir}')
-            logging.info(f'FSLInfo: Output type is {fsl.fsl_outputtype}')
+        fsl = shutil.which('fsl')
+        fsl_outputtype = os.getenv('FSLOUTPUTTYPE')
+        fsl_dir = os.getenv('FSLDIR')
+        probtrackx2 = shutil.which('probtrackx2')
+
+        if probtrackx2:
+            logging.info(f'FSLInfo: Executable path is \'{fsl}\'')
+            logging.info(f'FSLInfo: probtrackx2 executable path is \'{probtrackx2}\'')
+            logging.info(f'FSLInfo: Directory is {fsl_dir}')
+            logging.info(f'FSLInfo: Output type is {fsl_outputtype}')
 
         else:
             logging.warning('ModuleNotFoundError: No module named \'probtrackx2\' (FSL)')
