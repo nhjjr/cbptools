@@ -36,7 +36,8 @@ def seed_based_correlation(x: np.ndarray, y: np.ndarray, standardize: bool = Tru
     if standardize:
         x, y = map(lambda z: (z - np.mean(z, axis=0)) / np.std(z, axis=0, ddof=ddof), (x, y))
 
-    r = (y.T.dot(x) / x.shape[0]).T.astype(np.float32)  # correlation
+    # Correlation
+    r = (y.T.dot(x) / x.shape[0]).T.astype(np.float32)
 
     # No-variance voxels have 0 std, causing division by 0 for standardization resulting in NaNs. Here we 0 NaNs.
     r[np.isnan(r)] = 0

@@ -1,4 +1,4 @@
-from cbptools.create import validate_config, success_exit, fail_exit
+from cbptools.cbptools import validate_config, success_exit, fail_exit, copy_example
 from cbptools import __version__, __readthedocs__
 import argparse
 import errno
@@ -48,7 +48,7 @@ def main():
         'example',
         help='Generate an example configuration file for the requested input data type'
     )
-    example_command.set_defaults(run=example)
+    example_command.set_defaults(run=copy_example)
     example_command.add_argument(
         '-g', '--get',
         required=True,
@@ -59,26 +59,29 @@ def main():
     )
 
     args = parser.parse_args()
-    args.run(args)
+    args.run(args, parsers=[create_command, example_command])
 
 
-def create(params):
+def create(params, parsers):
     configfile = params.configfile
     work_dir = params.workdir
     force = params.force
-
-    # TODO: Check first if work_dir already exists and is not empty
+    parser = parsers[0]
 
     if not os.path.isfile(configfile):
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), configfile)
+        parser.error(FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), configfile))
 
     else:
+        if os.path.exists(work_dir) and len(os.listdir(work_dir)) > 0 and not force:
+            parser.error(f'Directory \'{work_dir}\' is not empty. Use -f, --force to '
+                         f'force overwrite an existing work_dir.')
+
         # Create working directory
         try:
             os.makedirs(work_dir, exist_ok=True)
             os.makedirs(os.path.join(work_dir, 'log'), exist_ok=True)
         except OSError as exc:
-            raise OSError(exc)
+            parser.error(OSError(exc))
 
         utime = str(int(time.time()))
         logfile = os.path.join(work_dir, 'log', f'project_{utime}.log')
@@ -88,15 +91,9 @@ def create(params):
 
         if info:
             success_exit(info, work_dir=work_dir, logfile=logfile)
+
         else:
             fail_exit(logfile=logfile)
-
-
-def example(params):
-    input_data_type = params.input_data_type
-
-
-    print(f'Not yet finished: {input_data_type}')
 
 
 if __name__ == "__main__":

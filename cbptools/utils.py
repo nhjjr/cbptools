@@ -67,7 +67,7 @@ def sort_files(participants: str, files: list, pos: int = -1, sep: str = '_',
     return sorted_files
 
 
-def get_disk_size(size: int, itemsize: int = 1):
+def readable_bytesize(size: int, itemsize: int = 1):
     size *= itemsize
     if size == 0:
         return "0B"
@@ -76,6 +76,15 @@ def get_disk_size(size: int, itemsize: int = 1):
     i = int(math.floor(math.log(size, 1000)))
     s = round(size / math.pow(1000, i), 2)
     return f'{s} {units[i]}'
+
+
+def bytes_to(bytes: int, to: str, bsize: int = 1024):
+    a = {'kb': 1, 'mb': 2, 'gb': 3, 'tb': 4, 'pb': 5, 'eb': 6}
+    r = float(bytes)
+    for i in range(a[to]):
+        r = r / bsize
+
+    return r
 
 
 def pyyaml_ordereddict(dumper, data):

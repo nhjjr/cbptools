@@ -121,11 +121,9 @@ def group_level_clustering(seed_img: str, participants: str, individual_labels: 
                  group_labels=np.squeeze(mode), mode_count=np.squeeze(count), method='mode')
 
     # Map labels to seed-mask image based on indices
-    if seed_indices:
-        seed_indices = np.load(seed_indices)
-
     order = 'F' if input_data_type == 'dmri' else 'C'
+    seed_indices = np.load(seed_indices) if seed_indices else np.array([])
     seed_img = nib.load(seed_img)
     group_labels += 1  # avoid 0-labeling
-    group_img = map_labels(img=seed_img, labels=group_labels, seed_indices=seed_indices, order=order)
+    group_img = map_labels(img=seed_img, labels=group_labels, indices=seed_indices, order=order)
     nib.save(group_img, out_img)

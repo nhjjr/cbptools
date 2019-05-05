@@ -24,7 +24,6 @@ def fft_filter(x: np.ndarray, low_pass: float, high_pass: float, tr: float) -> n
     np.ndarray
         Filtered time series
     """
-    # TODO: Make this flexible so that it can also be just a low or high-pass filter
     if high_pass >= low_pass:
         raise ValueError(f'High pass ({high_pass}) should be smaller than low pass ({low_pass})')
 

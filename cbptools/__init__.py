@@ -16,9 +16,7 @@ image                   --- Utilities for handling and transforming neuroimaging
 
 """
 from . import clean, cluster, connectivity, exceptions, image, utils
-from .fslconf import FSL
 from ._version import __version__
 
 __readthedocs__ = 'http://docs.inm7.de'
-
-__all__ = ['clean', 'cluster', 'connectivity', 'exceptions', 'image', 'utils', 'FSL', '__version__', '__readthedocs__']
+__all__ = ['clean', 'cluster', 'connectivity', 'exceptions', 'image', 'utils', '__version__', '__readthedocs__']

@@ -1,4 +1,4 @@
-input_data_type: rsfmri
+input_data_type: connectivity
 
 input_data:
   participants: 
@@ -10,23 +10,6 @@ input_data:
   seed_indices: /path/to/seed_indices.npy
 
 parameters:
-  masking:
-    del_seed_expand: 0
-    del_seed_from_target: false
-    median_filter: false
-    median_filter_dist: 1
-    resample_to_mni: true
-    subsample: true
-    threshold: 0.0
-  connectivity:
-    arctanh_transform: true
-    pca_transform: null
-    high_pass: 0.01
-    low_pass: 0.08
-    smoothing_fwhm: null
-    seed_low_variance_threshold: 0.05
-    target_low_variance_threshold: 0.1
-    tr: 0.72
   clustering:
     algorithm: auto
     group_method: mode

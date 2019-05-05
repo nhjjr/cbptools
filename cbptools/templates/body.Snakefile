@@ -5,7 +5,7 @@ rule participant_level_clustering:
     output: 'clustering/clustering_k{n_clusters}_{participant_id}.npy'
     threads: 1
     resources:
-        mem_mb = 2000  # TODO: Change this later
+        mem_mb = <cbptools['!mem_mb:clustering']>
     params:
         <cbptools['parameters:clustering:algorithm']>,
         <cbptools['parameters:clustering:init']>,
@@ -35,7 +35,7 @@ rule group_level_clustering:
         group_img = 'summary/niftis/group_clustering_k{n_clusters}.nii'
     threads: 1
     resources:
-        mem_mb = 2000
+        mem_mb = <cbptools['!mem_mb:clustering']>
     params:
         <cbptools['input_data_type']>,
         <cbptools['parameters:clustering:linkage']>,
@@ -60,7 +60,7 @@ rule internal_validity:
     output: temp('validity/internal-validity_{participant_id}.tsv')
     threads: 1
     resources:
-        mem_mb = 2000
+        mem_mb = <cbptools['!mem_mb:clustering']>
     params:
         <cbptools['parameters:clustering:internal_validity_metrics']>
     run:
@@ -80,7 +80,7 @@ rule summary_internal_validity:
         )
     output:
         table = 'summary/internal_validity.tsv',
-        figure = 'summary/figures/internal_validity.<!cbptools['parameters:summary:figure_format']>'
+        figure = 'summary/figures/internal_validity.<cbptools['!parameters:summary:figure_format']>'
     params:
         <cbptools['parameters:clustering:internal_validity_metrics']>,
         <cbptools['parameters:summary:figure_format']>
@@ -98,8 +98,8 @@ rule individual_similarity:
         labels = 'clustering/clustering_group_k{n_clusters}.npz'
     output:
         matrix = 'summary/individual_similarity_{n_clusters}_clusters.npy',
-        figure1 = 'summary/figures/individual_similarity_{n_clusters}clusters_unordered.<!cbptools['parameters:summary:figure_format']>',
-        figure2 = 'summary/figures/individual_similarity_{n_clusters}clusters_ordered.<!cbptools['parameters:summary:figure_format']>'
+        figure1 = 'summary/figures/individual_similarity_{n_clusters}clusters_unordered.<cbptools['!parameters:summary:figure_format']>',
+        figure2 = 'summary/figures/individual_similarity_{n_clusters}clusters_ordered.<cbptools['!parameters:summary:figure_format']>'
     threads: 1
     params:
         <cbptools['parameters:clustering:similarity_metric']>,
@@ -119,9 +119,9 @@ rule group_similarity:
     output:
         table1 = 'summary/group_similarity.tsv',
         table2 = 'summary/cophenetic_correlation.tsv',
-        figure1 = 'summary/figures/group_similarity.<!cbptools['parameters:summary:figure_format']>',
-        figure2 = 'summary/figures/relabel_accuracy.<!cbptools['parameters:summary:figure_format']>',
-        figure3 = 'summary/figures/cophenetic_correlation.<!cbptools['parameters:summary:figure_format']>'
+        figure1 = 'summary/figures/group_similarity.<cbptools['!parameters:summary:figure_format']>',
+        figure2 = 'summary/figures/relabel_accuracy.<cbptools['!parameters:summary:figure_format']>',
+        figure3 = 'summary/figures/cophenetic_correlation.<cbptools['!parameters:summary:figure_format']>'
     threads: 1
     params:
         <cbptools['parameters:clustering:similarity_metric']>,

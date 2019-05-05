@@ -233,6 +233,20 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
             if tr is None:
                 logging.error('ValueError: connectivity->tr requires a value')
 
+    # Reset values so that they can be used for FSL input directly
+    elif input_type == 'dmri':
+        if data.get('connectivity', {}).get('correct_path_distribution'):
+            data['connectivity']['correct_path_distribution'] = '--pd'
+
+        else:
+            data['connectivity']['correct_path_distribution'] = ''
+
+        if data.get('connectivity', {}).get('loop_check'):
+            data['connectivity']['loop_check'] = '-l'
+
+        else:
+            data['connectivity']['loop_check'] = ''
+
     return data
 
 
@@ -612,3 +626,23 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     logging.shutdown()  # no more log entries are made
 
     return info
+
+
+def copy_example(params, **kwargs):
+    """Copy an example configuration file to the current working directory"""
+    input_data_type = params.input_data_type
+    filename = f'config_{input_data_type}.yaml'
+    file = pkg_resources.resource_filename(__name__, f'templates/{filename}')
+    dest = os.path.join(os.getcwd(), filename)
+
+    if os.path.exists(dest):
+        path, ext = os.path.splitext(dest)
+        dest = f'{path} ({{i}}){ext}'
+        i = 0
+        while os.path.exists(dest.format(i=i)):
+            i += 1
+
+        dest = dest.format(i=i)
+
+    shutil.copy(file, dest)
+    print(f'Copied {input_data_type} example configuration file to {dest}')

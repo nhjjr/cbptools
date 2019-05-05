@@ -4,12 +4,13 @@ from cbptools.exceptions import DimensionError
 from cbptools.image import img_is_4d, get_masked_series, find_low_variance_voxels
 from cbptools.connectivity import seed_based_correlation
 from cbptools.clean import nuisance_signal_regression, fft_filter
-from cbptools import FSL
 from scipy.signal import detrend
+from scipy.sparse import coo_matrix
 from sklearn.decomposition import PCA
 from nibabel.processing import smooth_image
 from fnmatch import fnmatch
 from pathlib import Path
+from shutil import rmtree
 import pandas as pd
 import nibabel as nib
 import numpy as np
@@ -168,16 +169,13 @@ def validate_connectivity(log_file: str, connectivity: str, labels: str, n_clust
         print('\nOpen log/connectivity_log.tsv to find problematic participants in the low_variance_excluded column\n')
         raise ValueError('Participants with bad data found. Open log/connectivity_log.tsv for more details.')
 
+    # Touch an output file that subsequent rules depend on
     else:
-        # Touch an output file that subsequent rules depend on
         Path(out).touch()
 
 
-def connectivity_dmri(seed: str, target: str, samples: str, bet_binary_mask: str, tmp_dir: str, xfm: str, inv_xfm: str,
-                      out: str, pd: bool = True, n_samples: int = 200, n_steps: int = 2000, step_length: float = 0.5,
-                      dist_thresh: float = 5.0, c_thresh: float = 0.2, loop_check: bool = True,
-                      cubic_transform: bool = True, pca_transform: bool = False, wait_for_file: int = 240,
-                      cleanup_fsl: bool = True) -> None:
+def connectivity_dmri(fdt_matrix2: str, out: str, cleanup_fsl: bool = True, pca_transform: float = None,
+                      cubic_transform: bool = False):
     """ Compute a connectivity matrix from functional data. This method uses FSL's probtrackx2 function which must be
     accessible from the terminal.
 
@@ -187,74 +185,27 @@ def connectivity_dmri(seed: str, target: str, samples: str, bet_binary_mask: str
 
     Parameters
     ----------
-    seed : str
-        Path to the region-of-interest high-resolution mask nifti image. Used for the -x,--seed argument.
-    target : str
-        Path to the low-resolution target mask nifti image. Used for the --target2 argument.
-    samples : str
-        Basename for samples files (e.g., 'merged'). Used for the -s,--samples argument.
-    bet_binary_mask : str
-        Bet binary mask file in diffusion space. Used for the -m,--mask argument.
-    tmp_dir : str
-        Directory to put the FSL final volume output in. Used for the --dir argument. If cleanup_fsl is set to True,
-        this directory will be deleted after the connectivity matrix is extracted.
-    xfm : str
-        Transform taking seed space to DTI space (either FLIRT matrix of FNIRT warpfield). Used for the --xfm argment.
-    inv_xfm : str
-        Transform taking DTI space to seed space. Used for the --invxfm argument.
+    fdt_matrix2 : str
+        Path to the probtrackx2 output file for fdt_matrix2
     out : str
         Output filename for the connectivity matrix (.npy)
-    pd : bool, optional
-        Correct path distribution for the length of the pathways. Used for the --pd argument.
-    n_samples : int, optional
-        Number of samples, default is 200. Used for the -P,--nsamples argument.
-    n_steps : int, optional
-        Number of steps per sample, default is 2000. Used for the -S,--nsteps argument.
-    step_length : float, optional
-        Steplength in mm, default is 0.5. Used for the --steplength argument.
-    dist_thresh : float, optional
-        Discards samples shorter than this threshold in mm, default is 5.0. Used for the --distthresh argument.
-    c_thresh : float, optional
-        Curvature threshold, default is 0.2. Used for the -c,--cthr argument.
-    loop_check: bool, optional
-        Perform loopchecks on paths, default is True. Used for the -l,--loopcheck argument.
-    cubic_transform : bool, optional
-        Apply a cubic transformation to the connectivity matrix.
+    cleanup_fsl: bool, optional
+        Remove the FSL output directory defined in tmp_dir. Once the connectivity matrix has been extracted, this data
+        will no longer be used by the pipeline.
     pca_transform : float, optional
         Apply sklearn.decomposition.PCA to the connectivity matrix. The parameter value is used as the n_components
         value specified in the description of the aforementioned class. All other parameters are kept to sklearn
         defaults. Applying this returns the ROI-voxels by principal components as a connectivity matrix. If this is set
         to None, this step will be ignored.
-    wait_for_file: int, optional
-        Wait for the FSL output file 'fdt_matrix2' to appear in the file system in seconds, default is 240. If the file
-        has not appeared within this time, the script assumes something went wrong.
-    cleanup_fsl: bool, optional
-        Remove the FSL output directory defined in tmp_dir. Once the connectivity matrix has been extracted, this data
-        will no longer be used by the pipeline.
+    cubic_transform : bool, optional
+        Apply a cubic transformation to the connectivity matrix.
     """
+    i, j, value = np.loadtxt(fdt_matrix2, unpack=True)
+    i = i.astype(int) - 1  # numpy reads as floats, convert to int for indexing
+    j = j.astype(int) - 1  # FSL indexes from 1, but we need 0-indexing
 
-    options = (f'--nsamples={n_samples}', f'--nsteps={n_steps}', f'--steplength={step_length}',
-               f'--distthresh={dist_thresh}', f'--cthr={c_thresh}', '--omatrix2', '--forcedir', '--verbose=0')
-
-    if loop_check:
-        options += ('-l',)
-
-    if pd:
-        options += ('--pd',)
-
-    fsl = FSL()
-    connectivity = fsl.run_probtrackx2(
-        seed=seed,
-        target=target,
-        samples=samples,
-        mask=bet_binary_mask,
-        tmp_dir=tmp_dir,
-        xfm=xfm,
-        invxfm=inv_xfm,
-        options=options,
-        wait_for_file=wait_for_file,
-        cleanup_fsl=cleanup_fsl
-    )
+    connectivity = coo_matrix((value, (i, j)))
+    connectivity = connectivity.todense(order='C')
 
     if cubic_transform:
         connectivity = np.power(connectivity, 1 / 3)
@@ -265,3 +216,6 @@ def connectivity_dmri(seed: str, target: str, samples: str, bet_binary_mask: str
         connectivity = pca.fit_transform(connectivity)
 
     np.save(out, connectivity)
+
+    if cleanup_fsl:
+        rmtree(os.path.dirname(fdt_matrix2))

@@ -35,13 +35,11 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'cbptools=cbptools.cbptools:main',
+            'cbptools=cbptools.main:main',
         ],
     },
-    dependency_links=[
-        'https://github.com/pytries/datrie.git'
-    ],
     install_requires=[
+        'datrie@git+https://github.com/pytries/datrie.git',
         'matplotlib>=2.2.2',
         'nibabel>=2.2.1',
         'numpy>=1.14.5',

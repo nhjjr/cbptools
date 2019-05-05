@@ -103,13 +103,8 @@ def within_ss(x: np.ndarray, centers: np.ndarray, squared=True) -> float:
     """
     nbrs = NearestNeighbors(n_neighbors=1, algorithm='auto').fit(centers)
     distances, indices = nbrs.kneighbors(x)
-
-    if squared:
-        ss = np.sum(distances ** 2)
-    else:
-        ss = np.sum(distances)
-
-    return ss
+    ss = np.sum(distances ** 2) if squared else np.sum(distances)
+    return float(ss)
 
 
 def davies_bouldin_score(x: np.ndarray, y: list) -> float:
@@ -142,15 +137,13 @@ def davies_bouldin_score(x: np.ndarray, y: list) -> float:
         Davies-Bouldin index value
 
     """
-
     n = np.unique(y)
     k = len(n)
     c = [np.mean(x[y == i], axis=0) for i in n]
     d = [np.mean(np.linalg.norm(x[y == j] - c[i], axis=1, ord=2)) for i, j in enumerate(n)]
     db = np.zeros((k, k))
     db[np.triu_indices(k, 1)] = [(d[i] + d[j]) / euclidean(c[i], c[j]) for i, j in itertools.combinations(range(k), 2)]
-    db = np.mean(np.max(db+db.T, axis=0))
-
+    db = float(np.mean(np.max(db+db.T, axis=0)))
     return db
 
 
@@ -182,4 +175,3 @@ def gap_score(x: np.ndarray, kmeans: KMeans, n_refs: int) -> float:
 
     # Calculate gap score
     return np.log(np.mean(ref_dispersions)) - np.log(dispersion)
-

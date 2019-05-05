@@ -9,8 +9,7 @@ rule connectivity:
         connectivity_matrix = 'connectivity/connectivity_{participant_id}.npy'
     threads: 1
     resources:
-        mem_mb = 10000,
-        io = 5
+        mem_mb = <cbptools['!mem_mb:connectivity']>
     params:
         <cbptools['input_data:confounds:sep']>,
         <cbptools['input_data:confounds:usecols']>,
@@ -70,3 +69,4 @@ rule validate_connectivity:
             log_file=input.log_file, connectivity=params.connectivity_matrix, labels=params.cluster_labels,
             n_clusters=params.n_clusters, out=output.touchfile
         )
+

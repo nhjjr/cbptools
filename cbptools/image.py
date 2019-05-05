@@ -4,7 +4,7 @@
 Expected input to these functions are np.ndarrays rather than nibabel spatial images. This cuts down in computation
 cost for loading data and formatting the data back into spatial image objects."""
 
-from .exceptions import ShapeError, DimensionError
+from .exceptions import ShapeError
 from sys import float_info
 from scipy.ndimage.morphology import binary_dilation
 from scipy.spatial import distance
@@ -22,17 +22,16 @@ def imgs_equal_3d(imgs: List[spatialimage]) -> bool:
         iterator = iter(iterator)
         try:
             first = next(iterator)
+
         except StopIteration:
             return True
+
         return all(first == rest for rest in iterator)
 
     affines = [img.affine.flatten().tolist() for img in imgs]
     shapes = [img.shape[0:3] for img in imgs]
 
-    if not _check_equal(affines) or not _check_equal(shapes):
-        return False
-    else:
-        return True
+    return False if not _check_equal(affines) or not _check_equal(shapes) else True
 
 
 def img_is_3d(img: spatialimage) -> bool:
@@ -73,10 +72,10 @@ def get_mask_indices(img: spatialimage) -> np.ndarray:
 
 def binarize_3d(img: spatialimage, threshold: float = 0.0) -> spatialimage:
     """ binarize 3D spatial image """
-    if img_is_3d(img):
-        return nib.Nifti1Image(np.where(img.get_data() > threshold, 1, 0), img.affine, img.header)
-    else:
+    if not img_is_3d(img):
         raise ShapeError(3, len(img.shape))
+
+    return nib.Nifti1Image(np.where(img.get_data() > threshold, 1, 0), img.affine, img.header)
 
 
 def subtract_img(source_img: spatialimage, target_img: spatialimage, edge_dist: int = 0) -> spatialimage:
@@ -106,14 +105,14 @@ def subtract_img(source_img: spatialimage, target_img: spatialimage, edge_dist: 
 
 def subsample_img(img: spatialimage, f: int = 2) -> spatialimage:
     """Reduce image features of a 3D array by a given factor f."""
-    if img_is_3d(img):
-        data = img.get_data()
-        mask = np.zeros(img.shape)
-        mask[::f, ::f, ::f] = 1
-        data *= mask
-        return nib.Nifti1Image(data, img.affine, img.header)
-    else:
+    if not img_is_3d(img):
         raise ShapeError(3, len(img.shape))
+
+    data = img.get_data()
+    mask = np.zeros(img.shape)
+    mask[::f, ::f, ::f] = 1
+    data *= mask
+    return nib.Nifti1Image(data, img.affine, img.header)
 
 
 def median_filter_img(img: spatialimage, dist: int = 1) -> spatialimage:
@@ -124,21 +123,21 @@ def median_filter_img(img: spatialimage, dist: int = 1) -> spatialimage:
     a 3*3*3 shape. The number of repetitions nrep determines how often the median filter will be repeated.
     """
 
-    if img_is_3d(img):
-        data = img.get_data()
-        dilated = binary_dilation(data, iterations=2).astype(int)
-        voxels = np.asarray(np.where(dilated == 1)).transpose()
-
-        filtered = np.zeros(img.shape)
-        for x, y, z in voxels:
-            area = data[x - dist:x + (dist + 1), y - dist:y + (dist + 1), z - dist:z + (dist + 1)]
-
-            if np.median(area) > float_info.min:
-                filtered[x, y, z] = 1
-
-        return nib.Nifti1Image(np.float32(filtered), img.affine, img.header)
-    else:
+    if not img_is_3d(img):
         raise ShapeError(3, len(img.shape))
+
+    data = img.get_data()
+    dilated = binary_dilation(data, iterations=2).astype(int)
+    voxels = np.asarray(np.where(dilated == 1)).transpose()
+
+    filtered = np.zeros(img.shape)
+    for x, y, z in voxels:
+        area = data[x - dist:x + (dist + 1), y - dist:y + (dist + 1), z - dist:z + (dist + 1)]
+
+        if np.median(area) > float_info.min:
+            filtered[x, y, z] = 1
+
+    return nib.Nifti1Image(np.float32(filtered), img.affine, img.header)
 
 
 def stretch_img(source_img: spatialimage, target: Union[tuple, spatialimage]) -> spatialimage:
@@ -151,6 +150,7 @@ def stretch_img(source_img: spatialimage, target: Union[tuple, spatialimage]) ->
 
     try:
         target_shape, target_affine = target.shape, target.affine
+
     except AttributeError:
         target_shape, target_affine = target
 
@@ -180,7 +180,7 @@ def get_masked_series(time_series: spatialimage, mask: spatialimage):
         3D boolean mask image
     """
     if not imgs_equal_3d([time_series, mask]):
-        raise ValueError('Input time-series and mask do not have equal shape and/or affine')
+        raise ValueError('Time-series and mask do not have equal shape and/or affine')
 
     if not img_is_4d(time_series):
         raise ShapeError(4, len(time_series.shape))
@@ -195,20 +195,15 @@ def find_low_variance_voxels(data, tol: float = np.finfo(np.float32).eps):
     return np.where(data.var(axis=0) < tol)[0]
 
 
-# def get_masked_series(time_series: spatialimage, coordinates: np.ndarray):
-#     time_series_data = time_series.get_data()
-#     x, y, z = coordinates[0:, 0], coordinates[0:, 1], coordinates[0:, 2]
-#     return time_series_data[x, y, z, :].T
-
-
-def map_labels(img: spatialimage, labels: np.ndarray, seed_indices: np.ndarray = None, order: str = 'C'):
+def map_labels(img: spatialimage, labels: np.ndarray, indices: np.ndarray = None, order: str = 'C'):
     """Map cluster labels onto the seed mask"""
-    inds = get_mask_indices(img)
+    if not indices:
+        indices = get_mask_indices(img)
+
     mapped_img = np.zeros(img.shape)
-    mapped_img[inds[0:, 0], inds[0:, 1], inds[0:, 2]] = 1
+    mapped_img[indices[0:, 0], indices[0:, 1], indices[0:, 2]] = 1
     mapped_img = mapped_img.flatten(order=order).astype(int)
     np.place(mapped_img, [mapped_img == 1], labels)
     mapped_img = np.reshape(mapped_img, img.shape, order=order)
 
     return nib.Nifti1Image(np.float32(mapped_img), img.affine, img.header)
-
