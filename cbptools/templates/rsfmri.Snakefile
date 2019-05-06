@@ -11,8 +11,8 @@ rule connectivity:
     resources:
         mem_mb = <cbptools['!mem_mb:connectivity']>
     params:
-        <cbptools['input_data:confounds:sep']>,
-        <cbptools['input_data:confounds:usecols']>,
+        <cbptools['+input_data:confounds:sep']>,
+        <cbptools['+input_data:confounds:usecols']>,
         <cbptools['parameters:connectivity:arctanh_transform']>,
         <cbptools['parameters:connectivity:pca_transform']>,
         <cbptools['parameters:connectivity:high_pass']>,

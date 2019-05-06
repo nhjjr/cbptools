@@ -139,11 +139,23 @@ def validate_paths(d: dict, input_type: str, data: dict, participant_ids: list =
 
     # Validate filepath format
     for key in keys:
-        path = data.get(key, {}).get('file', None) if isinstance(data.get(key, None), dict) else data.get(key, None)
+        path = data.get(key, None)
         required = d.get(key, {}).get('required', False)
         template = d.get(key, {}).get('template', False)
         file_type = d.get(key, {}).get('file_type', None)
         expand = d.get(key, {}).get('expand', False)
+        subs = d.get(key, {}).get('subs', False)
+
+        if subs and not isinstance(path, dict) and path:
+            data[key] = {**{'file': path}, **{sub: None for sub in subs}}
+            path = data[key]['file']
+
+        elif subs and isinstance(path, dict):
+            for sub in subs:
+                if sub not in path.keys():
+                    data[key][sub] = None
+
+            path = data[key].get('file', None)
 
         if path is None and required:
             logging.error(f'TypeError: [{key}] Input is required')
@@ -199,12 +211,8 @@ def validate_paths(d: dict, input_type: str, data: dict, participant_ids: list =
 
 def validate_time_series(time_series: str, participants: list, seed_mask: spatialimage,
                          confounds: Union[str, dict] = None) -> list:
-    """Assess whether time-series is in the same space as the seed mask and whether confounds (if given)
-    have matching timepoints to the time-series and all requested confound columns are present"""
-
-    if not isinstance(seed_mask, nib.spatialimages.SpatialImage):
-        return []
-
+    """Assess whether the time-series are in the same space as the seed mask and whether confounds (if given)
+    have matching timepoints to the time-series"""
     participant_ids_bad = []
     for participant in participants:
         file = time_series.format(participant_id=participant)
@@ -234,7 +242,7 @@ def validate_time_series(time_series: str, participants: list, seed_mask: spatia
                 confounds_df = pd.read_csv(file, sep=sep, usecols=usecols, engine='python')
 
             else:
-                file = confounds
+                file = confounds.format(participant_id=participant)
                 ext = os.path.splitext(file)[-1]
                 separators = {'.tsv': '\t', '.csv': ','}
                 sep = separators[ext] if ext in separators.keys() else None
@@ -243,6 +251,21 @@ def validate_time_series(time_series: str, participants: list, seed_mask: spatia
             if len(confounds_df) != img.shape[-1]:
                 logging.warning(f'Mismatch: [confounds] {file} and time-series do not have matching timepoints')
                 participant_ids_bad.append(participant)
+
+    return list(set(participant_ids_bad))
+
+
+def validate_connectivity(connectivity_matrix: str, participants: list, seed_mask: spatialimage) -> list:
+    """Assess whether connectivity matrices have the correct shape"""
+    participant_ids_bad = []
+    n_voxels = np.count_nonzero(seed_mask.get_data())
+    for participant in participants:
+        file = connectivity_matrix.format(participant_id=participant)
+        mat = np.load(file, mmap_mode='r')
+
+        if mat.shape[0] != n_voxels:
+            logging.warning(f'Mismatch: [connectivity] Expected shape ({n_voxels}, x), not ({mat.shape[0]}, x)')
+            participant_ids_bad.append(participant)
 
     return list(set(participant_ids_bad))
 
@@ -339,7 +362,7 @@ def process_seed_indices(config: dict) -> Union[dict, bool]:
     seed = config.get('input_data', {}).get('seed_mask', None)
 
     try:
-        indices = np.load(indices_file)
+        indices = np.load(indices_file, mmap_mode='r')
 
     except Exception as exc:
         logging.error(f'ValueError: [seed_indices] Unable to read contents of file: {indices_file}')
@@ -506,23 +529,35 @@ def create_workflow(config: dict, mem_mb: dict, work_dir: str) -> None:
         for snakefile in snakefiles:
             with open(os.path.join(templates, snakefile), 'r') as f:
                 for line in f:
-                    tags = ({'start': "<cbptools[\'", 'end': "\']>"}, {'start': "<!cbptools[\'", 'end': "\']>"})
-
-                    if line.find(tags[0].get('start')) != -1:
-                        s, e = tags[0].get('start'), tags[0].get('end')
+                    s, e = "<cbptools[\'", "\']>"
+                    if line.find(s) != -1:
                         content = line[line.find(s) + len(s):line.find(e)]
-                        content, inplace = (content[1:], True) if content.startswith('!') else (content, False)
+                        inplace, force = False, False
+
+                        if content.startswith('!'):
+                            content = content[1:]
+                            inplace = True
+
+                        elif content.startswith('+'):
+                            content = content[1:]
+                            force = True
+
                         keys = content.split(':')
                         value = get_value(config, *keys)
 
                         if isinstance(value, dict):
                             value = value if not value.get('file', None) else value.get('file')
 
-                        if keys[0] == 'input_data' and not value:
+                        if keys[0] == 'input_data' and not value and not force:
                             continue
 
                         if inplace:
                             line = line.replace(f'{s}!{content}{e}', str(value))
+
+                        elif force:
+                            value = repr(value) if isinstance(value, str) else str(value)
+                            line = line.replace(f'{s}+{content}{e}', f'{keys[-1]} = {value}')
+
                         else:
                             value = repr(value) if isinstance(value, str) else str(value)
                             line = line.replace(f'{s}{content}{e}', f'{keys[-1]} = {value}')
@@ -560,6 +595,7 @@ def create_project(work_dir: str, config: dict, files: dict, mem_mb: dict, parti
     # Info
     input_data_type = config.get('input_data_type')
     n_participants_included = n_participants - n_bad_participants
+    logging.info(f'Removed participants: {n_bad_participants}')
     logging.info(f'Included participants: {n_participants_included}')
     seed_voxels = (np.asarray(files['seed_mask'].get_data()) == 1).sum()
 
@@ -630,19 +666,17 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
         logging.error(f'ValueError: [input_data] No {input_data_type} input data found')
 
     else:
-        if isinstance(input_data.get('participants', None), dict):
-            participant_ids = get_participant_ids(
-                file=input_data.get('participants', {}).get('file', None),
-                sep=input_data.get('participants', {}).get('sep', None),
-                index_col=input_data.get('participants', {}).get('index_col', 'participant_id')
-            )
-        else:
-            participant_ids = get_participant_ids(
-                file=input_data.get('participants', None),
-                sep=None,
-                index_col='participant_id'
-            )
-
+        if not isinstance(input_data.get('participants', None), dict):
+            input_data['participants'] = {
+                'file': input_data.get('participants', None),
+                'sep': None,
+                'index_col': 'participant_id'
+            }
+        participant_ids = get_participant_ids(
+            file=input_data.get('participants', {}).get('file', None),
+            sep=input_data.get('participants', {}).get('sep', None),
+            index_col=input_data.get('participants', {}).get('index_col', 'participant_id')
+        )
         input_data = validate_paths(
             d=defaults.get('input'),
             input_type=input_data_type,
@@ -715,8 +749,20 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
             logging.error('ValueError: [participants] Not enough participants left '
                           'after removing those with missing or bad data')
 
-        if logging.error.count > 0:
-            return False
+    elif input_data_type == 'connectivity':
+        participant_ids_bad = list(participant_ids_bad)
+        participant_ids_bad += validate_connectivity(
+            connectivity_matrix=input_data.get('connectivity_matrix', None),
+            participants=list(set(participant_ids) - set(participant_ids_bad)),
+            seed_mask=files.get('seed_mask', None)
+        )
+        participant_ids_bad = set(participant_ids_bad)
+        if participant_ids and len(set(participant_ids) - participant_ids_bad) <= 1:
+            logging.error('ValueError: [participants] Not enough participants left '
+                          'after removing those with missing or bad data')
+
+    if logging.error.count > 0:
+        return False
 
     # Get estimated memory usage of tasks
     mem_mb = estimate_memory_usage(

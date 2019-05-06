@@ -8,8 +8,6 @@ rule probtrackx2:
         <cbptools['input_data:inv_xfm']>
     output: 'probtrackx2/{participant_id}/fdt_matrix2.dot'
     threads: 1
-    benchmark:
-        'benchmarks/{participant_id}.probtrackx2.benchmark.txt'
     resources:
         mem_mb = <cbptools['!mem_mb:connectivity']>
     params:
@@ -33,8 +31,6 @@ rule probtrackx2:
 rule connectivity:
     input: 'probtrackx2/{participant_id}/fdt_matrix2.dot'
     output: 'connectivity/connectivity_{participant_id}.npy'
-    benchmark:
-        'benchmarks/{participant_id}.connectivity.benchmark.txt'
     resources:
         mem_mb = <cbptools['!mem_mb:clustering']>
     params:

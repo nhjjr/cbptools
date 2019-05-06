@@ -30,6 +30,7 @@ input:
     template: true
     input_type: ['rsfmri']
     file_type: ['.tsv', '.csv']
+    subs: ['sep', 'usecols']
   bet_binary_mask:
     required: true
     template: true
