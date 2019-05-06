@@ -96,7 +96,7 @@ def get_participant_ids(file: str = None, sep: str = None, index_col: str = 'par
     return participants
 
 
-def estimate_memory_usage(config: dict, files: dict, participants: list) -> dict:
+def estimate_memory_usage(config: dict, masks: dict, participants: list) -> dict:
     input_data_type = config.get('input_data_type')
     mem_mb = dict()
 
@@ -120,8 +120,8 @@ def estimate_memory_usage(config: dict, files: dict, participants: list) -> dict
     if input_data_type in ('rsfmri', 'dmri'):
         # Clustering task
         buffer = 250
-        seed_voxels = (np.asarray(files['seed_mask'].get_data()) == 1).sum()
-        target_voxels = (np.asarray(files['target_mask'].get_data()) == 1).sum()
+        seed_voxels = (np.asarray(masks['seed_mask'].get_data()) == 1).sum()
+        target_voxels = (np.asarray(masks['target_mask'].get_data()) == 1).sum()
         mem_mb['clustering'] = int(np.ceil(bytes_to(seed_voxels * target_voxels * len(participants), 'mb'))) + buffer
 
     elif input_data_type == 'connectivity':
@@ -310,6 +310,13 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
                 continue
 
         data[task] = {key: data.get(task, {}).get(key, None) for key in keys}
+
+    # Set order of connectivity matrices for dMRI and rsfMRI data
+    if input_type == 'rsfmri':
+        data['connectivity']['order'] = 'C'
+
+    elif input_type == 'dmri':
+        data['connectivity']['order'] = 'F'
 
     # Ensure low_pass > high_pass for rsfmri data
     if input_type == 'rsfmri':
@@ -567,10 +574,10 @@ def create_workflow(config: dict, mem_mb: dict, work_dir: str) -> None:
     shutil.copy(os.path.join(templates, 'cluster.json'), work_dir)
 
 
-def create_project(work_dir: str, config: dict, files: dict, mem_mb: dict, participants: pd.DataFrame) -> dict:
+def create_project(work_dir: str, config: dict, masks: dict, mem_mb: dict, participants: pd.DataFrame) -> dict:
     """Generate all the files needed by the CBP project"""
-    # Save files
-    for key, value in files.items():
+    # Save masks
+    for key, value in masks.items():
         if isinstance(value, spatialimage):
             nib.save(value, os.path.join(work_dir, key + '.nii'))
             logging.info(f'Created file {os.path.join(work_dir, key + ".nii")}')
@@ -597,10 +604,10 @@ def create_project(work_dir: str, config: dict, files: dict, mem_mb: dict, parti
     n_participants_included = n_participants - n_bad_participants
     logging.info(f'Removed participants: {n_bad_participants}')
     logging.info(f'Included participants: {n_participants_included}')
-    seed_voxels = (np.asarray(files['seed_mask'].get_data()) == 1).sum()
+    seed_voxels = (np.asarray(masks['seed_mask'].get_data()) == 1).sum()
 
     if input_data_type in ('rsfmri', 'dmri'):
-        target_voxels = (np.asarray(files['target_mask'].get_data()) == 1).sum()
+        target_voxels = (np.asarray(masks['target_mask'].get_data()) == 1).sum()
         connectivity_size = seed_voxels*target_voxels*n_participants_included
         logging.info(f'Approximate size of all connectivity matrices: {readable_bytesize(connectivity_size, 8)}')
 
@@ -726,13 +733,14 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     })
 
     # Process Masks
+    masks = dict()
     if input_data_type in ('rsfmri', 'dmri'):
-        files = process_masks(config=config)
+        masks = process_masks(config=config)
 
-    else:
-        files = process_seed_indices(config=config)
+    elif input_data_type == 'connectivity':
+        masks['seed_mask'] = load_img('seed', config.get('input_data', {}).get('seed_mask'))
 
-    if not files or logging.error.count > 0:
+    if logging.error.count > 0:
         return False
 
     # Evaluate time-series
@@ -741,7 +749,7 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
         participant_ids_bad += validate_time_series(
             time_series=input_data.get('time_series', None),
             participants=list(set(participant_ids) - set(participant_ids_bad)),
-            seed_mask=files.get('seed_mask', None),
+            seed_mask=masks.get('seed_mask', None),
             confounds=input_data.get('confounds', None)
         )
         participant_ids_bad = set(participant_ids_bad)
@@ -754,7 +762,7 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
         participant_ids_bad += validate_connectivity(
             connectivity_matrix=input_data.get('connectivity_matrix', None),
             participants=list(set(participant_ids) - set(participant_ids_bad)),
-            seed_mask=files.get('seed_mask', None)
+            seed_mask=masks['seed_mask']
         )
         participant_ids_bad = set(participant_ids_bad)
         if participant_ids and len(set(participant_ids) - participant_ids_bad) <= 1:
@@ -767,7 +775,7 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     # Get estimated memory usage of tasks
     mem_mb = estimate_memory_usage(
         config=config,
-        files=files,
+        masks=masks,
         participants=list(set(participant_ids) - set(participant_ids_bad))
     )
 
@@ -778,7 +786,7 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     info = create_project(
         work_dir=work_dir,
         config=config,
-        files=files,
+        masks=masks,
         mem_mb=mem_mb,
         participants=participants
     )

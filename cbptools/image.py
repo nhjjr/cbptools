@@ -65,17 +65,6 @@ def img_is_mask(img: np.ndarray, allow_empty: bool = True) -> bool:
     return True
 
 
-def get_mask_indices(img: spatialimage) -> np.ndarray:
-    """Get voxel space coordinates (indices) of seed voxels
-
-    Parameters
-    ----------
-    img : spatialimage
-        nibabel.spatialimages.SpatialImage object containing the mask image
-    """
-    return np.asarray(tuple(zip(*np.where(img.get_data() == 1))))
-
-
 def binarize_3d(img: spatialimage, threshold: float = 0.0) -> spatialimage:
     """binarize 3D spatial image"""
     if not img_is_3d(img):
@@ -201,6 +190,17 @@ def find_low_variance_voxels(data, tol: float = np.finfo(np.float32).eps):
     return np.where(data.var(axis=0) < tol)[0]
 
 
+def get_mask_indices(img: spatialimage) -> np.ndarray:
+    """Get voxel space coordinates (indices) of seed voxels
+
+    Parameters
+    ----------
+    img : spatialimage
+        nibabel.spatialimages.SpatialImage object containing the mask image
+    """
+    return np.asarray(tuple(zip(*np.where(img.get_data() == 1))))
+
+
 def map_labels(img: spatialimage, labels: np.ndarray, indices: np.ndarray = None, order: str = 'C'):
     """Map cluster labels onto the seed mask"""
     if indices is None:
@@ -211,5 +211,4 @@ def map_labels(img: spatialimage, labels: np.ndarray, indices: np.ndarray = None
     mapped_img = mapped_img.flatten(order=order).astype(int)
     np.place(mapped_img, [mapped_img == 1], labels)
     mapped_img = np.reshape(mapped_img, img.shape, order=order)
-
     return nib.Nifti1Image(np.float32(mapped_img), img.affine, img.header)
