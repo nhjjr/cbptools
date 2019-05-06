@@ -630,11 +630,19 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
         logging.error(f'ValueError: [input_data] No {input_data_type} input data found')
 
     else:
-        participant_ids = get_participant_ids(
-            file=input_data.get('participants', {}).get('file', None),
-            sep=input_data.get('participants', {}).get('sep', None),
-            index_col=input_data.get('participants', {}).get('index_col', 'participant_id')
-        )
+        if isinstance(input_data.get('participants', None), dict):
+            participant_ids = get_participant_ids(
+                file=input_data.get('participants', {}).get('file', None),
+                sep=input_data.get('participants', {}).get('sep', None),
+                index_col=input_data.get('participants', {}).get('index_col', 'participant_id')
+            )
+        else:
+            participant_ids = get_participant_ids(
+                file=input_data.get('participants', None),
+                sep=None,
+                index_col='participant_id'
+            )
+
         input_data = validate_paths(
             d=defaults.get('input'),
             input_type=input_data_type,
