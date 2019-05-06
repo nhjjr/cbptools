@@ -8,6 +8,8 @@ rule probtrackx2:
         <cbptools['input_data:inv_xfm']>
     output: 'probtrackx2/{participant_id}/fdt_matrix2.dot'
     threads: 1
+    benchmark:
+        'benchmarks/{participant_id}.probtrackx2.benchmark.txt'
     resources:
         mem_mb = <cbptools['!mem_mb:connectivity']>
     params:
@@ -21,13 +23,18 @@ rule probtrackx2:
         <cbptools['parameters:connectivity:n_steps']>,
         <cbptools['parameters:connectivity:correct_path_distribution']>
     shell:
-        "probtrackx2 --seed={input.seed} --target2={input.target} --samples={params.samples} --mask={input.bet_binary_mask} --xfm={input.xfm} --invxfm={input.inv_xfm} --dir={params.outdir} --nsamples={params.n_samples} --nsteps={params.n_steps} --steplength={params.step_length} --distthresh={params.dist_thresh} --cthr={params.c_thresh} --omatrix2 --forcedir {params.loop_check} {params.correct_path_distribution} > /dev/null"
+        "probtrackx2 --seed={input.seed} --target2={input.target} --samples={params.samples} \
+        --mask={input.bet_binary_mask} --xfm={input.xfm} --invxfm={input.inv_xfm} --dir={params.outdir} \
+        --nsamples={params.n_samples} --nsteps={params.n_steps} --steplength={params.step_length} \
+        --distthresh={params.dist_thresh} --cthr={params.c_thresh} --omatrix2 --forcedir {params.loop_check} \
+        {params.correct_path_distribution} > /dev/null"
 
 
 rule connectivity:
     input: 'probtrackx2/{participant_id}/fdt_matrix2.dot'
     output: 'connectivity/connectivity_{participant_id}.npy'
-    threads: 1
+    benchmark:
+        'benchmarks/{participant_id}.connectivity.benchmark.txt'
     resources:
         mem_mb = <cbptools['!mem_mb:clustering']>
     params:

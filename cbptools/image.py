@@ -203,7 +203,7 @@ def find_low_variance_voxels(data, tol: float = np.finfo(np.float32).eps):
 
 def map_labels(img: spatialimage, labels: np.ndarray, indices: np.ndarray = None, order: str = 'C'):
     """Map cluster labels onto the seed mask"""
-    if indices is not None:
+    if indices is None:
         indices = get_mask_indices(img)
 
     mapped_img = np.zeros(img.shape)

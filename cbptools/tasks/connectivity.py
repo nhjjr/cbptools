@@ -104,8 +104,16 @@ def connectivity_fmri(time_series: str, seed: str, target: str, participant_id: 
         np.save(out, np.array([]))
         return
 
-    if confounds is not None:  # Nuisance Signal Regression
+    # Nuisance Signal Regression
+    if confounds is not None:
         usecols = set(usecols)
+
+        # Fix separator if needed
+        if sep is None:
+            ext = os.path.splitext(confounds)[-1]
+            separators = {'.tsv': '\t', '.csv': ','}
+            if ext in separators.keys():
+                sep = separators[ext]
 
         # Check if usecols contains wildcards to extend upon the header
         if usecols is not None:

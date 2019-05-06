@@ -29,6 +29,7 @@ input:
     required: false
     template: true
     input_type: ['rsfmri']
+    file_type: ['.tsv', '.csv']
   bet_binary_mask:
     required: true
     template: true

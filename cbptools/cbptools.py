@@ -6,11 +6,12 @@
 
 from . import __version__
 from .utils import readable_bytesize, CallCountDecorator, TColor, pyyaml_ordereddict, bytes_to
-from .image import binarize_3d, stretch_img, median_filter_img, subtract_img, subsample_img, map_voxels
+from .image import binarize_3d, stretch_img, median_filter_img, subtract_img, subsample_img, map_voxels, imgs_equal_3d
+from nibabel.processing import resample_from_to, vox2out_vox
+from collections import OrderedDict
 from pydoc import locate
 from typing import Union
-from collections import OrderedDict
-from nibabel.processing import resample_from_to, vox2out_vox
+from fnmatch import fnmatch
 import nibabel as nib
 import shutil
 import numpy as np
@@ -24,6 +25,8 @@ import logging
 import time
 import sys
 import socket
+
+spatialimage = nib.spatialimages.SpatialImage
 
 
 def fail_exit(logfile: str):
@@ -74,7 +77,17 @@ def get_participant_ids(file: str = None, sep: str = None, index_col: str = 'par
         logging.error(f'FileNotFoundError: [participants] No such file: {file}')
         return []
 
+    if sep is None:
+        ext = os.path.splitext(file)[-1]
+        separators = {'.tsv': '\t', '.csv': ','}
+        if ext in separators.keys():
+            sep = separators[ext]
+
     participants = list(pd.read_csv(file, sep=sep, engine='python').get(index_col, []))
+
+    if not participants and sep is None:
+        logging.error(f'ValueError: [participants] No participant indices found in {index_col}: {file}. '
+                      f'Try adding a separator keyword to the configuration file.')
 
     if not participants:
         logging.error(f'ValueError: [participants] No participant indices found in {index_col}: {file}')
@@ -95,7 +108,14 @@ def estimate_memory_usage(config: dict, files: dict, participants: list) -> dict
         mem_mb['connectivity'] = int(np.ceil(bytes_to(np.ceil(max(sizes)*2.5), 'mb'))) + buffer
 
     elif input_data_type == 'dmri':
-        mem_mb['connectivity'] = 10000  # TODO: Figure out probtrackx2 memory usage
+        buffer = 250
+        samples = config.get('input_data', {}).get('samples') + '*'
+        sizes = []
+        for participant in participants:
+            sizes.append(sum([os.path.getsize(sample)
+                              for sample in glob.glob(samples.format(participant_id=participant))]))
+
+        mem_mb['connectivity'] = int(np.ceil(bytes_to(np.ceil(max(sizes)*2.5), 'mb'))) + buffer
 
     if input_data_type in ('rsfmri', 'dmri'):
         # Clustering task
@@ -173,8 +193,58 @@ def validate_paths(d: dict, input_type: str, data: dict, participant_ids: list =
         participant_ids_bad = set(participant_ids_bad)
 
     data = {key: data.get(key, None) for key in keys}
-    data['participant_ids_bad'] = participant_ids_bad
+    data['participant_ids_bad'] = list(participant_ids_bad)
     return data
+
+
+def validate_time_series(time_series: str, participants: list, seed_mask: spatialimage,
+                         confounds: Union[str, dict] = None) -> list:
+    """Assess whether time-series is in the same space as the seed mask and whether confounds (if given)
+    have matching timepoints to the time-series and all requested confound columns are present"""
+
+    if not isinstance(seed_mask, nib.spatialimages.SpatialImage):
+        return []
+
+    participant_ids_bad = []
+    for participant in participants:
+        file = time_series.format(participant_id=participant)
+        img = nib.load(file)
+
+        # Check if time-series and seed mask are in the same space
+        if not imgs_equal_3d(imgs=[img, seed_mask]):
+            logging.warning(f'Mismatch: [time_series] {file} and seed mask are not in the same space')
+            participant_ids_bad.append(participant)
+
+        # Check if all confounds columns are present
+        if confounds:
+            if isinstance(confounds, dict):
+                file = confounds.get('file').format(participant_id=participant)
+                sep = confounds.get('sep', None)
+                usecols = confounds.get('usecols', None)
+
+                if sep is None:
+                    ext = os.path.splitext(confounds.get('file'))[-1]
+                    separators = {'.tsv': '\t', '.csv': ','}
+                    sep = separators[ext] if ext in separators.keys() else None
+
+                if usecols:
+                    header = pd.read_csv(file, sep=sep, header=None, nrows=1).values.tolist()[0]
+                    usecols = [x for x in header if any(fnmatch(x, p) for p in usecols)]
+
+                confounds_df = pd.read_csv(file, sep=sep, usecols=usecols, engine='python')
+
+            else:
+                file = confounds
+                ext = os.path.splitext(file)[-1]
+                separators = {'.tsv': '\t', '.csv': ','}
+                sep = separators[ext] if ext in separators.keys() else None
+                confounds_df = pd.read_csv(file, sep=sep, engine='python')
+
+            if len(confounds_df) != img.shape[-1]:
+                logging.warning(f'Mismatch: [confounds] {file} and time-series do not have matching timepoints')
+                participant_ids_bad.append(participant)
+
+    return list(set(participant_ids_bad))
 
 
 def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
@@ -249,7 +319,7 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
     return data
 
 
-def load_img(name: str, mask: str) -> Union[nib.spatialimages.SpatialImage, bool]:
+def load_img(name: str, mask: str) -> Union[spatialimage, bool]:
     """Check if the input mask can be read using nibabel"""
     try:
         return nib.load(mask)
@@ -412,7 +482,10 @@ def process_masks(config: dict) -> Union[dict, bool]:
 
 
 def create_workflow(config: dict, mem_mb: dict, work_dir: str) -> None:
-    def get_value(data: dict, *args: str) -> str:
+    def get_value(data: dict, *args: str) -> Union[str, None]:
+        if not isinstance(data, dict):
+            return None
+
         return data.get(args[0], None) if len(args) == 1 else get_value(data.get(args[0], {}), *args[1:])
 
     input_data_type = config.get('input_data_type')
@@ -463,7 +536,7 @@ def create_project(work_dir: str, config: dict, files: dict, mem_mb: dict, parti
     """Generate all the files needed by the CBP project"""
     # Save files
     for key, value in files.items():
-        if isinstance(value, nib.spatialimages.SpatialImage):
+        if isinstance(value, spatialimage):
             nib.save(value, os.path.join(work_dir, key + '.nii'))
             logging.info(f'Created file {os.path.join(work_dir, key + ".nii")}')
 
@@ -474,6 +547,10 @@ def create_project(work_dir: str, config: dict, files: dict, mem_mb: dict, parti
     # Save participant info
     n_bad_participants = np.count_nonzero(participants.invalid)
     n_participants = participants.participant_id.count()
+    if n_bad_participants > 0:
+        participants_bad = pd.DataFrame(participants[participants['invalid']]['participant_id'])
+        participants_bad.to_csv(os.path.join(work_dir, 'participants_bad.tsv'), sep='\t', index=False)
+
     participants = pd.DataFrame(participants[~participants['invalid']]['participant_id'])
     participants.to_csv(os.path.join(work_dir, 'participants.tsv'), sep='\t', index=False)
 
@@ -554,22 +631,20 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
 
     else:
         participant_ids = get_participant_ids(
-            file=input_data.get('participants').get('file', None),
+            file=input_data.get('participants', {}).get('file', None),
             sep=input_data.get('participants', {}).get('sep', None),
             index_col=input_data.get('participants', {}).get('index_col', 'participant_id')
         )
-
         input_data = validate_paths(
             d=defaults.get('input'),
             input_type=input_data_type,
             data=input_data,
             participant_ids=participant_ids
         )
-
-        participant_ids_bad = input_data['participant_ids_bad']
-
+        participant_ids_bad = set(input_data['participant_ids_bad'])
         if participant_ids and len(set(participant_ids) - participant_ids_bad) <= 1:
-            logging.error('ValueError: [participants] After removing participants with missing data, none are left')
+            logging.error('ValueError: [participants] Not enough participants left '
+                          'after removing those with missing or bad data')
 
     # Validate parameters
     parameters = config.get('parameters', {})
@@ -602,10 +677,6 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     if logging.error.count > 0:
         return False
 
-    participants = pd.DataFrame(set(participant_ids), columns=['participant_id'])
-    participants.sort_values(by='participant_id', inplace=True)
-    participants['invalid'] = np.where(participants['participant_id'].isin(participant_ids_bad), True, False)
-
     config = OrderedDict({
         'input_data_type': input_data_type,
         'input_data': input_data,
@@ -622,6 +693,23 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     if not files or logging.error.count > 0:
         return False
 
+    # Evaluate time-series
+    if input_data_type == 'rsfmri':
+        participant_ids_bad = list(participant_ids_bad)
+        participant_ids_bad += validate_time_series(
+            time_series=input_data.get('time_series', None),
+            participants=list(set(participant_ids) - set(participant_ids_bad)),
+            seed_mask=files.get('seed_mask', None),
+            confounds=input_data.get('confounds', None)
+        )
+        participant_ids_bad = set(participant_ids_bad)
+        if participant_ids and len(set(participant_ids) - participant_ids_bad) <= 1:
+            logging.error('ValueError: [participants] Not enough participants left '
+                          'after removing those with missing or bad data')
+
+        if logging.error.count > 0:
+            return False
+
     # Get estimated memory usage of tasks
     mem_mb = estimate_memory_usage(
         config=config,
@@ -629,10 +717,19 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
         participants=list(set(participant_ids) - set(participant_ids_bad))
     )
 
-    info = create_project(work_dir=work_dir, config=config, files=files, mem_mb=mem_mb, participants=participants)
+    # Create the project files
+    participants = pd.DataFrame(set(participant_ids), columns=['participant_id'])
+    participants.sort_values(by='participant_id', inplace=True)
+    participants['invalid'] = np.where(participants['participant_id'].isin(participant_ids_bad), True, False)
+    info = create_project(
+        work_dir=work_dir,
+        config=config,
+        files=files,
+        mem_mb=mem_mb,
+        participants=participants
+    )
     logging.info(f'Project setup completed on {time.strftime("%b %d %Y %H:%M:%S")}')
-    logging.shutdown()  # no more log entries are made
-
+    logging.shutdown()
     return info
 
 
