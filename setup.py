@@ -25,6 +25,7 @@ except (ImportError, OSError) as exc:
 setup(
     name='cbptools',
     version=version,
+    python_requires='>=3.6.0',
     description='Regional Connectivity-Based Parcellation tool for Python using Snakemake',
     long_description=long_description,
     url='https://github.com/nreuter/cbptools',
