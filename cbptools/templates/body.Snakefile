@@ -37,7 +37,6 @@ rule group_level_clustering:
     resources:
         mem_mb = <cbptools['!mem_mb:clustering']>
     params:
-        <cbptools['input_data_type']>,
         <cbptools['parameters:clustering:linkage']>,
         <cbptools['parameters:clustering:group_method']>,
         <cbptools['parameters:connectivity:order']>
@@ -45,8 +44,7 @@ rule group_level_clustering:
         tasks.group_level_clustering(
             seed_img=input.seed_img, participants=input.participants, individual_labels=input.labels,
             seed_indices=input.get('seed_indices', None), linkage=params.linkage, method=params.group_method,
-            input_data_type=params.input_data_type, out_labels=output.group_labels, out_img=output.group_img,
-            order=params.order
+            out_labels=output.group_labels, out_img=output.group_img, order=params.order
         )
 
 
@@ -89,9 +87,8 @@ rule summary_internal_validity:
     threads: 1
     run:
         tasks.summary_internal_validity(
-            participants=input.participants, validity=input.validity,
-            internal_validity_metrics=params.internal_validity_metrics, out_table=output.table,
-            out_figure=output.figure, figure_format=params.figure_format
+            participants=input.participants, validity=input.validity, metrics=params.internal_validity_metrics,
+            out_table=output.table, out_figure=output.figure, figure_format=params.figure_format
         )
 
 
@@ -100,8 +97,8 @@ rule individual_similarity:
         labels = 'clustering/clustering_group_k{n_clusters}.npz'
     output:
         matrix = 'summary/individual_similarity_{n_clusters}_clusters.npy',
-        figure1 = 'summary/figures/individual_similarity_{n_clusters}clusters_unordered.<cbptools['!parameters:summary:figure_format']>',
-        figure2 = 'summary/figures/individual_similarity_{n_clusters}clusters_ordered.<cbptools['!parameters:summary:figure_format']>'
+        figure1 = 'summary/figures/individual_similarity_{n_clusters}clusters_heatmap.<cbptools['!parameters:summary:figure_format']>',
+        figure2 = 'summary/figures/individual_similarity_{n_clusters}clusters_clustermap.<cbptools['!parameters:summary:figure_format']>'
     threads: 1
     params:
         <cbptools['parameters:clustering:similarity_metric']>,
@@ -121,9 +118,7 @@ rule group_similarity:
     output:
         table1 = 'summary/group_similarity.tsv',
         table2 = 'summary/cophenetic_correlation.tsv',
-        figure1 = 'summary/figures/group_similarity.<cbptools['!parameters:summary:figure_format']>',
-        figure2 = 'summary/figures/relabel_accuracy.<cbptools['!parameters:summary:figure_format']>',
-        figure3 = 'summary/figures/cophenetic_correlation.<cbptools['!parameters:summary:figure_format']>'
+        figure = 'summary/figures/group_scores.<cbptools['!parameters:summary:figure_format']>'
     threads: 1
     params:
         <cbptools['parameters:clustering:similarity_metric']>,
@@ -131,6 +126,6 @@ rule group_similarity:
     run:
         tasks.group_similarity(
             participants=input.participants, labels_files=input.labels, metric=params.similarity_metric,
-            out_table1=output.table1, out_table2=output.table2, out_figure1=output.figure1, out_figure2=output.figure2,
-            out_figure3=output.figure3, figure_format=params.figure_format
+            out_table1=output.table1, out_table2=output.table2, out_figure=output.figure,
+            figure_format=params.figure_format
         )

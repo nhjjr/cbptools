@@ -1,4 +1,4 @@
-from cbptools.cluster import davies_bouldin_score, find_centers, weak_deletion_stability, gap_score
+from cbptools.cluster import davies_bouldin_score, weak_deletion_stability_score
 from cbptools.utils import sort_files
 from sklearn.metrics import silhouette_score, calinski_harabaz_score, adjusted_rand_score, v_measure_score, adjusted_mutual_info_score
 from scipy.cluster import hierarchy
@@ -38,22 +38,22 @@ def internal_validity(connectivity: str, labels: list, participant_id: str, metr
         df = df.append({'participant_id': participant_id, 'n_clusters': len(set(label))}, ignore_index=True)
         idx = df.iloc[-1].name
 
-        if 'silhouette' in metrics:
-            df.loc[idx, 'silhouette'] = silhouette_score(connectivity, label, metric='euclidean')
+        if 'silhouette_score' in metrics:
+            df.loc[idx, 'silhouette_score'] = silhouette_score(connectivity, label, metric='euclidean')
 
-        if 'davies-bouldin' in metrics:
-            df.loc[idx, 'davies-bouldin'] = davies_bouldin_score(connectivity, label)
+        if 'davies_bouldin_score' in metrics:
+            df.loc[idx, 'davies_bouldin_score'] = davies_bouldin_score(connectivity, label)
 
-        if 'calinski-harabasz' in metrics:
-            df.loc[idx, 'calinski-harabasz'] = calinski_harabaz_score(connectivity, label)
+        if 'calinski_harabasz_score' in metrics:
+            df.loc[idx, 'calinski_harabasz_score'] = calinski_harabaz_score(connectivity, label)
 
         if 'weak deletion stability' in metrics:
-            df.loc[idx, 'weak deletion stability'] = weak_deletion_stability(connectivity, label)
+            df.loc[idx, 'weak_deletion_stability_score'] = weak_deletion_stability_score(connectivity, label)
 
     df.to_csv(out, sep='\t', index=False)
 
 
-def summary_internal_validity(participants: str, validity: list, internal_validity_metrics: list, out_table: str,
+def summary_internal_validity(participants: str, validity: list, metrics: list, out_table: str,
                               out_figure: str, figure_format: str = 'png'):
     """ Generate a summary of the internal validity results.
 
@@ -65,7 +65,7 @@ def summary_internal_validity(participants: str, validity: list, internal_validi
         Path to the participant information dataframe file (as .tsv)
     validity : list
         Paths to the various internal validity metric reports (as .tsv)
-    internal_validity_metrics: list
+    metrics: list
         List of metrics that can be found in the validity metric reports
     out_table : str
         Output file path for tabular results
@@ -75,30 +75,41 @@ def summary_internal_validity(participants: str, validity: list, internal_validi
         Format of the figures that will be saved to disk
     """
 
+    if not metrics:
+        return ValueError('Internal validity metrics must be set')
+
     # Merge internal validity scores by metric into subject x k (n_clusters) tables
     validity = sort_files(participants, validity, pos=-1, sep='_', index_col='participant_id')
     data = pd.concat((pd.read_csv(f, sep='\t', index_col=False) for f in validity), ignore_index=True)
     data.to_csv(out_table, sep='\t', index=False)
+    data.rename(columns={'n_clusters': 'clusters'}, inplace=True)
 
     # Generate validity metric figure
     plt.ioff()
+    sns.set(style="whitegrid")
+    n_cols = len(metrics)
+    fig, axes = plt.subplots(nrows=1, ncols=n_cols, figsize=(4*n_cols, 4))
+    plt.subplots_adjust(left=None, bottom=0.2, right=None, top=None, wspace=1.5, hspace=None)
 
-    # Max column width = 3
-    if len(internal_validity_metrics) > 3:
-        ncols = 3
-        nrows = int(np.floor(len(internal_validity_metrics)/3))+1
-    else:
-        ncols = len(internal_validity_metrics)
-        nrows = 1
+    for i, (metric, ax) in enumerate(zip(metrics, axes.flat[0:])):
+        sns.boxplot(
+            x='clusters',
+            y=metric,
+            data=data,
+            ax=ax,
+            showfliers=False,
+            saturation=0.6,
+            width=.8,
+            dodge=True,
+            linewidth=.75
+        )
+        ylabel = 'score' if i == 0 else ''
+        ax.set_ylabel(ylabel, fontsize=10)
+        ax.set_xlabel('')
+        ax.set_title(f'{metric.replace("_", " ").title()}', weight='bold').set_fontsize('10')
+        ax.tick_params(axis='both', which='major', labelsize=9)
 
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(4*ncols, 4*nrows))
-    plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.5, hspace=None)
-
-    for metric, ax in zip(internal_validity_metrics, axes.flat[0:]):
-        data.rename(columns={'n_clusters': 'clusters'}, inplace=True)
-        sns.boxplot(x='clusters', y=metric, data=data, ax=ax, showfliers=False)
-
-    fig.suptitle('Internal Validity Scores')
+    fig.text(0.5, 0.04, 'clusters', ha='center', fontsize=10)
     sns.despine(offset=10, trim=True)
     plt.savefig(out_figure, format=figure_format)
 
@@ -127,12 +138,15 @@ def individual_similarity(labels: str, metric: str, n_clusters: str, out_matrix:
     """
 
     metric = metric.lower()
-    if metric == 'adjusted rand index':
+    if metric == 'adjusted_rand_score':
         similarity = adjusted_rand_score
-    elif metric == 'v measure':
+
+    elif metric == 'v_measure_score':
         similarity = v_measure_score
-    elif metric == 'adjusted mutual information':
+
+    elif metric == 'adjusted_mutual_info_score':
         similarity = adjusted_mutual_info_score
+
     else:
         raise ValueError('Metric \'{metric}\' not recognized')
 
@@ -148,27 +162,35 @@ def individual_similarity(labels: str, metric: str, n_clusters: str, out_matrix:
 
     # save the similarity matrix to disk
     np.save(out_matrix, similarity_matrix)
-    plt.ioff()
 
-    # Figure 1: Unordered Similarity Matrix
+    # Figure 2: Similarity Matrix (Heatmap)
+    plt.ioff()
     ax = sns.heatmap(similarity_matrix, xticklabels=False, yticklabels=False)
     ax.set_title(f'Pairwise Similarity for n_clusters={n_clusters} (unordered)')
     plt.savefig(out_figure1, format=figure_format)
     plt.clf()
 
-    # Figure 2: Similarity Matrix ordered by Dendrogram
-    y = hierarchy.linkage(similarity_matrix, method='centroid')
-    z = hierarchy.dendrogram(y, orientation='right', no_plot=True)
-    index = z['leaves']
-    similarity_matrix = similarity_matrix[index, :]
-    similarity_matrix = similarity_matrix[:, index]
-    ax = sns.heatmap(similarity_matrix, xticklabels=False, yticklabels=False)
-    ax.set_title(f'Pairwise Similarity for n_clusters={n_clusters} (ordered)')
+    # Figure 2: Similarity Matrix (clustermap)
+    plt.ioff()
+    sns.set(style="whitegrid")
+    plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=1.5, hspace=None)
+    ax = sns.clustermap(
+        similarity_matrix,
+        metric='euclidean',
+        method='average',
+        robust=True,
+        figsize=(16, 16),
+        # **{'xticklabels': False, 'yticklabels': False}
+    )
+    ax.ax_heatmap.tick_params(left=False, bottom=False, right=False, top=False)
+    plt.setp(ax.ax_heatmap.get_yticklabels(), rotation=0, fontsize=8)
+    plt.setp(ax.ax_heatmap.get_xticklabels(), rotation=90, fontsize=8)
+    ax.fig.suptitle(f'Pairwise Similarity for n_clusters={n_clusters} (clustermap)', weight='bold').set_fontsize('14')
     plt.savefig(out_figure2, format=figure_format)
 
 
 def group_similarity(participants: str, labels_files: list, metric: str, out_table1: str, out_table2: str,
-                     out_figure1: str, out_figure2: str, out_figure3: str, figure_format: str = 'png'):
+                     out_figure: str, figure_format: str = 'png'):
     """Group Similarity (subject similarity to group clustering)
 
     Parameters
@@ -183,26 +205,25 @@ def group_similarity(participants: str, labels_files: list, metric: str, out_tab
         Output file path for table 1
     out_table2 : str
         Output file path for table 2
-    out_figure1 : str
-        Output file path for figure 1
-    out_figure2 : str
-        Output file path for figure 2
-    out_figure3 : str
-        Output file path for figure 3
+    out_figure : str
+        Output file path for the group metrics figure
     figure_format : str, optional, {'png', 'svg', 'pdf', 'ps', 'eps'}
         Format of the figures that will be saved to disk
 
     """
 
     metric = metric.lower()
-    if metric == 'adjusted rand index':
+    if metric == 'adjusted_rand_score':
         similarity = adjusted_rand_score
-    elif metric == 'v measure':
+
+    elif metric == 'v_measure_score':
         similarity = v_measure_score
-    elif metric == 'adjusted mutual information':
+
+    elif metric == 'adjusted_mutual_info_score':
         similarity = adjusted_mutual_info_score
+
     else:
-        raise ValueError('Metric \'{metric}\' not recognized')
+        raise ValueError(f'Metric \'{metric}\' not recognized')
 
     participants = pd.read_csv(participants, sep='\t')['participant_id']
     data = pd.DataFrame()
@@ -227,26 +248,35 @@ def group_similarity(participants: str, labels_files: list, metric: str, out_tab
                 'relabel accuracy': accuracy
             }, ignore_index=True)
 
+    data.clusters = data.clusters.astype(int)
     data.to_csv(out_table1, sep='\t', index=False)
     reference_data.to_csv(out_table2, sep='\t', index=False)
+
+    # Generate Figure
     plt.ioff()
+    sns.set(style="whitegrid")
+    fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+    plt.subplots_adjust(left=None, bottom=0.2, right=None, top=None, wspace=1.5, hspace=None)
+    plt.suptitle('Individual- to Group-level cluster label comparisons', fontsize=10, weight='bold')
+    plot_options = {'showfliers': False, 'saturation': .6, 'width': .8, 'dodge': True, 'linewidth': .75}
 
-    # Generate Similarity Figure
-    ax = sns.boxplot(x='clusters', y='similarity', data=data, showfliers=False)
-    ax.set_title('Similarity of individual- to group-clusters')
-    sns.despine(offset=10, trim=True)
-    plt.savefig(out_figure1, format=figure_format)
-    plt.clf()
+    sns.boxplot(x='clusters', y='similarity', data=data, ax=ax[0], **plot_options)
+    ax[0].set_xlabel(ax[0].get_xlabel(), fontsize=8)
+    ax[0].set_ylabel(ax[0].get_ylabel(), fontsize=8)
+    ax[0].tick_params(labelsize=8)
+    ax[0].set_title('Similarity', weight='bold', fontsize=10)
 
-    # Generate Relabeling Accuracy Figure
-    ax = sns.boxplot(x='clusters', y='relabel accuracy', data=data, showfliers=False)
-    ax.set_title('Relabeling accuracy of individual- to group-level reference')
-    sns.despine(offset=10, trim=True)
-    plt.savefig(out_figure2, format=figure_format)
-    plt.clf()
+    sns.boxplot(x='clusters', y='relabel accuracy', data=data, ax=ax[1], **plot_options)
+    ax[1].set_xlabel(ax[1].get_xlabel(), fontsize=8)
+    ax[1].set_ylabel(ax[1].get_ylabel(), fontsize=8)
+    ax[1].tick_params(labelsize=8)
+    ax[1].set_title('Relabeling Accuracy', weight='bold', fontsize=10)
 
-    # Generate Cophenetic Correlation Figure
-    ax = sns.pointplot(x='clusters', y='cophenetic correlation', data=reference_data)
-    ax.set_title('Cophenetic Correlation of Group-level Clustering')
+    sns.pointplot(x='clusters', y='cophenetic correlation', data=reference_data, ax=ax[2])
+    ax[2].set_xlabel(ax[2].get_xlabel(), fontsize=8)
+    ax[2].set_ylabel(ax[2].get_ylabel(), fontsize=8)
+    ax[2].tick_params(labelsize=8)
+    ax[2].set_title('Cophenetic Correlation', weight='bold', fontsize=10)
+
     sns.despine(offset=10, trim=True)
-    plt.savefig(out_figure3, format=figure_format)
+    plt.savefig(out_figure, format=figure_format)

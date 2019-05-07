@@ -14,17 +14,15 @@ def expected_output(n_clusters: list, figure_format: str = 'png', internal_valid
             f'clustering/clustering_group_k{k}.npz',
             f'summary/niftis/group_clustering_k{k}.nii',
             f'summary/individual_similarity_{k}_clusters.npy',
-            f'summary/figures/individual_similarity_{k}clusters_unordered.{figure_format}',
-            f'summary/figures/individual_similarity_{k}clusters_ordered.{figure_format}'
+            f'summary/figures/individual_similarity_{k}clusters_heatmap.{figure_format}',
+            f'summary/figures/individual_similarity_{k}clusters_clustermap.{figure_format}'
         ]
         out += files
 
     out += [
         'summary/group_similarity.tsv',
         'summary/cophenetic_correlation.tsv',
-        f'summary/figures/group_similarity.{figure_format}',
-        f'summary/figures/relabel_accuracy.{figure_format}',
-        f'summary/figures/cophenetic_correlation.{figure_format}'
+        f'summary/figures/group_scores.{figure_format}'
     ]
 
     if internal_validity_metrics:

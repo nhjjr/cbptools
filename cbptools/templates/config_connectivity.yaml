@@ -7,9 +7,10 @@ input_data:
     index_col: participant_id
   connectivity_matrix: /path/to/dataset/{participant_id}/connectivity_matrix.npy
   seed_mask: /path/to/seed_mask.nii.gz
-  seed_indices: /path/to/seed_indices.npy
 
 parameters:
+  connectivity:
+    order: C
   clustering:
     algorithm: auto
     group_method: mode

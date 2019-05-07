@@ -54,7 +54,7 @@ def find_centers(x: np.ndarray, labels: list) -> np.ndarray:
     return np.asarray([np.mean(x[labels == i], axis=0) for i in np.unique(labels)])
 
 
-def weak_deletion_stability(x: np.ndarray, y: list, squared=True) -> float:
+def weak_deletion_stability_score(x: np.ndarray, y: list, squared=True) -> float:
     """ Internal validity metric
 
     Parameters

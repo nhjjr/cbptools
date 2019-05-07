@@ -232,14 +232,14 @@ parameters:
     internal_validity_metrics:
       required: false
       input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: ['silhouette']
-      allowed: ['silhouette', 'davies-bouldin', 'calinski-harabasz', 'gap score', 'weak deletion stability']
+      default: ['silhouette_score']
+      allowed: ['silhouette_score', 'davies_bouldin_score', 'calinski_harabasz_score', 'gap_score', 'weak_deletion_stability_score']
       instance_type: list
     similarity_metric:
       required: false
       input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: 'adjusted rand index'
-      allowed: ['adjusted rand index', 'adjusted mutual information', 'v measure']
+      default: 'adjusted_rand_score'
+      allowed: ['adjusted_rand_score', 'adjusted_mutual_info_score', 'v_measure_score']
       instance_type: str
   summary:
     figure_format:

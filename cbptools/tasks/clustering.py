@@ -44,8 +44,8 @@ def participant_level_clustering(connectivity, out: str, n_clusters: int, algori
 
 
 def group_level_clustering(seed_img: str, participants: str, individual_labels: list, linkage: str,
-                           input_data_type: str, out_labels: str, out_img: str, method: str = 'mode',
-                           seed_indices: str = None, order: str = 'C'):
+                           out_labels: str, out_img: str, method: str = 'mode', seed_indices: str = None,
+                           order: str = 'C'):
     """ Perform group-level analysis on all individual participant clustering results.
 
     Parameters
@@ -60,9 +60,6 @@ def group_level_clustering(seed_img: str, participants: str, individual_labels: 
     linkage : str
         Linkage method to use for agglomerative clustering. Allowed values are: 'complete', 'average', 'single'.
         However, single is not recommended for this type of data.
-    input_data_type : str
-        Modality that is being assessed. This is important for the order in which the unmasking takes place (i.e.,
-        F order for 'dwi', and C order for 'func', due to how the masks are applied to the connectivity data).
     out_labels : str
         Output filename (.npz) for the relabeled individual participant labels, the relabeling accuracy, the
         hierarchical group labels, the cophenetic correlation for the hierarchical clustering, and if the method is
@@ -79,13 +76,11 @@ def group_level_clustering(seed_img: str, participants: str, individual_labels: 
     seed_indices : str
         Path to the numpy file containing the indices of the seed voxels.
     order : str, optional
-        F- or C-contiguous order of the connectivity matrices. This is necessary to map the cluster labels onto the
-        seed mask.
+        F- or C-contiguous order at which the seed-mask was extracted while forming the connectivity matrices. This
+        determines the order of the seed-voxels, which is necessary to map the cluster labels onto the seed mask.
     """
 
-    methods = ('agglomerative', 'mode')
-
-    if method not in methods:
+    if method not in ('agglomerative', 'mode'):
         raise ValueError(f'Unknown group cluster method: {method}')
 
     # Aggregate subject-level cluster labels into one matrix
