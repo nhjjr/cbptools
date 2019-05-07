@@ -11,7 +11,7 @@ mo = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", open(version_file, "rt").r
 if mo:
     version = mo.group(1)
 else:
-    raise RuntimeError(f'Unable to find version string in {version_file}.')
+    raise RuntimeError('Unable to find version string in %s.' % version_file)
 
 try:
     import pypandoc
@@ -19,7 +19,7 @@ try:
 
 except (ImportError, OSError) as exc:
     print('WARNING: pypandoc failed to import or threw an error while converting '
-          f'README.md to RST: {exc} .md version will be used as is')
+          'README.md to RST: %s .md version will be used as is' % exc)
     long_description = open(readme).read()
 
 setup(
