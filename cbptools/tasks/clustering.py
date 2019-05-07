@@ -1,6 +1,6 @@
 from cbptools.utils import sort_files
 from cbptools.cluster import relabel
-from cbptools.image import map_labels
+from cbptools.image import map_labels, get_mask_indices
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import pdist
 from scipy.cluster import hierarchy
@@ -43,9 +43,8 @@ def participant_level_clustering(connectivity, out: str, n_clusters: int, algori
     np.save(out, kmeans.labels_)  # cluster labels are 0-indexed
 
 
-def group_level_clustering(seed_img: str, participants: str, individual_labels: list, linkage: str,
-                           out_labels: str, out_img: str, method: str = 'mode', seed_indices: str = None,
-                           order: str = 'C'):
+def group_level_clustering(seed_img: str, participants: str, individual_labels: list, linkage: str, out_labels: str,
+                           out_img: str, method: str = 'mode', seed_indices: str = None):
     """ Perform group-level analysis on all individual participant clustering results.
 
     Parameters
@@ -75,9 +74,6 @@ def group_level_clustering(seed_img: str, participants: str, individual_labels: 
         clustering.
     seed_indices : str
         Path to the numpy file containing the indices of the seed voxels.
-    order : str, optional
-        F- or C-contiguous order at which the seed-mask was extracted while forming the connectivity matrices. This
-        determines the order of the seed-voxels, which is necessary to map the cluster labels onto the seed mask.
     """
 
     if method not in ('agglomerative', 'mode'):
@@ -121,8 +117,8 @@ def group_level_clustering(seed_img: str, participants: str, individual_labels: 
                  group_labels=np.squeeze(mode), mode_count=np.squeeze(count), method='mode')
 
     # Map labels to seed-mask image based on indices
-    seed_indices = np.load(seed_indices) if seed_indices else None
     seed_img = nib.load(seed_img)
+    seed_indices = np.load(seed_indices)
     group_labels += 1  # avoid 0-labeling
-    group_img = map_labels(img=seed_img, labels=group_labels, indices=seed_indices, order=order)
+    group_img = map_labels(img=seed_img, labels=group_labels, indices=seed_indices)
     nib.save(group_img, out_img)

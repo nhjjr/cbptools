@@ -107,7 +107,7 @@ def summary_internal_validity(participants: str, validity: list, metrics: list, 
         ax.set_ylabel(ylabel, fontsize=10)
         ax.set_xlabel('')
         ax.set_title(f'{metric.replace("_", " ").title()}', weight='bold').set_fontsize('10')
-        ax.tick_params(axis='both', which='major', labelsize=9)
+        ax.tick_params(axis='both', which='major', labelsize=8)
 
     fig.text(0.5, 0.04, 'clusters', ha='center', fontsize=10)
     sns.despine(offset=10, trim=True)
@@ -248,6 +248,7 @@ def group_similarity(participants: str, labels_files: list, metric: str, out_tab
                 'relabel accuracy': accuracy
             }, ignore_index=True)
 
+    reference_data.clusters = reference_data.clusters.astype(int)
     data.clusters = data.clusters.astype(int)
     data.to_csv(out_table1, sep='\t', index=False)
     reference_data.to_csv(out_table2, sep='\t', index=False)
@@ -261,22 +262,23 @@ def group_similarity(participants: str, labels_files: list, metric: str, out_tab
     plot_options = {'showfliers': False, 'saturation': .6, 'width': .8, 'dodge': True, 'linewidth': .75}
 
     sns.boxplot(x='clusters', y='similarity', data=data, ax=ax[0], **plot_options)
-    ax[0].set_xlabel(ax[0].get_xlabel(), fontsize=8)
-    ax[0].set_ylabel(ax[0].get_ylabel(), fontsize=8)
+    ax[0].set_ylabel(ax[0].get_ylabel(), fontsize=10)
+    ax[0].set_xlabel('')
     ax[0].tick_params(labelsize=8)
     ax[0].set_title('Similarity', weight='bold', fontsize=10)
 
     sns.boxplot(x='clusters', y='relabel accuracy', data=data, ax=ax[1], **plot_options)
-    ax[1].set_xlabel(ax[1].get_xlabel(), fontsize=8)
-    ax[1].set_ylabel(ax[1].get_ylabel(), fontsize=8)
+    ax[1].set_ylabel(ax[1].get_ylabel(), fontsize=10)
+    ax[1].set_xlabel('')
     ax[1].tick_params(labelsize=8)
     ax[1].set_title('Relabeling Accuracy', weight='bold', fontsize=10)
 
     sns.pointplot(x='clusters', y='cophenetic correlation', data=reference_data, ax=ax[2])
-    ax[2].set_xlabel(ax[2].get_xlabel(), fontsize=8)
-    ax[2].set_ylabel(ax[2].get_ylabel(), fontsize=8)
+    ax[2].set_ylabel(ax[2].get_ylabel(), fontsize=10)
+    ax[2].set_xlabel('')
     ax[2].tick_params(labelsize=8)
     ax[2].set_title('Cophenetic Correlation', weight='bold', fontsize=10)
 
+    fig.text(0.5, 0.04, 'clusters', ha='center', fontsize=10)
     sns.despine(offset=10, trim=True)
     plt.savefig(out_figure, format=figure_format)

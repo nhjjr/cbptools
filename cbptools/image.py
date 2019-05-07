@@ -190,25 +190,52 @@ def find_low_variance_voxels(data, tol: float = np.finfo(np.float32).eps):
     return np.where(data.var(axis=0) < tol)[0]
 
 
-def get_mask_indices(img: spatialimage) -> np.ndarray:
+def get_mask_indices(img: spatialimage, order: str = 'C') -> np.ndarray:
     """Get voxel space coordinates (indices) of seed voxels
 
     Parameters
     ----------
     img : spatialimage
-        nibabel.spatialimages.SpatialImage object containing the mask image
+        Mask NIfTI image
+    order : str, optional
+        Order that the seed-mask voxels will be extracted in. The resulting indices will be listed in this way
+
+    Returns
+    -------
+    np.ndarray
+        2D array of shape (n_voxels, 3) containing the 3D coordinates of all mask image voxels
     """
-    return np.asarray(tuple(zip(*np.where(img.get_data() == 1))))
+    data = img.get_data()
+    indices = np.asarray(tuple(zip(*np.where(img.get_data() == 1))))
+
+    if order != 'C':
+        reorder = np.argsort(np.arange(np.prod(img.shape)).reshape(img.shape, order=order)[data.astype(bool)])
+        indices = indices[reorder]
+
+    return indices
 
 
-def map_labels(img: spatialimage, labels: np.ndarray, indices: np.ndarray = None, order: str = 'C'):
-    """Map cluster labels onto the seed mask"""
-    if indices is None:
-        indices = get_mask_indices(img)
+def map_labels(img: spatialimage, labels: np.ndarray, indices: np.ndarray) -> spatialimage:
+    """Map cluster labels onto the seed mask
+
+    Parameters
+    ----------
+    img : spatialimage
+        Mask NIfTI image to which the labels will be mapped
+    labels : np.ndarray
+        1D array of cluster labels (sklearn.cluster.KMeans._labels)
+    indices : np.ndarray
+        Indices of all mask image voxels of which the order coincides with
+        the order of the voxels in the labels array.
+
+    Returns
+    -------
+    spatialimage
+        Mask image with the labels mapped onto it.
+    """
+    if len(indices) != len(labels):
+        raise ValueError('Indices and labels do not match')
 
     mapped_img = np.zeros(img.shape)
-    mapped_img[indices[0:, 0], indices[0:, 1], indices[0:, 2]] = 1
-    mapped_img = mapped_img.flatten(order=order).astype(int)
-    np.place(mapped_img, [mapped_img == 1], labels)
-    mapped_img = np.reshape(mapped_img, img.shape, order=order)
+    mapped_img[indices[0:, 0], indices[0:, 1], indices[0:, 2]] = labels
     return nib.Nifti1Image(np.float32(mapped_img), img.affine, img.header)

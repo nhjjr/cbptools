@@ -6,6 +6,11 @@ input:
     template: true
     input_type: ['connectivity']
     file_type: ['.npy']
+  seed_indices:
+    required: true
+    template: false
+    input_type: ['connectivity']
+    file_type: ['.npy']
   seed_mask:
     required: true
     template: false
@@ -95,11 +100,6 @@ parameters:
       instance_type: list
       default: null
   connectivity:
-    order:
-      required: true
-      input_type: ['connectivity']
-      instance_type: str
-      allowed: ['C', 'F']
     seed_low_variance_threshold:
       required: false
       input_type: ['rsfmri']

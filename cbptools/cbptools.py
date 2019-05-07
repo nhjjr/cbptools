@@ -6,7 +6,7 @@
 
 from . import __version__
 from .utils import readable_bytesize, CallCountDecorator, TColor, pyyaml_ordereddict, bytes_to
-from .image import binarize_3d, stretch_img, median_filter_img, subtract_img, subsample_img, map_voxels, imgs_equal_3d
+from .image import binarize_3d, stretch_img, median_filter_img, subtract_img, subsample_img, map_voxels, imgs_equal_3d, get_mask_indices
 from nibabel.processing import resample_from_to, vox2out_vox
 from collections import OrderedDict
 from pydoc import locate
@@ -311,13 +311,6 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
 
         data[task] = {key: data.get(task, {}).get(key, None) for key in keys}
 
-    # Set order of connectivity matrices for dMRI and rsfMRI data
-    if input_type == 'rsfmri':
-        data['connectivity']['order'] = 'C'
-
-    elif input_type == 'dmri':
-        data['connectivity']['order'] = 'F'
-
     # Ensure low_pass > high_pass for rsfmri data
     if input_type == 'rsfmri':
         low_pass = data.get('connectivity', {}).get('low_pass', None)
@@ -525,7 +518,6 @@ def create_workflow(config: dict, mem_mb: dict, work_dir: str) -> None:
     if input_data_type in ('rsfmri', 'dmri'):
         snakefiles.insert(1, f'{input_data_type}.Snakefile')
         config['input_data']['connectivity_matrix'] = 'connectivity/connectivity_{participant_id}.npy'
-        config['input_data']['seed_indices'] = ''
 
     if input_data_type == 'rsfmri':
         config['input_data']['touchfile'] = 'log/.touchfile'
@@ -576,6 +568,8 @@ def create_workflow(config: dict, mem_mb: dict, work_dir: str) -> None:
 
 def create_project(work_dir: str, config: dict, masks: dict, mem_mb: dict, participants: pd.DataFrame) -> dict:
     """Generate all the files needed by the CBP project"""
+    input_data_type = config.get('input_data_type')
+
     # Save masks
     for key, value in masks.items():
         if isinstance(value, spatialimage):
@@ -585,6 +579,17 @@ def create_project(work_dir: str, config: dict, masks: dict, mem_mb: dict, parti
         elif isinstance(value, np.ndarray):
             np.save(os.path.join(work_dir, key + '.npy'), value)
             logging.info(f'Created file {os.path.join(work_dir, key + ".npy")}')
+
+    # Save seed indices
+    if input_data_type == 'rsfmri':
+        seed_indices = get_mask_indices(img=masks['seed_mask'], order='C')
+        np.save(os.path.join(work_dir, 'seed_indices.npy'), seed_indices)
+        config['input_data']['seed_indices'] = 'seed_indices.npy'
+
+    elif input_data_type == 'dmri':
+        seed_indices = get_mask_indices(img=masks['seed_mask'], order='F')
+        np.save(os.path.join(work_dir, 'seed_indices.npy'), seed_indices)
+        config['input_data']['seed_indices'] = 'seed_indices.npy'
 
     # Save participant info
     n_bad_participants = np.count_nonzero(participants.invalid)
@@ -600,7 +605,6 @@ def create_project(work_dir: str, config: dict, masks: dict, mem_mb: dict, parti
     create_workflow(config=config, mem_mb=mem_mb, work_dir=work_dir)
 
     # Info
-    input_data_type = config.get('input_data_type')
     n_participants_included = n_participants - n_bad_participants
     logging.info(f'Removed participants: {n_bad_participants}')
     logging.info(f'Included participants: {n_participants_included}')
@@ -738,7 +742,8 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
         masks = process_masks(config=config)
 
     elif input_data_type == 'connectivity':
-        masks['seed_mask'] = load_img('seed', config.get('input_data', {}).get('seed_mask'))
+        masks = process_seed_indices(config=config)
+        # masks['seed_mask'] = load_img('seed', config.get('input_data', {}).get('seed_mask'))
 
     if logging.error.count > 0:
         return False
