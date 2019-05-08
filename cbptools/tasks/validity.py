@@ -3,6 +3,7 @@ from cbptools.cluster import davies_bouldin_score, \
 from cbptools.utils import sort_files
 from sklearn.metrics import silhouette_score, calinski_harabaz_score, \
     adjusted_rand_score, v_measure_score, adjusted_mutual_info_score
+from collections import OrderedDict
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -272,8 +273,10 @@ def group_similarity(participants: str, labels_files: list, metric: str,
         raise ValueError('Metric \'%s\' not recognized' % metric)
 
     participants = pd.read_csv(participants, sep='\t')['participant_id']
-    data = pd.DataFrame()
-    reference_data = pd.DataFrame()
+    data = pd.DataFrame(columns=['participant_id', 'clusters', 'similarity',
+                                 'relabel accuracy'])
+    reference_data = pd.DataFrame(columns=['clusters',
+                                           'cophenetic correlation'])
 
     for file in labels_files:
         file = np.load(file)
@@ -289,7 +292,7 @@ def group_similarity(participants: str, labels_files: list, metric: str,
         for participant_id, labels, accuracy \
                 in zip(participants, individual_labels, relabel_accuracy):
             data = data.append({
-                'participant_id': participant_id,
+                'participant_id': str(participant_id),
                 'clusters': n_clusters,
                 'similarity': similarity(group_labels, labels),
                 'relabel accuracy': accuracy
