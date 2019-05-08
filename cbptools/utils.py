@@ -43,17 +43,22 @@ def sort_files(participants: str, files: list, pos: int = -1, sep: str = '_',
     Parameters
     ----------
     participants : str
-        Path to a participants tsv file. The contents of the index column (default: 'participant_id') should match
-        part of the filename. The ordering of the participants in this file will determine the ordering of the listed
+        Path to a participants tsv file. The contents of the index
+        column (default: 'participant_id') should match
+        part of the filename. The ordering of the participants in
+        this file will determine the ordering of the listed
         files.
     files : list
-        List of filenames to be sorted based on the order of values of index_col in the participants file.
+        List of filenames to be sorted based on the order of values
+        of index_col in the participants file.
     pos : int
-        Position at which the participant id found in the filename when splitting with the defined separator (sep)
+        Position at which the participant id found in the filename
+        when splitting with the defined separator (sep)
     sep : str
         Separator used to split the filename into multiple parts.
     index_col : str
-        The column in participants that defines the participant_id which is to be found in the list of filenames.
+        The column in participants that defines the participant_id
+        which is to be found in the list of filenames.
 
     Returns
     -------
@@ -63,7 +68,10 @@ def sort_files(participants: str, files: list, pos: int = -1, sep: str = '_',
 
     df = pd.read_csv(participants, sep='\t').set_index(index_col)
     participant_id = df.index.values.astype(str).tolist()
-    sorted_files = sorted(files, key=lambda x: participant_id.index(x.split(sep)[pos].split('.')[0]))
+    sorted_files = sorted(
+        files,
+        key=lambda x: participant_id.index(x.split(sep)[pos].split('.')[0])
+    )
     return sorted_files
 
 
@@ -75,7 +83,9 @@ def readable_bytesize(size: int, itemsize: int = 1):
     units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
     i = int(math.floor(math.log(size, 1000)))
     s = round(size / math.pow(1000, i), 2)
-    return f'{s} {units[i]}'
+    readable = '%s %s' % (s, units[i])
+
+    return readable
 
 
 def bytes_to(bytes: int, to: str, bsize: int = 1024):

@@ -6,8 +6,10 @@ class DimensionError(TypeError):
 
     @property
     def message(self):
-        return ("Image has incompatible dimensionality: Expected dimension is {0}D and you provided a {1}D "
-                "image.".format(self.obj1, self.obj2))
+        return (
+            "Image has incompatible dimensionality: Expected dimension is "
+            "{0}D and you provided a {1}D image.".format(self.obj1, self.obj2)
+        )
 
     def __str__(self):
         return self.message
@@ -21,8 +23,11 @@ class ShapeError(TypeError):
 
     @property
     def message(self):
-        return ("Image has incompatible shape: Expected shape is {0} and you provided an image with shape {1}"
-                .format(tuple(self.obj1), tuple(self.obj2)))
+        return (
+            "Image has incompatible shape: Expected shape is {0} and you "
+            "provided an image with shape {1}".format(tuple(self.obj1),
+                                                      tuple(self.obj2))
+        )
 
     def __str__(self):
         return self.message
@@ -37,9 +42,11 @@ class AffineError(TypeError):
 
     @property
     def message(self):
-        return ("Image has incompatible affine: Expected affine is: \n{0}\n\n and you provided an image with "
-                "affine: \n{1}"
-                .format(self.obj1, self.obj2))
+        return (
+            "Image has incompatible affine: Expected affine is: \n{0}\n\n and "
+            "you provided an image with affine: \n{1}".format(self.obj1,
+                                                              self.obj2)
+        )
 
     def __str__(self):
         return self.message

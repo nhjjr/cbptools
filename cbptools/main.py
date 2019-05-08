@@ -8,10 +8,12 @@ import time
 
 def main():
     parser = argparse.ArgumentParser(
-        description='%(prog) - a python package for regional connectivity-based parcellation',
-        epilog=f'For a usage tutorial visit {__readthedocs__}'
+        description='%(prog) - a python package for regional '
+                    'connectivity-based parcellation',
+        epilog='For a usage tutorial visit %s' % __readthedocs__
     )
-    parser.add_argument('-v', '--version', action='version', version=f'{__version__}')
+    parser.add_argument('-v', '--version', action='version',
+                        version='%s' % __version__)
 
     subcommands = parser.add_subparsers(
         title="cbptools commands",
@@ -46,13 +48,15 @@ def main():
 
     example_command = subcommands.add_parser(
         'example',
-        help='Generate an example configuration file for the requested input data type'
+        help='Generate an example configuration file for the requested input '
+             'data type'
     )
     example_command.set_defaults(run=copy_example)
     example_command.add_argument(
         '-g', '--get',
         required=True,
-        help='What type of input data to get the configuration example file for',
+        help='What type of input data to get the configuration example '
+             'file for',
         choices=['connectivity', 'rsfmri', 'dmri'],
         type=str,
         dest='input_data_type'
@@ -69,12 +73,14 @@ def create(params, parsers):
     parser = parsers[0]
 
     if not os.path.isfile(configfile):
-        parser.error(FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), configfile))
+        parser.error(FileNotFoundError(errno.ENOENT,
+                                       os.strerror(errno.ENOENT), configfile))
 
     else:
-        if os.path.exists(work_dir) and len(os.listdir(work_dir)) > 0 and not force:
-            parser.error(f'Directory \'{work_dir}\' is not empty. Use -f, --force to '
-                         f'force overwrite an existing work_dir.')
+        if os.path.exists(work_dir) and \
+                len(os.listdir(work_dir)) > 0 and not force:
+            parser.error('Directory \'%s\' is not empty. Use -f, --force to '
+                         'force overwrite an existing work_dir.' % work_dir)
 
         # Create working directory
         try:
@@ -84,10 +90,11 @@ def create(params, parsers):
             parser.error(OSError(exc))
 
         utime = str(int(time.time()))
-        logfile = os.path.join(work_dir, 'log', f'project_{utime}.log')
+        logfile = os.path.join(work_dir, 'log', 'project_%s.log' % utime)
 
         # Validate configuration file
-        info = validate_config(configfile=configfile, work_dir=work_dir, logfile=logfile)
+        info = validate_config(configfile=configfile, work_dir=work_dir,
+                               logfile=logfile)
 
         if info:
             success_exit(info, work_dir=work_dir, logfile=logfile)

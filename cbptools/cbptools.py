@@ -5,8 +5,10 @@
 """
 
 from . import __version__
-from .utils import readable_bytesize, CallCountDecorator, TColor, pyyaml_ordereddict, bytes_to
-from .image import binarize_3d, stretch_img, median_filter_img, subtract_img, subsample_img, map_voxels, imgs_equal_3d, get_mask_indices
+from .utils import readable_bytesize, CallCountDecorator, TColor, \
+    pyyaml_ordereddict, bytes_to
+from .image import binarize_3d, stretch_img, median_filter_img, subtract_img, \
+    subsample_img, map_voxels, imgs_equal_3d, get_mask_indices
 from nibabel.processing import resample_from_to, vox2out_vox
 from collections import OrderedDict
 from pydoc import locate
@@ -32,14 +34,16 @@ spatialimage = nib.spatialimages.SpatialImage
 def fail_exit(logfile: str):
     n_errors = logging.error.count
     n_warnings = logging.warning.count
-    print(f'{TColor.FAIL}Project Creation Failed: Resolve all errors before continuing{TColor.ENDC}')
-    print(f'{TColor.OKBLUE}Log file:{TColor.ENDC} {logfile}')
-    print(f'{TColor.FAIL}{n_errors} errors in project{TColor.ENDC}')
+    print('%sProject Creation Failed: Resolve all errors before continuing%s'
+          % (TColor.FAIL, TColor.ENDC))
+    print('%sLog file:%s %s' % (TColor.OKBLUE, TColor.ENDC, logfile))
+    print('%s%s errors in project%s' % (TColor.FAIL, n_errors, TColor.ENDC))
 
     if n_warnings > 0:
-        print(f'{TColor.WARNING}{n_warnings} warnings in project{TColor.ENDC}')
+        print('%s%s warnings in project%s'
+              % (TColor.WARNING, n_warnings, TColor.ENDC))
     else:
-        print(f'{n_warnings} warnings in project')
+        print('%s warnings in project' % n_warnings)
 
     sys.exit()
 
@@ -47,34 +51,39 @@ def fail_exit(logfile: str):
 def success_exit(stats: dict, work_dir: str, logfile: str):
     n_errors = logging.error.count
     n_warnings = logging.warning.count
+    n_bad_participants = stats.get('n_bad_participants', 0)
+    cluster_json = os.path.join(work_dir, "cluster.json")
 
-    print(f'{TColor.OKGREEN}New project created in {work_dir}{TColor.ENDC}')
-    print(f'{TColor.OKBLUE}Log file:{TColor.ENDC} {logfile}')
-    print(f'{n_errors} errors in project')
+    print('%sNew project created in %s%s'
+          % (TColor.OKGREEN, work_dir, TColor.ENDC))
+    print('%sLog file:%s %s' % (TColor.OKBLUE, TColor.ENDC, logfile))
+    print('%s errors in project' % n_errors)
 
     if n_warnings > 0:
-        print(f'{TColor.WARNING}{n_warnings} warnings in project{TColor.ENDC}')
+        print('%s%s warnings in project%s'
+              % (TColor.WARNING, n_warnings, TColor.ENDC))
     else:
-        print(f'{n_warnings} warnings in project')
+        print('%s warnings in project' % n_warnings)
 
-    if stats.get('n_bad_participants', 0) > 0:
-        print(f'{TColor.WARNING}{stats.get("n_bad_participants")} participant(s) '
-              f'removed due to missing data{TColor.ENDC}')
+    if n_bad_participants > 0:
+        print('%s%s participant(s) removed due to missing data%s'
+              % (TColor.WARNING, n_bad_participants, TColor.ENDC))
 
-    print(f'Manually edit {os.path.join(work_dir, "cluster.json")} to execute the workflow on a cluster '
-          f'(e.g., SLURM or qsub)')
-
+    print('Manually edit %s to execute the workflow on a cluster '
+          '(e.g., SLURM or qsub)' % cluster_json)
     sys.exit()
 
 
-def get_participant_ids(file: str = None, sep: str = None, index_col: str = 'participant_id') -> list:
+def get_participant_ids(file: str = None, sep: str = None,
+                        index_col: str = 'participant_id') -> list:
     """Load the participants file and see if there are participants in it"""
     if file is None:
-        logging.error(f'TypeError: [participants] Input is required')
+        logging.error('TypeError: [participants] Input is required')
         return []
 
     if not os.path.exists(file):
-        logging.error(f'FileNotFoundError: [participants] No such file: {file}')
+        logging.error('FileNotFoundError: [participants] No such file: %s'
+                      % file)
         return []
 
     if sep is None:
@@ -83,20 +92,25 @@ def get_participant_ids(file: str = None, sep: str = None, index_col: str = 'par
         if ext in separators.keys():
             sep = separators[ext]
 
-    participants = list(pd.read_csv(file, sep=sep, engine='python').get(index_col, []))
+    participants = list(pd.read_csv(
+        file, sep=sep, engine='python'
+    ).get(index_col, []))
 
     if not participants and sep is None:
-        logging.error(f'ValueError: [participants] No participant indices found in {index_col}: {file}. '
-                      f'Try adding a separator keyword to the configuration file.')
+        logging.error('ValueError: [participants] No participant indices '
+                      'found in %s: %s.  Try adding a separator keyword to '
+                      'the configuration file.' % (index_col, file))
 
     if not participants:
-        logging.error(f'ValueError: [participants] No participant indices found in {index_col}: {file}')
+        logging.error('ValueError: [participants] No participant indices '
+                      'found in %s: %s' % (index_col, file))
         return []
 
     return participants
 
 
-def estimate_memory_usage(config: dict, masks: dict, participants: list) -> dict:
+def estimate_memory_usage(config: dict, masks: dict,
+                          participants: list) -> dict:
     input_data_type = config.get('input_data_type')
     mem_mb = dict()
 
@@ -104,38 +118,55 @@ def estimate_memory_usage(config: dict, masks: dict, participants: list) -> dict
     if input_data_type == 'rsfmri':
         buffer = 250  # in MB
         time_series = config.get('input_data', {}).get('time_series')
-        sizes = [os.path.getsize(time_series.format(participant_id=participant)) for participant in participants]
-        mem_mb['connectivity'] = int(np.ceil(bytes_to(np.ceil(max(sizes)*2.5), 'mb'))) + buffer
+        sizes = [
+            os.path.getsize(time_series.format(participant_id=participant))
+            for participant in participants
+        ]
+        mb_value = int(np.ceil(bytes_to(np.ceil(max(sizes)*2.5), 'mb')))
+        mem_mb['connectivity'] = mb_value + buffer
 
     elif input_data_type == 'dmri':
         buffer = 250
         samples = config.get('input_data', {}).get('samples') + '*'
         sizes = []
         for participant in participants:
-            sizes.append(sum([os.path.getsize(sample)
-                              for sample in glob.glob(samples.format(participant_id=participant))]))
-
-        mem_mb['connectivity'] = int(np.ceil(bytes_to(np.ceil(max(sizes)*2.5), 'mb'))) + buffer
+            sizes.append(sum([
+                os.path.getsize(sample)
+                for sample in glob.glob(
+                    samples.format(participant_id=participant)
+                )])
+            )
+        mb_value = int(np.ceil(bytes_to(np.ceil(max(sizes)*2.5), 'mb')))
+        mem_mb['connectivity'] = mb_value + buffer
 
     if input_data_type in ('rsfmri', 'dmri'):
         # Clustering task
         buffer = 250
         seed_voxels = (np.asarray(masks['seed_mask'].get_data()) == 1).sum()
-        target_voxels = (np.asarray(masks['target_mask'].get_data()) == 1).sum()
-        mem_mb['clustering'] = int(np.ceil(bytes_to(seed_voxels * target_voxels * len(participants), 'mb'))) + buffer
+        target_voxels = (np.asarray(
+            masks['target_mask'].get_data()) == 1).sum()
+        mb_value = int(np.ceil(bytes_to(seed_voxels * target_voxels *
+                                        len(participants), 'mb')))
+        mem_mb['clustering'] = mb_value + buffer
 
     elif input_data_type == 'connectivity':
         buffer = 250
         connectivity = config.get('input_data', {}).get('connectivity_matrix')
-        sizes = [os.path.getsize(connectivity.format(participant_id=participant)) for participant in participants]
-        mem_mb['clustering'] = int(np.ceil(bytes_to(np.ceil(max(sizes)), 'mb'))) + buffer
+        sizes = [
+            os.path.getsize(connectivity.format(participant_id=participant))
+            for participant in participants
+        ]
+        mb_value = int(np.ceil(bytes_to(np.ceil(max(sizes)), 'mb')))
+        mem_mb['clustering'] = mb_value + buffer
 
     return mem_mb
 
 
-def validate_paths(d: dict, input_type: str, data: dict, participant_ids: list = None) -> dict:
+def validate_paths(d: dict, input_type: str, data: dict,
+                   participant_ids: list = None) -> dict:
     """Validate input file formatting and ensure files exist"""
-    keys = [key for key, value in d.items() if input_type in value.get('input_type')]
+    keys = [key for key, value in d.items()
+            if input_type in value.get('input_type')]
 
     # Validate filepath format
     for key in keys:
@@ -157,29 +188,41 @@ def validate_paths(d: dict, input_type: str, data: dict, participant_ids: list =
 
             path = data[key].get('file', None)
 
+        if not isinstance(path, str):
+            logging.error('TypeError: [%s] Input should be a text string'
+                          % key)
+            continue
+
         if path is None and required:
-            logging.error(f'TypeError: [{key}] Input is required')
+            logging.error('TypeError: [%s] Input is required' % key)
             continue
 
         elif path is None and not required:
-            logging.info(f'Missing optional input [{key}]')
+            logging.info('Missing optional input [%s]' % key)
             continue
 
-        if file_type is not None and not any(path.endswith(ext) for ext in file_type):
-            logging.error(f'TypeError: [{key}] {os.path.splitext(path)[-1]} extension given, {file_type} expected')
+        if file_type is not None and \
+                not any(path.endswith(ext) for ext in file_type):
+            logging.error('TypeError: [%s] %s extension given, %s expected'
+                          % (key, os.path.splitext(path)[-1], file_type))
 
         if template:
-            if 'participant_id' not in [t[1] for t in string.Formatter().parse(path) if t[1] is not None]:
-                logging.error(f'TemplateError: [{key}] Missing {{participant_id}} template in {path}')
+            if 'participant_id' not in \
+                    [t[1] for t in string.Formatter().parse(path)
+                     if t[1] is not None]:
+                logging.error('TemplateError: [%s] Missing {participant_id} '
+                              'template in %s' % (key, path))
 
         else:
             # Non-template files can be checked immediately
             if expand:
                 if not (glob.glob(path + '*')):
-                    logging.error(f'FileNotFoundError: [{key}] No such file or directory: {path}')
+                    logging.error('FileNotFoundError: [%s] No such file or '
+                                  'directory: %s' % (key, path))
 
             elif not os.path.exists(path):
-                logging.error(f'FileNotFoundError: [{key}] No such file or directory: {path}')
+                logging.error('FileNotFoundError: [%s] No such file or '
+                              'directory: %s' % (key, path))
 
     # Ensure files are present for all participants
     participant_ids_bad = []
@@ -195,11 +238,13 @@ def validate_paths(d: dict, input_type: str, data: dict, participant_ids: list =
 
                     if expand:
                         if not (glob.glob(path + '*')):
-                            logging.warning(f'FileNotFound: [{key}] No such file or directory: {path}')
+                            logging.warning('FileNotFound: [%s] No such file '
+                                            'or directory: %s' % (key, path))
                             participant_ids_bad.append(participant_id)
 
                     elif not os.path.exists(path):
-                        logging.warning(f'FileNotFound: [{key}] No such file: {path}')
+                        logging.warning('FileNotFound: [%s] No such file: '
+                                        '%s' % (key, path))
                         participant_ids_bad.append(participant_id)
 
         participant_ids_bad = set(participant_ids_bad)
@@ -209,10 +254,12 @@ def validate_paths(d: dict, input_type: str, data: dict, participant_ids: list =
     return data
 
 
-def validate_time_series(time_series: str, participants: list, seed_mask: spatialimage,
+def validate_time_series(time_series: str, participants: list,
+                         seed_mask: spatialimage,
                          confounds: Union[str, dict] = None) -> list:
-    """Assess whether the time-series are in the same space as the seed mask and whether confounds (if given)
-    have matching timepoints to the time-series"""
+    """Assess whether the time-series are in the same space as the seed mask
+    and whether confounds (if given) have matching timepoints to the
+    time-series"""
     participant_ids_bad = []
     for participant in participants:
         file = time_series.format(participant_id=participant)
@@ -220,7 +267,8 @@ def validate_time_series(time_series: str, participants: list, seed_mask: spatia
 
         # Check if time-series and seed mask are in the same space
         if not imgs_equal_3d(imgs=[img, seed_mask]):
-            logging.warning(f'Mismatch: [time_series] {file} and seed mask are not in the same space')
+            logging.warning('Mismatch: [time_series] %s and seed mask are not '
+                            'in the same space' % file)
             participant_ids_bad.append(participant)
 
         # Check if all confounds columns are present
@@ -236,10 +284,21 @@ def validate_time_series(time_series: str, participants: list, seed_mask: spatia
                     sep = separators[ext] if ext in separators.keys() else None
 
                 if usecols:
-                    header = pd.read_csv(file, sep=sep, header=None, nrows=1).values.tolist()[0]
-                    usecols = [x for x in header if any(fnmatch(x, p) for p in usecols)]
+                    header = pd.read_csv(
+                        file,
+                        sep=sep,
+                        header=None,
+                        nrows=1
+                    ).values.tolist()[0]
+                    usecols = [x for x in header
+                               if any(fnmatch(x, p) for p in usecols)]
 
-                confounds_df = pd.read_csv(file, sep=sep, usecols=usecols, engine='python')
+                confounds_df = pd.read_csv(
+                    file,
+                    sep=sep,
+                    usecols=usecols,
+                    engine='python'
+                )
 
             else:
                 file = confounds.format(participant_id=participant)
@@ -249,13 +308,15 @@ def validate_time_series(time_series: str, participants: list, seed_mask: spatia
                 confounds_df = pd.read_csv(file, sep=sep, engine='python')
 
             if len(confounds_df) != img.shape[-1]:
-                logging.warning(f'Mismatch: [confounds] {file} and time-series do not have matching timepoints')
+                logging.warning('Mismatch: [confounds] %s and time-series '
+                                'do not have matching timepoints' % file)
                 participant_ids_bad.append(participant)
 
     return list(set(participant_ids_bad))
 
 
-def validate_connectivity(connectivity_matrix: str, participants: list, seed_mask: spatialimage) -> list:
+def validate_connectivity(connectivity_matrix: str, participants: list,
+                          seed_mask: spatialimage) -> list:
     """Assess whether connectivity matrices have the correct shape"""
     participant_ids_bad = []
     n_voxels = np.count_nonzero(seed_mask.get_data())
@@ -264,18 +325,20 @@ def validate_connectivity(connectivity_matrix: str, participants: list, seed_mas
         mat = np.load(file, mmap_mode='r')
 
         if mat.shape[0] != n_voxels:
-            logging.warning(f'Mismatch: [connectivity] Expected shape ({n_voxels}, x), not ({mat.shape[0]}, x)')
+            logging.warning('Mismatch: [connectivity] Expected shape '
+                            '(%s, x), not (%s, x)' % (n_voxels, mat.shape[0]))
             participant_ids_bad.append(participant)
 
     return list(set(participant_ids_bad))
 
 
 def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
-    """Ensure required parameters are given and default values are used where none are entered.
-    Returns a data dictionary object with only relevant parameters to the input_type.
-    """
+    """Ensure required parameters are given and default values are used where
+    none are entered. Returns a data dictionary object with only relevant
+    parameters to the input_type."""
     for task in d.keys():
-        keys = [key for key, value in d[task].items() if input_type in value.get('input_type')]
+        keys = [key for key, value in d[task].items()
+                if input_type in value.get('input_type')]
 
         for key in keys:
             if not data.get(task, None):
@@ -283,30 +346,38 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
 
             value = data.get(task, {}).get(key, None)
             required = d.get(task, {}).get(key, {}).get('required', False)
-            instance_type = d.get(task, {}).get(key, {}).get('instance_type', False)
+            instance_type = d.get(task, {}).get(key, {}).get('instance_type',
+                                                             False)
             default = d.get(task, {}).get(key, {}).get('default', None)
             allowed = d.get(task, {}).get(key, {}).get('allowed', None)
 
             if required and value is None:
-                logging.error(f'TypeError: {task}->{key} requires a value.')
+                logging.error('TypeError: %s->%s requires a value.'
+                              % (task, key))
                 continue
 
             elif not required and value is None and default is not None:
-                logging.info(f'DefaultValue: Setting {task}->{key} to {default}')
+                logging.info('DefaultValue: Setting %s->%s to %s'
+                             % (task, key, default))
                 data[task][key] = default
                 continue
 
             if allowed is not None:
-                if isinstance(value, list) and not set(value).issubset(allowed):
-                    logging.error(f'InputError: [{task}->{key}] Must be {", ".join(allowed)}, not {value}')
+                if isinstance(value, list) and \
+                        not set(value).issubset(allowed):
+                    logging.error('InputError: [%s->%s] Must be %s, not %s'
+                                  % (task, key, ', '.join(allowed), value))
                     continue
 
                 elif isinstance(value, str) and value not in allowed:
-                    logging.error(f'InputError: [{task}->{key}] Must be {", ".join(allowed)}, not {value}')
+                    logging.error('InputError: [%s->%s] Must be %s, not %s'
+                                  % (task, key, ', '.join(allowed), value))
                     continue
 
             if type(value) is not locate(instance_type) and value is not None:
-                logging.error(f'TypeError: [{task}->{key}] Must be {type(value).__name__}, not {instance_type}')
+                logging.error('TypeError: [%s->%s] Must be %s, not %s'
+                              % (task, key, type(value).__name__,
+                                 instance_type))
                 continue
 
         data[task] = {key: data.get(task, {}).get(key, None) for key in keys}
@@ -319,8 +390,9 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
 
         if low_pass is not None and high_pass is not None:
             if high_pass >= low_pass:
-                logging.error(f'ValueError: High-pass ({high_pass}) is expected to be smaller than low-pass '
-                              f'({low_pass})')
+                logging.error('ValueError: High-pass (%s) is expected to '
+                              'be smaller than low-pass (%s)'
+                              % (high_pass, low_pass))
 
             if tr is None:
                 logging.error('ValueError: connectivity->tr requires a value')
@@ -348,31 +420,33 @@ def load_img(name: str, mask: str) -> Union[spatialimage, bool]:
         return nib.load(mask)
 
     except Exception as e:
-        logging.error(f'ValueError: [{name}_mask] Unable to read contents of file: {mask}')
+        logging.error('ValueError: [%s_mask] Unable to read contents of file: '
+                      '%s' % (name, mask))
         return False
 
 
 def process_seed_indices(config: dict) -> Union[dict, bool]:
-    if isinstance(config.get('input_data', {}).get('seed_indices', None), dict):
-        indices_file = config.get('input_data', {}).get('seed_indices', {}).get('file', None)
-
-    else:
-        indices_file = config.get('input_data', {}).get('seed_indices')
-
+    indices_file = config.get('input_data', {}).get('seed_indices', None)
     seed = config.get('input_data', {}).get('seed_mask', None)
+
+    if isinstance(indices_file, dict):
+        indices_file = indices_file.get('file', None)
 
     try:
         indices = np.load(indices_file, mmap_mode='r')
 
     except Exception as exc:
-        logging.error(f'ValueError: [seed_indices] Unable to read contents of file: {indices_file}')
+        logging.error('ValueError: [seed_indices] Unable to read contents of '
+                      'file: %s' % indices_file)
         return False
 
     seed_img = load_img('seed', seed)
     n_voxels = np.count_nonzero(seed_img.get_data())
 
     if indices.shape != (n_voxels, 3):
-        logging.error(f'ValueError: [seed_indices] Expected shape ({n_voxels}, 3), not {indices.shape}')
+        logging.error('ValueError: [seed_indices] Expected shape '
+                      '(%s, 3), not %s'
+                      % (n_voxels, str(indices.shape)))
         return False
 
     files = {'seed_mask': seed_img, 'seed_indices': indices}
@@ -380,7 +454,8 @@ def process_seed_indices(config: dict) -> Union[dict, bool]:
 
 
 def process_masks(config: dict) -> Union[dict, bool]:
-    def base_proc(file, img, resample_to_mni: bool = False, bin_threshold: float = 0.0):
+    def base_proc(file, img, resample_to_mni: bool = False,
+                  bin_threshold: float = 0.0):
         mni_mapped_voxels = map_voxels(
             voxel_size=[2, 2, 2],
             origin=[90, -126, -72],
@@ -392,7 +467,8 @@ def process_masks(config: dict) -> Union[dict, bool]:
         # Binarize
         if not np.array_equal(data, data.astype(bool)):
             img = binarize_3d(img, threshold=bin_threshold)
-            logging.warning(f'Binarizing {file}: setting all values >{bin_threshold} to 1 and others to 0')
+            logging.warning('Binarizing %s: setting all values >%s to 1 and '
+                            'others to 0' % (file, bin_threshold))
 
         # Resample
         if resample_to_mni:
@@ -400,10 +476,14 @@ def process_masks(config: dict) -> Union[dict, bool]:
             affine = img.affine
             mapped_voxels = mni_mapped_voxels
 
-            if not np.all([np.all(np.equal(a, b)) for a, b in zip(mapped_voxels, (shape, affine))]):
-                img = resample_from_to(img, mapped_voxels, order=0, mode='nearest')
-                logging.warning(f'Resampling {file} to MNI group template '
-                                f'(nibabel.processing.resample_from_to), using order=0, mode=\'nearest\'')
+            if not np.all([np.all(np.equal(a, b))
+                           for a, b in zip(mapped_voxels, (shape, affine))]):
+                img = resample_from_to(img, mapped_voxels, order=0,
+                                       mode='nearest')
+                logging.warning('Resampling %s to MNI group template '
+                                '(nibabel.processing.resample_from_to), '
+                                'using order=0, mode=\'nearest\''
+                                % file)
 
         return img
 
@@ -430,14 +510,20 @@ def process_masks(config: dict) -> Union[dict, bool]:
     # Load default MNI152GM template if target is not given
     if target is None:
         target = 'Default MNI152 Gray Matter template'
-        target_img = nib.load(pkg_resources.resource_filename(__name__, 'templates/MNI152GM.nii'))
-        logging.warning(f'DefaultValue: [target_mask] Using default MNI152 Gray Matter template')
+        target_img = nib.load(
+            pkg_resources.resource_filename(__name__,
+                                            'templates/MNI152GM.nii'))
+        logging.warning('DefaultValue: [target_mask] Using default MNI152 '
+                        'Gray Matter template')
 
     else:
         target_img = load_img('target', target)
 
-    seed_img = base_proc(seed, seed_img, resample_to_mni=resample_to_mni, bin_threshold=bin_threshold)
-    target_img = base_proc(target, target_img, resample_to_mni=resample_to_mni, bin_threshold=bin_threshold)
+    seed_img = base_proc(seed, seed_img, resample_to_mni=resample_to_mni,
+                         bin_threshold=bin_threshold)
+    target_img = base_proc(target, target_img,
+                           resample_to_mni=resample_to_mni,
+                           bin_threshold=bin_threshold)
 
     if logging.error.count > 0:
         return False
@@ -445,7 +531,8 @@ def process_masks(config: dict) -> Union[dict, bool]:
     # Process seed
     if median_filter:
         seed_img = median_filter_img(seed_img, dist=median_filter_dist)
-        logging.info(f'Applying median filter on seed ({seed}) (dist={median_filter_dist})')
+        logging.info('Applying median filter on seed (%s) (dist=%s)'
+                     % (seed, median_filter_dist))
 
     if input_data_type == 'dmri':
         if upsample is not None:
@@ -453,14 +540,20 @@ def process_masks(config: dict) -> Union[dict, bool]:
                 upsample = [upsample] * 3
 
             if len(upsample) != 3:
-                logging.error(f'ValueError: [masking->upsample_seed_to] Requires 1 or 3 values, not {len(upsample)}')
+                logging.error('ValueError: [masking->upsample_seed_to] '
+                              'Requires 1 or 3 values, not %s' % len(upsample))
 
             else:
                 mapped_voxels = (seed_img.shape, seed_img.affine)
-                highres_seed_img = stretch_img(source_img=seed_img, target=vox2out_vox(mapped_voxels, upsample))
-                logging.info(f'Stretched seed ({seed}) to fit a '
-                             f'{"x".join(map(str, highres_seed_img.shape))} template with '
-                             f'{"x".join(map(str, upsample))} voxel size')
+                highres_seed_img = stretch_img(
+                    source_img=seed_img,
+                    target=vox2out_vox(mapped_voxels, upsample)
+                )
+                logging.info('Stretched seed (%s) to fit a '
+                             '%s template with %s voxel size'
+                             % (seed,
+                                'x'.join(map(str, highres_seed_img.shape)),
+                                'x'.join(map(str, upsample))))
 
     # Process target
     if input_data_type == 'rsfmri':
@@ -471,12 +564,13 @@ def process_masks(config: dict) -> Union[dict, bool]:
                 target_img=seed_img,
                 edge_dist=del_seed_dist
             )
-            logging.info(f'Removing seed ({seed}) from target ({target}) (edge_dist={del_seed_dist}')
+            logging.info('Removing seed (%s) from target (%s) '
+                         '(edge_dist=%s)' % (seed, target, del_seed_dist))
 
         # Reduce the number of voxels in target
         if subsample:
             target_img = subsample_img(img=target_img, f=2)
-            logging.info(f'Subsampling target image ({target})')
+            logging.info('Subsampling target image (%s)' % target)
 
     elif input_data_type == 'dmri':
         if downsample is not None:
@@ -484,14 +578,21 @@ def process_masks(config: dict) -> Union[dict, bool]:
                 downsample = [downsample] * 3
 
             if len(downsample) != 3:
-                logging.error(f'ValueError: [masking->downsample_target_to] Requires 1 or 3 values, not '
-                              f'{len(downsample)}')
+                logging.error('ValueError: [masking->downsample_target_to] '
+                              'Requires 1 or 3 values, not %s'
+                              % len(downsample))
 
             else:
-                mapped_voxels = vox2out_vox((target_img.shape, target_img.affine), downsample)
-                target_img = resample_from_to(target_img, mapped_voxels, order=0, mode='nearest')
-                logging.warning(f'Resampling {target} to {"x".join(map(str, downsample))} voxel size '
-                                f'(nibabel.processing.resample_from_to), using order=0, mode=\'nearest\'')
+                mapped_voxels = vox2out_vox(
+                    (target_img.shape, target_img.affine),
+                    downsample
+                )
+                target_img = resample_from_to(target_img, mapped_voxels,
+                                              order=0, mode='nearest')
+                logging.warning('Resampling %s to %s voxel size '
+                                '(nibabel.processing.resample_from_to), using '
+                                'order=0, mode=\'nearest\''
+                                % (target, 'x'.join(map(str, downsample))))
 
     if logging.error.count > 0:
         return False
@@ -509,15 +610,18 @@ def create_workflow(config: dict, mem_mb: dict, work_dir: str) -> None:
         if not isinstance(data, dict):
             return None
 
-        return data.get(args[0], None) if len(args) == 1 else get_value(data.get(args[0], {}), *args[1:])
+        return data.get(args[0], None) if len(args) == 1 \
+            else get_value(data.get(args[0], {}), *args[1:])
 
     input_data_type = config.get('input_data_type')
-    templates = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'templates')
+    templates = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                             'templates')
     snakefiles = ['header.Snakefile', 'body.Snakefile']
 
     if input_data_type in ('rsfmri', 'dmri'):
-        snakefiles.insert(1, f'{input_data_type}.Snakefile')
-        config['input_data']['connectivity_matrix'] = 'connectivity/connectivity_{participant_id}.npy'
+        snakefiles.insert(1, '%s.Snakefile' % input_data_type)
+        config['input_data']['connectivity_matrix'] = \
+            'connectivity/connectivity_{participant_id}.npy'
 
     if input_data_type == 'rsfmri':
         config['input_data']['touchfile'] = 'log/.touchfile'
@@ -545,40 +649,53 @@ def create_workflow(config: dict, mem_mb: dict, work_dir: str) -> None:
                         value = get_value(config, *keys)
 
                         if isinstance(value, dict):
-                            value = value if not value.get('file', None) else value.get('file')
+                            value = value if not value.get('file', None) \
+                                else value.get('file')
 
                         if keys[0] == 'input_data' and not value and not force:
                             continue
 
                         if inplace:
-                            line = line.replace(f'{s}!{content}{e}', str(value))
+                            line = line.replace('%s!%s%s' % (s, content, e),
+                                                str(value))
 
                         elif force:
-                            value = repr(value) if isinstance(value, str) else str(value)
-                            line = line.replace(f'{s}+{content}{e}', f'{keys[-1]} = {value}')
+                            value = repr(value) if isinstance(value, str) \
+                                else str(value)
+                            line = line.replace(
+                                '%s+%s%s' % (s, content, e),
+                                '%s = %s' % (keys[-1], value)
+                            )
 
                         else:
-                            value = repr(value) if isinstance(value, str) else str(value)
-                            line = line.replace(f'{s}{content}{e}', f'{keys[-1]} = {value}')
+                            value = repr(value) if isinstance(value, str) \
+                                else str(value)
+                            line = line.replace(
+                                '%s%s%s' % (s, content, e),
+                                '%s = %s' % (keys[-1], value)
+                            )
 
                     of.write(line)
 
     shutil.copy(os.path.join(templates, 'cluster.json'), work_dir)
 
 
-def create_project(work_dir: str, config: dict, masks: dict, mem_mb: dict, participants: pd.DataFrame) -> dict:
+def create_project(work_dir: str, config: dict, masks: dict, mem_mb: dict,
+                   participants: pd.DataFrame) -> dict:
     """Generate all the files needed by the CBP project"""
     input_data_type = config.get('input_data_type')
 
     # Save masks
     for key, value in masks.items():
         if isinstance(value, spatialimage):
-            nib.save(value, os.path.join(work_dir, key + '.nii'))
-            logging.info(f'Created file {os.path.join(work_dir, key + ".nii")}')
+            fpath = os.path.join(work_dir, key + '.nii')
+            nib.save(value, fpath)
+            logging.info('Created file %s' % fpath)
 
         elif isinstance(value, np.ndarray):
-            np.save(os.path.join(work_dir, key + '.npy'), value)
-            logging.info(f'Created file {os.path.join(work_dir, key + ".npy")}')
+            fpath = os.path.join(work_dir, key + '.npy')
+            np.save(fpath, value)
+            logging.info('Created file %s' % fpath)
 
     # Save seed indices
     if input_data_type == 'rsfmri':
@@ -595,28 +712,45 @@ def create_project(work_dir: str, config: dict, masks: dict, mem_mb: dict, parti
     n_bad_participants = np.count_nonzero(participants.invalid)
     n_participants = participants.participant_id.count()
     if n_bad_participants > 0:
-        participants_bad = pd.DataFrame(participants[participants['invalid']]['participant_id'])
-        participants_bad.to_csv(os.path.join(work_dir, 'participants_bad.tsv'), sep='\t', index=False)
+        participants_bad = pd.DataFrame(
+            participants[participants['invalid']]['participant_id']
+        )
+        participants_bad.to_csv(
+            os.path.join(work_dir, 'participants_bad.tsv'),
+            sep='\t',
+            index=False
+        )
 
-    participants = pd.DataFrame(participants[~participants['invalid']]['participant_id'])
-    participants.to_csv(os.path.join(work_dir, 'participants.tsv'), sep='\t', index=False)
+    participants = pd.DataFrame(
+        participants[~participants['invalid']]['participant_id']
+    )
+    participants.to_csv(
+        os.path.join(work_dir, 'participants.tsv'),
+        sep='\t',
+        index=False
+    )
 
     # Create workflow (snakefile)
     create_workflow(config=config, mem_mb=mem_mb, work_dir=work_dir)
 
     # Info
     n_participants_included = n_participants - n_bad_participants
-    logging.info(f'Removed participants: {n_bad_participants}')
-    logging.info(f'Included participants: {n_participants_included}')
+    logging.info('Removed participants: %s' % n_bad_participants)
+    logging.info('Included participants: %s' % n_participants_included)
     seed_voxels = (np.asarray(masks['seed_mask'].get_data()) == 1).sum()
 
     if input_data_type in ('rsfmri', 'dmri'):
-        target_voxels = (np.asarray(masks['target_mask'].get_data()) == 1).sum()
+        target_voxels = (
+                np.asarray(masks['target_mask'].get_data()) == 1
+        ).sum()
         connectivity_size = seed_voxels*target_voxels*n_participants_included
-        logging.info(f'Approximate size of all connectivity matrices: {readable_bytesize(connectivity_size, 8)}')
+        logging.info('Approximate size of all connectivity matrices: %s'
+                     % readable_bytesize(connectivity_size, 8))
 
-    cluster_labels_size = (seed_voxels * n_participants_included) + (seed_voxels * 2) + n_participants_included + 1
-    logging.info(f'Approximate size of all cluster label files: {readable_bytesize(cluster_labels_size, 8)}')
+    cluster_labels_size = (seed_voxels * n_participants_included) + \
+                          (seed_voxels * 2) + n_participants_included + 1
+    logging.info('Approximate size of all cluster label files: %s'
+                 % readable_bytesize(cluster_labels_size, 8))
 
     stats = {
         'n_bad_participants': n_bad_participants,
@@ -627,7 +761,8 @@ def create_project(work_dir: str, config: dict, masks: dict, mem_mb: dict, parti
 
 
 def validate_config(configfile: str, work_dir: str, logfile: str):
-    """Validate configuration file. Returns false if validation cannot continue"""
+    """Validate configuration file. Returns false if validation cannot
+    continue"""
     # make pyyaml work with OrderedDict
     yaml.add_representer(OrderedDict, pyyaml_ordereddict)
 
@@ -643,28 +778,32 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     )
     logging.error = CallCountDecorator(logging.error)
     logging.warning = CallCountDecorator(logging.warning)
-    logging.info(f'CBP tools version {__version__}')
-    logging.info(f'Setup initiated on {time.strftime("%b %d %Y %H:%M:%S")} in environment {sys.prefix}')
-    logging.info(f'Username of creator is "{os.getlogin()}" with hostname "{socket.gethostname()}"')
+    logging.info('CBP tools version %s' % __version__)
+    logging.info('Setup initiated on %s in environment %s'
+                 % (time.strftime('%b %d %Y %H:%M:%S'), sys.prefix))
+    logging.info('Username of creator is \'%s\' with hostname \'%s\''
+                 % (os.getlogin(), socket.gethostname()))
 
     # Load configfile
     with open(configfile, 'r') as stream:
         try:
             config = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
-            logging.error(f'Could not load configfile: {exc}')
+            logging.error('Could not load configfile: %s' % exc)
             return False, False
 
     # Load predefined settings
-    with open(pkg_resources.resource_filename(__name__, 'defaults.yaml'), 'r') as stream:
+    with open(pkg_resources.resource_filename(__name__, 'defaults.yaml'),
+              'r') as stream:
         defaults = yaml.safe_load(stream)
 
     # Validate input data type
     input_data_type = config.get('input_data_type', None)
 
     if input_data_type not in defaults.get('input_data_types'):
-        logging.error(f'TypeError: [input_data_type] Must be {", ".join(defaults.get("input_data_types"))}, not'
-                      f'{input_data_type}')
+        logging.error('TypeError: [input_data_type] Must be %s, not'
+                      '%s' % (', '.join(defaults.get('input_data_types')),
+                              input_data_type))
     else:
         input_data_type = config['input_data_type'] = input_data_type.lower()
 
@@ -674,7 +813,8 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     participant_ids_bad = []
 
     if not input_data:
-        logging.error(f'ValueError: [input_data] No {input_data_type} input data found')
+        logging.error('ValueError: [input_data] No %s input data found'
+                      % input_data_type)
 
     else:
         if not isinstance(input_data.get('participants', None), dict):
@@ -686,7 +826,8 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
         participant_ids = get_participant_ids(
             file=input_data.get('participants', {}).get('file', None),
             sep=input_data.get('participants', {}).get('sep', None),
-            index_col=input_data.get('participants', {}).get('index_col', 'participant_id')
+            index_col=input_data.get('participants', {}).get('index_col',
+                                                             'participant_id')
         )
         input_data = validate_paths(
             d=defaults.get('input'),
@@ -695,14 +836,16 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
             participant_ids=participant_ids
         )
         participant_ids_bad = set(input_data['participant_ids_bad'])
-        if participant_ids and len(set(participant_ids) - participant_ids_bad) <= 1:
-            logging.error('ValueError: [participants] Not enough participants left '
-                          'after removing those with missing or bad data')
+        if participant_ids and \
+                len(set(participant_ids) - participant_ids_bad) <= 1:
+            logging.error('ValueError: [participants] Not enough participants '
+                          'left after removing those with missing or bad data')
 
     # Validate parameters
     parameters = config.get('parameters', {})
     if not parameters:
-        logging.error(f'ValueError: [parameters] No {input_data_type} parameters found')
+        logging.error('ValueError: [parameters] No %s parameters found'
+                      % input_data_type)
 
     else:
         parameters = validate_parameters(
@@ -719,13 +862,15 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
         probtrackx2 = shutil.which('probtrackx2')
 
         if probtrackx2:
-            logging.info(f'FSLInfo: Executable path is \'{fsl}\'')
-            logging.info(f'FSLInfo: probtrackx2 executable path is \'{probtrackx2}\'')
-            logging.info(f'FSLInfo: Directory is {fsl_dir}')
-            logging.info(f'FSLInfo: Output type is {fsl_outputtype}')
+            logging.info('FSLInfo: Executable path is \'%s\'' % fsl)
+            logging.info('FSLInfo: probtrackx2 executable path is \'%s\''
+                         % probtrackx2)
+            logging.info('FSLInfo: Directory is %s' % fsl_dir)
+            logging.info('FSLInfo: Output type is %s' % fsl_outputtype)
 
         else:
-            logging.warning('ModuleNotFoundError: No module named \'probtrackx2\' (FSL)')
+            logging.warning('ModuleNotFoundError: No module named '
+                            '\'probtrackx2\' (FSL)')
 
     if logging.error.count > 0:
         return False
@@ -743,7 +888,6 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
 
     elif input_data_type == 'connectivity':
         masks = process_seed_indices(config=config)
-        # masks['seed_mask'] = load_img('seed', config.get('input_data', {}).get('seed_mask'))
 
     if logging.error.count > 0:
         return False
@@ -758,9 +902,10 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
             confounds=input_data.get('confounds', None)
         )
         participant_ids_bad = set(participant_ids_bad)
-        if participant_ids and len(set(participant_ids) - participant_ids_bad) <= 1:
-            logging.error('ValueError: [participants] Not enough participants left '
-                          'after removing those with missing or bad data')
+        if participant_ids and \
+                len(set(participant_ids) - participant_ids_bad) <= 1:
+            logging.error('ValueError: [participants] Not enough participants '
+                          'left after removing those with missing or bad data')
 
     elif input_data_type == 'connectivity':
         participant_ids_bad = list(participant_ids_bad)
@@ -770,9 +915,10 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
             seed_mask=masks['seed_mask']
         )
         participant_ids_bad = set(participant_ids_bad)
-        if participant_ids and len(set(participant_ids) - participant_ids_bad) <= 1:
-            logging.error('ValueError: [participants] Not enough participants left '
-                          'after removing those with missing or bad data')
+        if participant_ids and \
+                len(set(participant_ids) - participant_ids_bad) <= 1:
+            logging.error('ValueError: [participants] Not enough participants '
+                          'left after removing those with missing or bad data')
 
     if logging.error.count > 0:
         return False
@@ -785,9 +931,14 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     )
 
     # Create the project files
-    participants = pd.DataFrame(set(participant_ids), columns=['participant_id'])
+    participants = pd.DataFrame(
+        set(participant_ids), columns=['participant_id']
+    )
     participants.sort_values(by='participant_id', inplace=True)
-    participants['invalid'] = np.where(participants['participant_id'].isin(participant_ids_bad), True, False)
+    participants['invalid'] = np.where(
+        participants['participant_id'].isin(participant_ids_bad),
+        True, False
+    )
     info = create_project(
         work_dir=work_dir,
         config=config,
@@ -795,7 +946,8 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
         mem_mb=mem_mb,
         participants=participants
     )
-    logging.info(f'Project setup completed on {time.strftime("%b %d %Y %H:%M:%S")}')
+    logging.info('Project setup completed on %s'
+                 % time.strftime('%b %d %Y %H:%M:%S'))
     logging.shutdown()
     return info
 
@@ -803,13 +955,13 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
 def copy_example(params, **kwargs):
     """Copy an example configuration file to the current working directory"""
     input_data_type = params.input_data_type
-    filename = f'config_{input_data_type}.yaml'
-    file = pkg_resources.resource_filename(__name__, f'templates/{filename}')
+    filename = 'config_%s.yaml' % input_data_type
+    file = pkg_resources.resource_filename(__name__, 'templates/%s' % filename)
     dest = os.path.join(os.getcwd(), filename)
 
     if os.path.exists(dest):
         path, ext = os.path.splitext(dest)
-        dest = f'{path} ({{i}}){ext}'
+        dest = '%s ({i})%s' % (path, ext)
         i = 0
         while os.path.exists(dest.format(i=i)):
             i += 1
@@ -817,4 +969,5 @@ def copy_example(params, **kwargs):
         dest = dest.format(i=i)
 
     shutil.copy(file, dest)
-    print(f'Copied {input_data_type} example configuration file to {dest}')
+    print('Copied %s example configuration file to %s'
+          % (input_data_type, dest))
