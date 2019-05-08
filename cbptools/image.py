@@ -149,7 +149,7 @@ def median_filter_img(img: spatialimage, dist: int = 1) -> spatialimage:
 
     filtered = np.zeros(img.shape)
     for x, y, z in voxels:
-        area = data[x - dist:x + (dist + 1), y - dist:y + (dist + 1), z - dist:z + (dist + 1)]
+        area = data[x-dist:x+(dist+1), y-dist:y+(dist+1), z-dist:z+(dist+1)]
 
         if np.median(area) > float_info.min:
             filtered[x, y, z] = 1

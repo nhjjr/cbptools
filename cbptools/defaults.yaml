@@ -67,7 +67,7 @@ parameters:
     median_filter_dist:
       required: false
       instance_type: int
-      input_type: 'all'
+      input_type: ['dmri', 'rsfmri']
       default: 1
     del_seed_from_target:
       required: false
