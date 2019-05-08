@@ -12,6 +12,13 @@
     "mem" : "1000M"
   },
 
+  "probtrackx2" :
+  {
+    "out" : "log/{rule}_{wildcards.participant_id}-%j.out",
+    "name" : "probtrackx2",
+    "mem" : "{resources.mem_mb}M"
+  },
+
   "connectivity" :
   {
     "time" : "01:00:00",
@@ -20,42 +27,56 @@
     "mem" : "{resources.mem_mb}M"
   },
 
+  "merge_connectivity_logs" :
+  {
+    "time" : "01:00:00",
+    "out"  : "log/{rule}-%j.out",
+    "name" : "mrgconn"
+  },
+
+  "validate_connectivity" :
+  {
+    "time" : "01:00:00",
+    "out"  : "log/{rule}-%j.out",
+    "name" : "valconn"
+  },
+
   "participant_level_clustering" :
   {
-    "out"  : "log/{rule}_{wildcards.participant_id}_{wildcards.k}clusters-%j.out",
+    "out"  : "log/{rule}_{wildcards.participant_id}_{wildcards.n_clusters}clusters-%j.out",
     "name" : "sglclust",
     "mem" : "{resources.mem_mb}M"
   },
 
   "group_level_clustering" :
   {
-    "out"  : "log/{rule}_{wildcards.k}-%j.out",
-    "name" : "grpclust"
+    "out"  : "log/{rule}_{wildcards.n_clusters}-%j.out",
+    "name" : "grpclust",
+    "mem" : "{resources.mem_mb}M"
   },
 
   "internal_validity" :
   {
     "out"  : "log/{rule}_{wildcards.participant_id}-%j.out",
-    "name" : "validity"
+    "name" : "intval",
+    "mem" : "{resources.mem_mb}M"
   },
 
   "summary_internal_validity" :
   {
     "out"  : "log/{rule}-%j.out",
-    "name" : "validity"
+    "name" : "sumvalid"
   },
 
   "individual_similarity" :
   {
-    "out"  : "log/{rule}_{wildcards.k}clusters-%j.out",
-    "name" : "similarity"
+    "out"  : "log/{rule}_{wildcards.n_clusters}clusters-%j.out",
+    "name" : "indsim"
   },
 
   "group_similarity" :
   {
     "out"  : "log/{rule}-%j.out",
-    "name" : "similarity"
-  },
-
-
+    "name" : "grpsim"
+  }
 }
