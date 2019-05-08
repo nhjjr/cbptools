@@ -177,6 +177,14 @@ def validate_paths(d: dict, input_type: str, data: dict,
         expand = d.get(key, {}).get('expand', False)
         subs = d.get(key, {}).get('subs', False)
 
+        if path is None and required:
+            logging.error('TypeError: [%s] Input is required' % key)
+            continue
+
+        elif path is None and not required:
+            logging.info('Missing optional input [%s]' % key)
+            continue
+
         if subs and not isinstance(path, dict) and path:
             data[key] = {**{'file': path}, **{sub: None for sub in subs}}
             path = data[key]['file']
@@ -191,14 +199,6 @@ def validate_paths(d: dict, input_type: str, data: dict,
         if not isinstance(path, str):
             logging.error('TypeError: [%s] Input should be a text string'
                           % key)
-            continue
-
-        if path is None and required:
-            logging.error('TypeError: [%s] Input is required' % key)
-            continue
-
-        elif path is None and not required:
-            logging.info('Missing optional input [%s]' % key)
             continue
 
         if file_type is not None and \
