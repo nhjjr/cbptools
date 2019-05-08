@@ -15,7 +15,7 @@
   "probtrackx2" :
   {
     "out" : "log/{rule}_{wildcards.participant_id}-%j.out",
-    "name" : "probtrackx2",
+    "name" : "probtrac",
     "mem" : "{resources.mem_mb}M"
   },
 
@@ -23,7 +23,7 @@
   {
     "time" : "01:00:00",
     "out"  : "log/{rule}_{wildcards.participant_id}-%j.out",
-    "name" : "connectivity",
+    "name" : "conn",
     "mem" : "{resources.mem_mb}M"
   },
 
