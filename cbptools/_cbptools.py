@@ -84,6 +84,13 @@ def success_exit(stats: dict, work_dir: str, logfile: str):
     sys.exit()
 
 
+def get_filepath(value: Union[str, dict]):
+    if isinstance(value, dict):
+        value = value.get('file')
+
+    return value
+
+
 def parse_line(line: str, config: dict) -> Union[str, bool]:
     """Parse <cbptools['key1:key2:key3']> string"""
 
@@ -180,7 +187,7 @@ def estimate_memory_usage(config: dict, masks: dict,
     # Connectivity task
     if input_data_type == 'rsfmri':
         buffer = 250  # in MB
-        time_series = config['input_data']['time_series']
+        time_series = get_filepath(config['input_data']['time_series'])
         sizes = [
             os.path.getsize(time_series.format(participant_id=participant))
             for participant in participants
@@ -294,12 +301,9 @@ def validate_paths(d: dict, input_type: str, data: dict,
 
     for pid in participant_ids:
         for key in keys:
-            path = data.get(key, None)
+            path = get_filepath(data.get(key, None))
             template = d.get(key, {}).get('template', False)
             expand = d.get(key, {}).get('expand', False)
-
-            if isinstance(data.get(key, None), dict):
-                path = data.get(key, {}).get('file', None)
 
             if template and path is not None:
                 path = path.format(participant_id=pid)
@@ -329,19 +333,19 @@ def validate_time_series(time_series: str, participants: list,
     time-series"""
     bad_pids = []
     for pid in participants:
-        file = time_series.format(participant_id=pid)
-        img = nib.load(file)
+        ts = time_series.format(participant_id=pid)
+        img = nib.load(ts)
 
         # Check if time-series and seed mask are in the same space
         if not imgs_equal_3d(imgs=[img, seed_mask]):
             logging.warning('Mismatch: [time_series] %s and seed mask are not '
-                            'in the same space' % file)
+                            'in the same space' % ts)
             bad_pids.append(pid)
 
         # Check if all confounds columns are present
         if confounds:
             if isinstance(confounds, dict):
-                file = confounds.get('file').format(participant_id=pid)
+                cf = confounds.get('file').format(participant_id=pid)
                 sep = confounds.get('sep', None)
                 usecols = confounds.get('usecols', None)
 
@@ -351,37 +355,39 @@ def validate_time_series(time_series: str, participants: list,
                     sep = seps[ext] if ext in seps.keys() else None
 
                 if usecols:
-                    header = pd.read_csv(file, sep=sep, header=None, nrows=1)
+                    header = pd.read_csv(cf, sep=sep, header=None, nrows=1)
                     header = header.values.tolist()[0]
                     usecols = [x for x in header
                                if any(fnmatch(x, p) for p in usecols)]
 
                 df = pd.read_csv(
-                    file, sep=sep, usecols=usecols, engine='python')
+                    cf, sep=sep, usecols=usecols, engine='python')
 
             else:
-                file = confounds.format(participant_id=pid)
-                ext = os.path.splitext(file)[-1]
+                cf = confounds.format(participant_id=pid)
+                ext = os.path.splitext(cf)[-1]
                 seps = {'.tsv': '\t', '.csv': ','}
                 sep = seps[ext] if ext in seps.keys() else None
-                df = pd.read_csv(file, sep=sep, engine='python')
+                df = pd.read_csv(cf, sep=sep, engine='python')
 
             if len(df) != img.shape[-1]:
                 logging.warning('Mismatch: [confounds] %s and time-series '
-                                'do not have matching timepoints' % file)
+                                'do not have matching timepoints' % cf)
                 bad_pids.append(pid)
 
     bad_pids = list(set(bad_pids))
     return bad_pids
 
 
-def validate_connectivity(connectivity_matrix: str, participants: list,
+def validate_connectivity(connectivity_matrix: Union[str, dict],
+                          participants: list,
                           seed_mask: spatialimage) -> list:
     """Assess whether connectivity matrices have the correct shape"""
     bad_pids = []
     n_voxels = np.count_nonzero(seed_mask.get_data())
     for pid in participants:
-        file = connectivity_matrix.format(participant_id=pid)
+        file = get_filepath(connectivity_matrix)
+        file = file.format(participant_id=pid)
         mat = np.load(file, mmap_mode='r')
 
         if mat.shape[0] != n_voxels:
@@ -481,11 +487,9 @@ def load_img(name: str, mask: str) -> Union[spatialimage, bool]:
 
 
 def process_seed_indices(config: dict) -> Union[dict, bool]:
-    indices_file = config.get('input_data', {}).get('seed_indices', None)
-    seed = config.get('input_data', {}).get('seed_mask', None)
-
-    if isinstance(indices_file, dict):
-        indices_file = indices_file.get('file', None)
+    input_data = config.get('input_data', {})
+    indices_file = get_filepath(input_data.get('seed_indices', None))
+    seed = get_filepath(input_data.get('seed_mask', None))
 
     try:
         indices = np.load(indices_file, mmap_mode='r')
@@ -548,11 +552,12 @@ def process_masks(config: dict) -> Union[dict, bool]:
     masks = dict()
 
     # Input data
-    seed = config.get('input_data', {}).get('seed_mask', None)
-    target = config.get('input_data', {}).get('target_mask', None)
+    input_data_type = config.get('input_data_type')
+    input_data = config.get('input_data', {})
+    seed = get_filepath(input_data.get('seed_mask', None))
+    target = get_filepath(input_data.get('target_mask', None))
 
     # Parameters
-    input_data_type = config.get('input_data_type')
     options = config.get('parameters', {}).get('masking', {})
     resample_to_mni = options['resample_to_mni']
     bin_threshold = options['threshold']
@@ -823,7 +828,7 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     with open(defaults, 'r') as stream:
         defaults = yaml.safe_load(stream)
 
-    # Validate input data type
+    # Validate input data
     input_data_type = config.get('input_data_type', None)
 
     if input_data_type not in defaults.get('input_data_types'):
@@ -833,8 +838,8 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     else:
         input_data_type = config['input_data_type'] = input_data_type.lower()
 
-    # Validate input data
     input_data = config.get('input_data', {})
+    eval_ts = input_data.get('time_series', {}).get('validate_shape', False)
     pids = []
     pids_bad = []
 
@@ -921,10 +926,10 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
         return False
 
     # Evaluate time-series
-    if input_data_type == 'rsfmri':
+    if input_data_type == 'rsfmri' and eval_ts:
         pids_bad = list(pids_bad)
         pids_bad += validate_time_series(
-            time_series=input_data.get('time_series', None),
+            time_series=get_filepath(input_data['time_series']),
             participants=list(set(pids) - set(pids_bad)),
             seed_mask=masks.get('seed_mask', None),
             confounds=input_data.get('confounds', None)
@@ -939,7 +944,8 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     elif input_data_type == 'connectivity':
         pids_bad = list(pids_bad)
         pids_bad += validate_connectivity(
-            connectivity_matrix=input_data.get('connectivity_matrix', None),
+            connectivity_matrix=get_filepath(
+                input_data['connectivity_matrix']),
             participants=list(set(pids) - set(pids_bad)),
             seed_mask=masks['seed_mask']
         )

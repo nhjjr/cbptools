@@ -25,6 +25,7 @@ input:
     required: true
     template: true
     input_type: ['rsfmri']
+    subs: ['validate_shape']
   confounds:
     required: false
     template: true

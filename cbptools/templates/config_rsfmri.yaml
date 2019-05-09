@@ -4,7 +4,9 @@ input_data:
     file: /path/to/participants.tsv
     sep: "\t"
     index_col: participant_id
-  time_series: /path/to/dataset/{participant_id}/time_series.nii.gz
+  time_series:
+    file: /path/to/dataset/{participant_id}/time_series.nii.gz
+    validate_shape: true
   confounds: 
     file: /path/to/dataset/{participant_id}/confounds.tsv
     sep: "\t"

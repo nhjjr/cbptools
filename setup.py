@@ -5,28 +5,34 @@ from os.path import join as opj, dirname
 import re
 
 version_file = 'cbptools/_version.py'
-readme = opj(dirname(__file__), 'README.md')
-mo = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", open(version_file, "rt").read(), re.M)
+long_description = open(opj(dirname(__file__), 'README.rst')).read()
+mo = re.search(
+    r"^__version__ = ['\"]([^'\"]*)['\"]",
+    open(version_file, "rt").read(),
+    re.M
+)
 
 if mo:
     version = mo.group(1)
 else:
     raise RuntimeError('Unable to find version string in %s.' % version_file)
 
-try:
-    import pypandoc
-    long_description = pypandoc.convert(readme, 'rst')
-
-except (ImportError, OSError) as exc:
-    print('WARNING: pypandoc failed to import or threw an error while converting '
-          'README.md to RST: %s .md version will be used as is' % exc)
-    long_description = open(readme).read()
+# try:
+#     import pypandoc
+#     long_description = pypandoc.convert(readme, 'rst')
+#
+# except (ImportError, OSError) as exc:
+#     print('WARNING: pypandoc failed to import or threw an error while '
+#           'converting README.md to RST: %s .md version will be used as is'
+#           % exc)
+#     long_description = open(readme).read()
 
 setup(
     name='cbptools',
     version=version,
     python_requires='>=3.5.0',
-    description='Regional Connectivity-Based Parcellation tool for Python using Snakemake',
+    description='Regional Connectivity-Based Parcellation tool for Python '
+                'using Snakemake',
     long_description=long_description,
     url='https://github.com/nreuter/cbptools',
     author='Niels Reuter',

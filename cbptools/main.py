@@ -1,4 +1,5 @@
-from cbptools.cbptools import validate_config, success_exit, fail_exit, copy_example
+from cbptools._cbptools import validate_config, success_exit, fail_exit, \
+    copy_example
 from cbptools import __version__, __readthedocs__
 import argparse
 import errno
