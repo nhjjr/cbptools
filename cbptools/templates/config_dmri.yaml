@@ -28,7 +28,6 @@ parameters:
     n_samples: 200
     n_steps: 2000
     correct_path_distribution: true
-    wait_for_file: 240
     cleanup_fsl: true
     cubic_transform: true
   clustering:

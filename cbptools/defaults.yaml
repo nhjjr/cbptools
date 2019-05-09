@@ -175,11 +175,6 @@ parameters:
       input_type: ['dmri']
       instance_type: bool
       default: true
-    wait_for_file:
-      required: false
-      input_type: ['dmri']
-      default: 240
-      instance_type: int
     cleanup_fsl:
       required: false
       input_type: ['dmri']
