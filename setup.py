@@ -5,7 +5,7 @@ from os.path import join as opj, dirname
 import re
 
 version_file = 'cbptools/_version.py'
-readme = opj(dirname(__file__), 'README.rst')
+readme = opj(dirname(__file__), 'README.md')
 mo = re.search(
     r"^__version__ = ['\"]([^'\"]*)['\"]",
     open(version_file, "rt").read(),

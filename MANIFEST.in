@@ -1,3 +1,2 @@
-include README.rst
 include cbptools/defaults.yaml
 include cbptools/templates/*
