@@ -211,7 +211,7 @@ parameters:
     n_init:
       required: false
       input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: 100
+      default: 256
       instance_type: int
     linkage:
       required: false

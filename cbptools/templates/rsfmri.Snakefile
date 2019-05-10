@@ -9,7 +9,8 @@ rule connectivity:
         connectivity_matrix = 'connectivity/connectivity_{participant_id}.npy'
     threads: 1
     resources:
-        mem_mb = <cbptools['!mem_mb:connectivity']>
+        mem_mb = <cbptools['!mem_mb:connectivity']>,
+        io = 1
     params:
         <cbptools['+input_data:confounds:sep']>,
         <cbptools['+input_data:confounds:usecols']>,

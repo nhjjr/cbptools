@@ -6,7 +6,7 @@ Connectivity-Based Parcellation Tools
 =====================================
 
 Regional **connectivity-based parcellation** (CBP) is a procedure for regional mapping by long-range connectivity
-profiles [Eickhoff et al., 2015], revealing brain organization within a region-of-interest (ROI).
+profiles (Eickhoff et al., 2015), revealing brain organization within a region-of-interest (ROI).
 
 For a complete overview of the software and a setup guide, visit `documentation <https://github.com/>`_.
 
@@ -72,11 +72,12 @@ snakemake, which is installed as a dependency of CBPtools.
     cd /path/to/workdir
     snakemake
 
-For more customizability on snakemake, visit the
+For more customizability on snakemake (Köster and Rahmann, 2012), visit the
 `snakemake documentation <https://snakemake.readthedocs.io/en/stable/>`_.
 
 References
 ----------
-
 Eickhoff SB, Thirion B, Varoquaux G, Bzdok D (2015): Connectivity-based parcellation: Critique and implications.
 Hum Brain Mapp 36:4771–4792.
+
+Köster J, Rahmann S (2012): Snakemake--a scalable bioinformatics workflow engine. Bioinformatics 28:2520–2522.

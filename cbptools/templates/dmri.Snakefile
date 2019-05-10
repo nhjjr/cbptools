@@ -9,7 +9,8 @@ rule probtrackx2:
     output: 'probtrackx2/{participant_id}/fdt_matrix2.dot'
     threads: 1
     resources:
-        mem_mb = <cbptools['!mem_mb:connectivity']>
+        mem_mb = <cbptools['!mem_mb:connectivity']>,
+        io = 1
     params:
         outdir = 'probtrackx2/{participant_id}',
         <cbptools['input_data:samples']>,
