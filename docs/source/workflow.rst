@@ -2,6 +2,8 @@ Workflow
 ========
 In this section the processing of the pipeline is described through its various tasks.
 
+.. image:: workflow.png
+
 Connectivity (resting-state)
 ----------------------------
   1. Load timeseries, roi_mask, target_mask (define target mask here)
