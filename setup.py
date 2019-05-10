@@ -5,7 +5,7 @@ from os.path import join as opj, dirname
 import re
 
 version_file = 'cbptools/_version.py'
-long_description = open(opj(dirname(__file__), 'README.rst')).read()
+readme = opj(dirname(__file__), 'README.rst')
 mo = re.search(
     r"^__version__ = ['\"]([^'\"]*)['\"]",
     open(version_file, "rt").read(),
@@ -17,15 +17,15 @@ if mo:
 else:
     raise RuntimeError('Unable to find version string in %s.' % version_file)
 
-# try:
-#     import pypandoc
-#     long_description = pypandoc.convert(readme, 'rst')
-#
-# except (ImportError, OSError) as exc:
-#     print('WARNING: pypandoc failed to import or threw an error while '
-#           'converting README.md to RST: %s .md version will be used as is'
-#           % exc)
-#     long_description = open(readme).read()
+try:
+    import pypandoc
+    long_description = pypandoc.convert(readme, 'rst')
+
+except (ImportError, OSError) as exc:
+    print('WARNING: pypandoc failed to import or threw an error while '
+          'converting README.md to RST: %s .md version will be used as is'
+          % exc)
+    long_description = open(readme).read()
 
 setup(
     name='cbptools',
