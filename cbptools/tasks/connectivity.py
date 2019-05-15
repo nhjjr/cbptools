@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from cbptools.exceptions import DimensionError
-from cbptools.image import img_is_4d, get_masked_series, find_low_variance_voxels
+from cbptools.image import img_is_4d, get_masked_series, \
+    find_low_variance_voxels
 from cbptools.connectivity import seed_based_correlation
 from cbptools.clean import nuisance_signal_regression, fft_filter
 from scipy.signal import detrend

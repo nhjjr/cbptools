@@ -46,6 +46,13 @@ def main():
         dest='force',
         help='Overwrite the current working directory if it exists'
     )
+    create_command.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        default=False,
+        dest='verbose',
+        help='Print logging to the terminal during project creation'
+    )
 
     example_command = subcommands.add_parser(
         'example',
@@ -71,6 +78,7 @@ def create(params, parsers):
     configfile = params.configfile
     work_dir = params.workdir
     force = params.force
+    verbose = params.verbose
     parser = parsers[0]
 
     if not os.path.isfile(configfile):
@@ -87,6 +95,7 @@ def create(params, parsers):
         try:
             os.makedirs(work_dir, exist_ok=True)
             os.makedirs(os.path.join(work_dir, 'log'), exist_ok=True)
+
         except OSError as exc:
             parser.error(OSError(exc))
 
@@ -95,7 +104,7 @@ def create(params, parsers):
 
         # Validate configuration file
         info = validate_config(configfile=configfile, work_dir=work_dir,
-                               logfile=logfile)
+                               logfile=logfile, verbose=verbose)
 
         if info:
             success_exit(info, work_dir=work_dir, logfile=logfile)

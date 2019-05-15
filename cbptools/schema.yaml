@@ -229,7 +229,7 @@ parameters:
       required: false
       input_type: ['dmri', 'rsfmri', 'connectivity']
       default: ['silhouette_score']
-      allowed: ['silhouette_score', 'davies_bouldin_score', 'calinski_harabasz_score', 'gap_score', 'weak_deletion_stability_score']
+      allowed: ['silhouette_score', 'davies_bouldin_score', 'calinski_harabasz_score']
       instance_type: list
     similarity_metric:
       required: false

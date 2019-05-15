@@ -423,9 +423,9 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
                               % (task, key))
                 continue
 
-            elif not required and value is None and default is not None:
-                logging.info('DefaultValue: Setting %s->%s to %s'
-                             % (task, key, default))
+            elif value is None and default is not None:
+                logging.warning('DefaultValue: Setting %s->%s to %s'
+                                % (task, key, default))
                 data[task][key] = default
                 continue
 
@@ -443,8 +443,8 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
 
             if type(value) is not locate(instance_type) and value is not None:
                 logging.error('TypeError: [%s->%s] Must be %s, not %s'
-                              % (task, key, type(value).__name__,
-                                 instance_type))
+                              % (task, key, instance_type,
+                                 type(value).__name__))
                 continue
 
         data[task] = {key: data.get(task, {}).get(key, None) for key in keys}
@@ -463,6 +463,10 @@ def validate_parameters(d: dict, input_type: str, data: dict) -> dict:
 
             if tr is None:
                 logging.error('ValueError: connectivity->tr requires a value')
+
+            elif tr > 100:
+                logging.warning('connectivity->tr is large. Are you sure it '
+                                'is repetition time in seconds?')
 
     # Format values so that they can be used for FSL input directly
     elif input_type == 'dmri':
@@ -791,7 +795,8 @@ def create_project(work_dir: str, config: dict, masks: dict, mem_mb: dict,
     return stats
 
 
-def validate_config(configfile: str, work_dir: str, logfile: str):
+def validate_config(configfile: str, work_dir: str, logfile: str,
+                    verbose: bool = False):
     """Validate configuration file. Returns false if validation cannot
     continue"""
     # make pyyaml work with OrderedDict
@@ -809,6 +814,10 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
     )
     logging.error = CallCountDecorator(logging.error)
     logging.warning = CallCountDecorator(logging.warning)
+
+    if verbose:
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
     logging.info('CBP tools version %s' % __version__)
     logging.info('Setup initiated on %s in environment %s'
                  % (time.strftime('%b %d %Y %H:%M:%S'), sys.prefix))
@@ -824,7 +833,7 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
             return False
 
     # Load predefined settings
-    defaults = pkg_resources.resource_filename(__name__, 'defaults.yaml')
+    defaults = pkg_resources.resource_filename(__name__, 'schema.yaml')
     with open(defaults, 'r') as stream:
         defaults = yaml.safe_load(stream)
 
@@ -839,9 +848,12 @@ def validate_config(configfile: str, work_dir: str, logfile: str):
         input_data_type = config['input_data_type'] = input_data_type.lower()
 
     input_data = config.get('input_data', {})
-    eval_ts = input_data.get('time_series', {}).get('validate_shape', False)
+    time_series = input_data.get('time_series', {})
     pids = []
     pids_bad = []
+
+    eval_ts = time_series.get('validate_shape', False) \
+        if isinstance(time_series, dict) else False
 
     if not input_data:
         logging.error('ValueError: [input_data] No %s input data found'
