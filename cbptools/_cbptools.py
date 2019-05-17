@@ -270,6 +270,10 @@ def validate_paths(d: dict, input_type: str, data: dict,
                           % key)
             continue
 
+        if not os.path.isabs(path):
+            logging.error('TypeError: [%s] Input path should be absolute, '
+                          'not relative' % key)
+
         if file_type is not None and \
                 not any(path.endswith(ext) for ext in file_type):
             logging.error('TypeError: [%s] %s extension given, %s expected'
