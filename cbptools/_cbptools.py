@@ -740,13 +740,8 @@ def create_project(work_dir: str, config: dict, masks: dict, mem_mb: dict,
             logging.info('Created file %s' % fpath)
 
     # Save seed indices
-    if input_data_type == 'rsfmri':
+    if input_data_type in ('rsfmri', 'dmri'):
         seed_indices = get_mask_indices(img=masks['seed_mask'], order='C')
-        np.save(os.path.join(work_dir, 'seed_indices.npy'), seed_indices)
-        config['input_data']['seed_indices'] = 'seed_indices.npy'
-
-    elif input_data_type == 'dmri':
-        seed_indices = get_mask_indices(img=masks['seed_mask'], order='F')
         np.save(os.path.join(work_dir, 'seed_indices.npy'), seed_indices)
         config['input_data']['seed_indices'] = 'seed_indices.npy'
 

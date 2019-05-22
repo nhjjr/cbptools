@@ -222,6 +222,49 @@ def find_low_variance_voxels(data, tol: float = np.finfo(np.float32).eps):
     return np.where(data.var(axis=0) < tol)[0]
 
 
+def get_f2c_order(img: spatialimage) -> np.ndarray:
+    """The order in which voxels are extracted from a mask is either
+    F-contiguous or C-contiguous (C by default in NumPy), which is reflected
+    by the order in which they are placed in an array.
+
+    This function provides reordering indices such that an F extraction order
+    is turned into a C extraction order.
+
+    Parameters
+    ----------
+    img : spatialimage
+        Mask NIfTI image
+    """
+    mask = img.get_data()
+    reorder = np.arange(int(np.prod(img.shape)))
+    reorder = reorder.reshape(img.shape, order='C')
+    reorder = reorder.flatten(order='F')
+    reorder = reorder[mask.flatten(order='F').astype(bool)]
+    reorder = np.argsort(reorder)
+    return reorder
+
+
+def get_c2f_order(img: spatialimage) -> np.ndarray:
+    """The order in which voxels are extracted from a mask is either
+    F-contiguous or C-contiguous (C by default in NumPy), which is reflected
+    by the order in which they are placed in an array. 
+    
+    This function provides reordering indices such that a C extraction order 
+    is turned into an F extraction order.
+
+    Parameters
+    ----------
+    img : spatialimage
+        Mask NIfTI image
+    """
+    mask = img.get_data()
+    reorder = np.arange(int(np.prod(mask.shape)))
+    reorder = reorder.reshape(mask.shape, order='F')
+    reorder = reorder[mask.astype(bool)]
+    reorder = np.argsort(reorder)
+    return reorder
+
+
 def get_mask_indices(img: spatialimage, order: str = 'C') -> np.ndarray:
     """Get voxel space coordinates (indices) of seed voxels
 
@@ -240,18 +283,16 @@ def get_mask_indices(img: spatialimage, order: str = 'C') -> np.ndarray:
         all mask image voxels
     """
 
-    if order not in ('C', 'F'):
+    if order not in ('C', 'F', 'c', 'f'):
         raise ValueError('Order has unexpected value: expected %s, got \'%s\''
                          % ("'C' or 'F'", order))
 
     data = img.get_data()
     indices = np.asarray(tuple(zip(*np.where(data == 1))))
 
-    if order != 'C':
-        reorder = np.arange(int(np.prod(data.shape)))
-        reorder = reorder.reshape(data.shape, order=order)
-        reorder = reorder[data.astype(bool)]
-        reorder = np.argsort(reorder)
+    if order.upper() == 'F':
+        # indices are C order and must become F order
+        reorder = get_c2f_order(img)
         indices = indices[reorder]
 
     return indices

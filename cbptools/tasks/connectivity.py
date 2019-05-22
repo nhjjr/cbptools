@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from cbptools.exceptions import DimensionError
 from cbptools.image import img_is_4d, get_masked_series, \
-    find_low_variance_voxels
+    find_low_variance_voxels, get_f2c_order
 from cbptools.connectivity import seed_based_correlation
 from cbptools.clean import nuisance_signal_regression, fft_filter
 from scipy.signal import detrend
@@ -247,8 +247,8 @@ def validate_connectivity(log_file: str, connectivity: str, labels: str,
         Path(out).touch()
 
 
-def connectivity_dmri(fdt_matrix2: str, out: str, cleanup_fsl: bool = True,
-                      pca_transform: float = None,
+def connectivity_dmri(fdt_matrix2: str, seed: str, out: str,
+                      cleanup_fsl: bool = True, pca_transform: float = None,
                       cubic_transform: bool = False) -> None:
     """ Compute a connectivity matrix from functional data. This
     method uses FSL's probtrackx2 function which must be accessible
@@ -263,6 +263,8 @@ def connectivity_dmri(fdt_matrix2: str, out: str, cleanup_fsl: bool = True,
     ----------
     fdt_matrix2 : str
         Path to the probtrackx2 output file for fdt_matrix2
+    seed : str
+        Path to the seed mask nifti image
     out : str
         Output filename for the connectivity matrix (.npy)
     cleanup_fsl: bool, optional
@@ -295,6 +297,11 @@ def connectivity_dmri(fdt_matrix2: str, out: str, cleanup_fsl: bool = True,
         pca = PCA(n_components=pca_transform)
         connectivity = pca.fit_transform(connectivity)
 
+    # Reorder seed-voxels from F- to C-order
+    seed = nib.load(seed)
+    reorder = get_f2c_order(seed)
+    connectivity = connectivity[reorder, :]
+    
     np.save(out, connectivity)
 
     if cleanup_fsl:
