@@ -36,12 +36,12 @@ parameters:
     algorithm: auto
     group_method: mode
     init: random
-    internal_validity_metrics: ['silhouette', 'davies-bouldin', 'calinski-harabasz']
+    internal_validity_metrics: ['silhouette_score', 'davies_bouldin_score', 'calinski_harabasz_score']
     linkage: complete
     max_iter: 10000
     n_clusters: [2, 3, 4, 5]
     n_init: 256
-    similarity_metric: adjusted rand index
+    similarity_metric: adjusted_rand_score
   summary:
     figure_format: png
 
