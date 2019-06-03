@@ -1,2 +1,2 @@
-include cbptools/defaults.yaml
+include cbptools/schema.yaml
 include cbptools/templates/*

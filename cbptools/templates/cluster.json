@@ -43,6 +43,7 @@
 
   "participant_level_clustering" :
   {
+    "time" : "08:00:00",
     "out"  : "log/{rule}_{wildcards.participant_id}_{wildcards.n_clusters}clusters-%j.out",
     "name" : "sglclust",
     "mem" : "{resources.mem_mb}M"
