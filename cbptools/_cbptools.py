@@ -818,18 +818,16 @@ def validate_config(configfile: str, work_dir: str, logfile: str,
         logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 
-    try:
-        creator = os.getlogin()
-        hostname = socket.gethostname()
-    except:
-        creator = 'unknown'
-        hostname = 'unknown'
-
     logging.info('CBP tools version %s' % __version__)
     logging.info('Setup initiated on %s in environment %s'
                  % (time.strftime('%b %d %Y %H:%M:%S'), sys.prefix))
-    logging.info('Username of creator is \'%s\' with hostname \'%s\''
-                 % (creator, hostname))
+
+    try:
+        # Sometimes username/hostname can't be found, it's not a big problem
+        logging.info('Username of creator is \'%s\' with hostname \'%s\''
+                     % (os.getlogin(), socket.gethostname()))
+    except:
+        pass
 
     # Load configfile
     with open(configfile, 'r') as stream:
