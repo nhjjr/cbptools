@@ -183,6 +183,16 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
     )
 
     if arctanh_transform:
+        # Values at 1 or -1 causing atanh inf's, here we set them slightly
+        # below 1 or above -1.
+        connectivity[connectivity >= 1] = np.nextafter(
+            np.float32(1.),
+            np.float32(-1)
+        )
+        connectivity[connectivity <= -1] = np.nextafter(
+            np.float32(-1.),
+            np.float32(1)
+        )
         connectivity = np.arctanh(connectivity)
 
     if pca_transform is not None:
@@ -190,7 +200,6 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
         pca = PCA(n_components=pca_transform)
         connectivity = pca.fit_transform(connectivity)
 
-    connectivity = np.ascontiguousarray(connectivity)
     np.save(out, connectivity)
 
 

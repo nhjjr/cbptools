@@ -52,9 +52,4 @@ def seed_based_correlation(x: np.ndarray, y: np.ndarray,
     # standardization resulting in NaNs. Here we 0 NaNs.
     r[np.isnan(r)] = 0
 
-    # Values at 1 or -1 causing atanh inf's, here we set them slightly below
-    # 1 or above -1.
-    r[r >= 1] = np.nextafter(np.float32(1.), np.float32(-1))
-    r[r <= -1] = np.nextafter(np.float32(-1.), np.float32(1))
-
     return r
