@@ -7,7 +7,7 @@ input_data:
   bet_binary_mask: /path/to/dataset/{participant_id}/bet_binary_mask.nii.gz
   xfm: /path/to/dataset/{participant_id}/xfm.nii.gz
   inv_xfm: /path/to/dataset/{participant_id}/inv_xfm.nii.gz
-  samples: /path/to/dataset/{participant_id}/samples/merged
+  samples: /path/to/dataset/{participant_id}/merged
   seed_mask: /path/to/region_of_interest.nii.gz
   target_mask: /path/to/MNI152GM.nii.gz
 

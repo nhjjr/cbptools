@@ -817,7 +817,6 @@ def validate_config(configfile: str, work_dir: str, logfile: str,
     if verbose:
         logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
-
     logging.info('CBP tools version %s' % __version__)
     logging.info('Setup initiated on %s in environment %s'
                  % (time.strftime('%b %d %Y %H:%M:%S'), sys.prefix))

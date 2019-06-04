@@ -112,8 +112,10 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
     # Identify low-variance voxels and log them
     in_seed = find_low_variance_voxels(data=seed_series)
     in_target = find_low_variance_voxels(data=target_series)
-    bad_seed = in_seed.size / np.count_nonzero(seed_img.get_data()) > seed_low_variance
-    bad_target = in_target.size / np.count_nonzero(target_img.get_data()) > target_low_variance
+    bad_seed = in_seed.size / np.count_nonzero(
+        seed_img.get_data()) > seed_low_variance
+    bad_target = in_target.size / np.count_nonzero(
+        target_img.get_data()) > target_low_variance
 
     pd.DataFrame(
         data=[[participant_id, in_seed, in_target, bad_seed or bad_target]],

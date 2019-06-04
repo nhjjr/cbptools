@@ -1,9 +1,8 @@
 from cbptools.cluster import davies_bouldin_score, \
     weak_deletion_stability_score
 from cbptools.utils import sort_files
-from sklearn.metrics import silhouette_score, calinski_harabaz_score, \
+from sklearn.metrics import silhouette_score, calinski_harabasz_score, \
     adjusted_rand_score, v_measure_score, adjusted_mutual_info_score
-from collections import OrderedDict
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -61,7 +60,7 @@ def internal_validity(connectivity: str, labels: list, participant_id: str,
             )
 
         if 'calinski_harabasz_score' in metrics:
-            df.loc[idx, 'calinski_harabasz_score'] = calinski_harabaz_score(
+            df.loc[idx, 'calinski_harabasz_score'] = calinski_harabasz_score(
                 connectivity,
                 label
             )

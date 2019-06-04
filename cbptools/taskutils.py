@@ -21,8 +21,10 @@ def expected_output(n_clusters: list, figure_format: str = 'png',
             'clustering/clustering_group_k%s.npz' % k,
             'summary/niftis/group_clustering_k%s.nii' % k,
             'summary/individual_similarity_%s_clusters.npy' % k,
-            'summary/figures/individual_similarity_%sclusters_heatmap.%s' % (k, figure_format),
-            'summary/figures/individual_similarity_%sclusters_clustermap.%s' % (k, figure_format)
+            'summary/figures/individual_similarity_%sclusters_heatmap.%s'
+            % (k, figure_format),
+            'summary/figures/individual_similarity_%sclusters_clustermap.%s'
+            % (k, figure_format)
         ]
         out += files
 
