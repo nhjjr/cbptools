@@ -61,6 +61,13 @@ snakemake, which is installed as a dependency of CBPtools.
 For more customizability on snakemake (Köster and Rahmann, 2012), visit the
 [snakemake documentation](https://snakemake.readthedocs.io/en/stable/).
 
+## Licensing
+The copyright and all other rights related to the hereby provided products are held by Forschungszentrum Jülich GmbH. 
+The use of the products is only permitted for own educational, scientific or private purposes. The source of the 
+products must be quoted correctly. It is not allowed to revise or amend the provided products or extract only parts 
+of it without the explicit permission of Forschungszentrum Jülich GmbH. Likewise it is not allowed to grant 
+sublicences to third partys.
+
 ## References
 Eickhoff SB, Thirion B, Varoquaux G, Bzdok D (2015): Connectivity-based parcellation: Critique and implications.
 Hum Brain Mapp 36:4771–4792.
