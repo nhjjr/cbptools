@@ -5,7 +5,7 @@ CBPtools Documentation
 Connectivity-Based Parcellation Tools
 =====================================
 
-Regional **connectivity-based parcellation** (CBP) is a procedure for regional mapping by long-range connectivity
+Regional **connectivity-based parcellation** (CBP) is a procedure for mapping a region's long-range connectivity
 profiles (Eickhoff et al., 2015), revealing brain organization within a region-of-interest (ROI).
 
 The procedure clusters ROI voxels/vertices based on similarity in their profile of connection strengths to a set of
@@ -30,7 +30,7 @@ estimate anatomical fiber-connectivity.
 Citation
 --------
 Niels Reuter, Xiaojin Liu, Sarah Genon, Shahrzad Kharabian, Tobias Kalenscher, Felix Hoffstaedter, Simon B. Eickhoff,
-Kaustubh R. Patil. "CBPtools: A python package for regional connectivity-based parcellation". Submitted 2019.
+Kaustubh R. Patil. "CBPtools: A python package for regional connectivity-based parcellation". In Preparation 2019.
 
 References
 ----------
