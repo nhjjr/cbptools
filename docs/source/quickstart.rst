@@ -7,9 +7,9 @@ After installing CBPtools, an example configuration file can be obtained.
 
 .. code-block:: bash
 
-    cbptools example --get <data type>
+    cbptools example --get data_type
 
-Where <data type> is replaced by the data you intend to give as input, either rsfmri, dmri, or connectivity. A
+Where data_type is replaced by the data you intend to give as input, either rsfmri, dmri, or connectivity. A
 configuration file with default and placeholder settings will now appear in your current working directory. Edit this
 file so that it correctly points to the input data and all parameters are set accordingly.
 
