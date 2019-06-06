@@ -611,6 +611,19 @@ def process_masks(config: dict) -> Union[dict, bool]:
 
     masks['seed_mask'] = seed_img
 
+    # Delete seed region from target
+    del_seed_from_target = options['del_seed_from_target']
+    del_seed_expand = options['del_seed_expand']
+
+    if del_seed_from_target:
+        target_img = subtract_img(
+            source_img=target_img,
+            target_img=seed_img,
+            edge_dist=del_seed_expand
+        )
+        logging.info('Removing seed (%s) from target (%s) '
+                     '(edge_dist=%s)' % (seed, target, del_seed_expand))
+
     if input_data_type == 'dmri':
         upsample = options['upsample_seed_to']
 
@@ -637,19 +650,7 @@ def process_masks(config: dict) -> Union[dict, bool]:
 
     # Process target
     if input_data_type == 'rsfmri':
-        del_seed_from_target = options['del_seed_from_target']
-        del_seed_expand = options['del_seed_expand']
         subsample = options['subsample']
-
-        # Remove seed voxels from target
-        if del_seed_from_target:
-            target_img = subtract_img(
-                source_img=target_img,
-                target_img=seed_img,
-                edge_dist=del_seed_expand
-            )
-            logging.info('Removing seed (%s) from target (%s) '
-                         '(edge_dist=%s)' % (seed, target, del_seed_expand))
 
         # Reduce the number of voxels in target
         if subsample:

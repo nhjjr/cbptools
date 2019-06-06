@@ -72,12 +72,12 @@ parameters:
       default: 1
     del_seed_from_target:
       required: false
-      input_type: ['rsfmri']
+      input_type: ['rsfmri', 'dmri']
       instance_type: bool
       default: false
     del_seed_expand:
       required: false
-      input_type: ['rsfmri']
+      input_type: ['rsfmri', 'dmri']
       instance_type: int
       default: 0
     subsample:
