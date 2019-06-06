@@ -680,10 +680,10 @@ def process_masks(config: dict) -> Union[dict, bool]:
                     order=0,
                     mode='nearest'
                 )
-                logging.warning('Resampling %s to %s voxel size '
-                                '(nibabel.processing.resample_from_to), using '
-                                'order=0, mode=\'nearest\''
-                                % (target, 'x'.join(map(str, downsample))))
+                logging.info('Resampling %s to %s voxel size '
+                             '(nibabel.processing.resample_from_to), using '
+                             'order=0, mode=\'nearest\''
+                             % (target, 'x'.join(map(str, downsample))))
 
     if logging.error.count > 0:
         return False
