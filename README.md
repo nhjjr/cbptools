@@ -4,7 +4,8 @@
 Regional **connectivity-based parcellation** (CBP) is a procedure for regional mapping by long-range connectivity
 profiles (Eickhoff et al., 2015), revealing brain organization within a region-of-interest (ROI).
 
-For a complete overview of the software and a setup guide, visit [documentation](https://).
+For a complete overview of the software and a setup guide, visit 
+[documentation](https://cbptools.readthedocs.io/en/latest/).
 
 The procedure clusters ROI voxels/vertices based on similarity in their profile of connection strengths to a set of
 target voxels/vertices, referred to as a connectivity profile. The connectivity profile for each ROI voxel/vertex
