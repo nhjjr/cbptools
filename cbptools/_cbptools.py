@@ -674,6 +674,10 @@ def process_masks(config: dict) -> Union[dict, bool]:
                     (target_img.shape, target_img.affine),
                     downsample
                 )
+
+                # Make sure x-axis is flipped correctly (-x, 0, 0, x-origin)
+                mapped_voxels[1][0, :] = mapped_voxels[1][0, :]*[-1, 1, 1, -1]
+
                 target_img = resample_from_to(
                     target_img,
                     mapped_voxels,
