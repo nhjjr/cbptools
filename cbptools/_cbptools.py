@@ -636,10 +636,19 @@ def process_masks(config: dict) -> Union[dict, bool]:
                               'Requires 1 or 3 values, not %s' % len(upsample))
 
             else:
-                mapped_voxels = (seed_img.shape, seed_img.affine)
+                mapped_voxels = vox2out_vox(
+                    (seed_img.shape, seed_img.affine),
+                    upsample
+                )
+
+                # Make sure affine signs are the same as the original
+                a = np.sign(target_img.affine)
+                b = np.sign(mapped_voxels[1])
+                mapped_voxels[1] = mapped_voxels[1] * (a * b)
+
                 highres_seed_img = stretch_img(
                     source_img=seed_img,
-                    target=vox2out_vox(mapped_voxels, upsample)
+                    target=mapped_voxels
                 )
                 logging.info('Stretched seed (%s) to fit a '
                              '%s template with %s voxel size'
@@ -675,8 +684,10 @@ def process_masks(config: dict) -> Union[dict, bool]:
                     downsample
                 )
 
-                # Make sure x-axis is flipped correctly (-x, 0, 0, x-origin)
-                mapped_voxels[1][0, :] = mapped_voxels[1][0, :]*[-1, 1, 1, -1]
+                # Make sure affine signs are the same as the original
+                a = np.sign(target_img.affine)
+                b = np.sign(mapped_voxels[1])
+                mapped_voxels[1] = mapped_voxels[1] * (a * b)
 
                 target_img = resample_from_to(
                     target_img,
