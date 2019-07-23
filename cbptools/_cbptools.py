@@ -636,10 +636,10 @@ def process_masks(config: dict) -> Union[dict, bool]:
                               'Requires 1 or 3 values, not %s' % len(upsample))
 
             else:
-                mapped_voxels = vox2out_vox(
+                mapped_voxels = list(vox2out_vox(
                     (seed_img.shape, seed_img.affine),
                     upsample
-                )
+                ))
 
                 # Make sure affine signs are the same as the original
                 a = np.sign(target_img.affine)
@@ -679,10 +679,10 @@ def process_masks(config: dict) -> Union[dict, bool]:
                               % len(downsample))
 
             else:
-                mapped_voxels = vox2out_vox(
+                mapped_voxels = list(vox2out_vox(
                     (target_img.shape, target_img.affine),
                     downsample
-                )
+                ))
 
                 # Make sure affine signs are the same as the original
                 a = np.sign(target_img.affine)
