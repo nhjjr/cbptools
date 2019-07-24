@@ -60,7 +60,7 @@ def success_exit(stats: dict, work_dir: str, logfile: str):
     lines = '\n'.join((
         '  {okgreen}New project created in {work_dir}{endc}',
         '  {okblue}Log file:{endc} {logfile}',
-        '  {n_errors} in project',
+        '  {n_errors} errors in project',
         '  {warning}{n_warnings} warnings in project{endc}',
         '  {pwarning}{n_bad_participants} participant(s) removed due to '
         'missing data{endc}',
