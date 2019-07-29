@@ -37,10 +37,10 @@ def internal_validity(connectivity: str, labels: list, participant_id: str,
     """
 
     df = pd.DataFrame(columns=['participant_id', 'n_clusters'] + metrics)
-    connectivity = np.load(connectivity, allow_pickle=True)
+    connectivity = np.load(connectivity)
 
     for label in labels:
-        label = np.load(label, allow_pickle=True) + 1
+        label = np.load(label) + 1
         df = df.append({
             'participant_id': participant_id,
             'n_clusters': len(set(label))
@@ -190,7 +190,7 @@ def individual_similarity(labels: str, metric: str, n_clusters: str,
     else:
         raise ValueError('Metric \'{metric}\' not recognized')
 
-    individual_labels = np.load(labels, allow_pickle=True)['individual_labels']
+    individual_labels = np.load(labels)['individual_labels']
     n_participants = individual_labels.shape[0]
     similarity_matrix = np.zeros((n_participants, n_participants))
 
@@ -278,7 +278,7 @@ def group_similarity(participants: str, labels_files: list, metric: str,
                                            'cophenetic correlation'])
 
     for file in labels_files:
-        file = np.load(file, allow_pickle=True)
+        file = np.load(file)
         individual_labels = file['individual_labels']
         relabel_accuracy = file['relabel_accuracy']
         group_labels = file['group_labels']
