@@ -39,7 +39,7 @@ def participant_level_clustering(connectivity, out: str, n_clusters: int,
         See sklearn.cluster.KMeans
     """
 
-    connectivity = np.load(connectivity)
+    connectivity = np.load(connectivity, allow_pickle=True)
 
     # If the connectivity file is empty (connectivity could not be computed),
     # create an empty labels file
@@ -112,7 +112,8 @@ def group_level_clustering(seed_img: str, participants: str,
     # Aggregate subject-level cluster labels into one matrix
     # Resulting shape is (participants, voxels)
     individual_labels = sort_files(participants, individual_labels, pos=-1)
-    individual_labels = np.asarray([np.load(f) for f in individual_labels])
+    individual_labels = np.asarray([np.load(f, allow_pickle=True)
+                                    for f in individual_labels])
 
     if len(individual_labels.shape) != 2:
         raise ValueError('Cluster label length mismatch between included '
@@ -164,7 +165,7 @@ def group_level_clustering(seed_img: str, participants: str,
 
     # Map labels to seed-mask image based on indices
     seed_img = nib.load(seed_img)
-    seed_indices = np.load(seed_indices)
+    seed_indices = np.load(seed_indices, allow_pickle=True)
     group_labels += 1  # avoid 0-labeling
     group_img = map_labels(
         img=seed_img,
