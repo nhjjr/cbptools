@@ -392,8 +392,14 @@ def validate_connectivity(connectivity_matrix: Union[str, dict],
     for pid in participants:
         file = get_filepath(connectivity_matrix)
         file = file.format(participant_id=pid)
-        mat = np.load(file, mmap_mode='r')
-        mat = mat['connectivity']
+
+        try:
+            mat = np.load(file, mmap_mode='r').get('connectivity')
+
+        except:
+            logging.warning('Unable to open %s' % file)
+            bad_pids.append(pid)
+            continue
 
         if mat.shape[0] != n_voxels:
             logging.warning('Mismatch: [connectivity] Expected shape '
