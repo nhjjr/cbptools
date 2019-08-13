@@ -1,0 +1,26 @@
+input_data_type: connectivity
+
+input_data:
+  participants: 
+    file: /path/to/participants.tsv
+    sep: "\t"
+    index_col: participant_id
+  connectivity_matrix: /path/to/dataset/{participant_id}/connectivity_matrix.npy
+  seed_mask: /path/to/seed_mask.nii.gz
+
+parameters:
+  connectivity:
+    order: C
+  clustering:
+    algorithm: auto
+    group_method: mode
+    init: random
+    internal_validity_metrics: ['silhouette', 'davies-bouldin', 'calinski-harabasz']
+    linkage: complete
+    max_iter: 10000
+    n_clusters: [2, 3, 4, 5]
+    n_init: 256
+    similarity_metric: adjusted rand index
+  summary:
+    figure_format: png
+

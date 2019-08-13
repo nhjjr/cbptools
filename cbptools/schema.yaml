@@ -186,6 +186,11 @@ parameters:
       input_type: ['dmri']
       default: true
       instance_type: bool
+    compress:
+      required: false
+      input_type: ['dmri', 'rsfmri']
+      default: true
+      instance_type: bool
   clustering:
     n_clusters:
       required: true

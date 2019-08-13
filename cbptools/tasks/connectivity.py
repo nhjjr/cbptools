@@ -26,7 +26,8 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
                       smoothing_fwhm: int = None, confounds: str = None,
                       sep: str = None, usecols: list = None,
                       band_pass: tuple = None, arctanh_transform: bool = True,
-                      pca_transform: float = None) -> None:
+                      pca_transform: float = None,
+                      compress_output: bool = False) -> None:
     """ Compute a connectivity matrix from functional data.
 
     Processing steps:
@@ -92,6 +93,9 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
         this returns the ROI-voxels by principal components as a
         connectivity matrix. If this is set to None, this step will
         be ignored.
+    compress_output: bool, optional
+        Compress the output connectivity matrices using numpy savez_compressed
+        to reduce the size on disk.
     """
 
     time_series = nib.load(time_series)
@@ -126,7 +130,7 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
     # If the participant has data exceeding the seed- or target low variance
     # threshold, output an empty file
     if bad_seed or bad_target:
-        np.save(out, np.array([]))
+        np.savez(out, connectivity=np.array([]))
         return
 
     # Nuisance Signal Regression
@@ -202,7 +206,13 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
         pca = PCA(n_components=pca_transform)
         connectivity = pca.fit_transform(connectivity)
 
-    np.save(out, connectivity)
+    # Ensure float32
+    connectivity = connectivity.astype(np.float32)
+
+    if compress_output:
+        np.savez_compressed(out, connectivity=connectivity)
+    else:
+        np.savez(out, connectivity=connectivity)
 
 
 def merge_connectivity_logs(log_file: str, participants: list,
@@ -260,7 +270,8 @@ def validate_connectivity(log_file: str, connectivity: str, labels: str,
 
 def connectivity_dmri(fdt_matrix2: str, seed: str, out: str,
                       cleanup_fsl: bool = True, pca_transform: float = None,
-                      cubic_transform: bool = False) -> None:
+                      cubic_transform: bool = False,
+                      compress_output: bool = False) -> None:
     """ Compute a connectivity matrix from functional data. This
     method uses FSL's probtrackx2 function which must be accessible
     from the terminal.
@@ -292,6 +303,9 @@ def connectivity_dmri(fdt_matrix2: str, seed: str, out: str,
         be ignored.
     cubic_transform : bool, optional
         Apply a cubic transformation to the connectivity matrix.
+    compress_output: bool, optional
+        Compress the output connectivity matrices using numpy savez_compressed
+        to reduce the size on disk.
     """
     i, j, value = np.loadtxt(fdt_matrix2, unpack=True)
     i = i.astype(int) - 1  # convert to int for indexing
@@ -312,8 +326,14 @@ def connectivity_dmri(fdt_matrix2: str, seed: str, out: str,
     seed = nib.load(seed)
     reorder = get_f2c_order(seed)
     connectivity = connectivity[reorder, :]
-    
-    np.save(out, connectivity)
+
+    # Ensure float32
+    connectivity = connectivity.astype(np.float32)
+
+    if compress_output:
+        np.savez_compressed(out, connectivity=connectivity)
+    else:
+        np.savez(out, connectivity=connectivity)
 
     if cleanup_fsl:
         rmtree(os.path.dirname(fdt_matrix2))

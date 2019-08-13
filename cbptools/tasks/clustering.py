@@ -39,7 +39,7 @@ def participant_level_clustering(connectivity, out: str, n_clusters: int,
         See sklearn.cluster.KMeans
     """
 
-    connectivity = np.load(connectivity)
+    connectivity = np.load(connectivity).get('connectivity')
 
     # If the connectivity file is empty (connectivity could not be computed),
     # create an empty labels file

@@ -6,7 +6,7 @@ rule connectivity:
         <cbptools['input_data:time_series']>,
         <cbptools['input_data:confounds']>
     output:
-        connectivity_matrix = 'connectivity/connectivity_{participant_id}.npy'
+        connectivity_matrix = 'connectivity/connectivity_{participant_id}.npz'
     threads: 1
     resources:
         mem_mb = <cbptools['!mem_mb:connectivity']>,
@@ -22,6 +22,7 @@ rule connectivity:
         <cbptools['parameters:connectivity:smoothing_fwhm']>,
         <cbptools['parameters:connectivity:seed_low_variance_threshold']>,
         <cbptools['parameters:connectivity:target_low_variance_threshold']>,
+        <cbptools['parameters:connectivity:compress']>,
         log_file = '%s/connectivity/connectivity_{participant_id}.tsv' % os.getcwd()
     run:
         tasks.connectivity_fmri(
@@ -30,7 +31,7 @@ rule connectivity:
             sep=params.sep, usecols=params.usecols, arctanh_transform=params.arctanh_transform,
             pca_transform=params.pca_transform, band_pass=(params.high_pass, params.low_pass, params.tr),
             smoothing_fwhm=params.smoothing_fwhm, seed_low_variance=params.seed_low_variance_threshold,
-            target_low_variance=params.target_low_variance_threshold
+            target_low_variance=params.target_low_variance_threshold, compress_output=params.compress
         )
 
 

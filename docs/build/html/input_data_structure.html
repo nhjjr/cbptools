@@ -1,0 +1,305 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Input Data Structure &mdash; cbptools 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Input Validation" href="input_validation.html" />
+    <link rel="prev" title="Quick Start Guide" href="quickstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> cbptools
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Workflow</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Configuration File</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configuration/instructions.html">Configuration File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration/input_data.html">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration/parameters.html">Parameters</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Input Data Structure</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#resting-state-data">Resting-State Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#diffusion-weighted-imaging">Diffusion-Weighted Imaging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#connectivity">Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="input_validation.html">Input Validation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution.html">Execution</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">cbptools</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Input Data Structure</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/input_data_structure.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="input-data-structure">
+<h1>Input Data Structure<a class="headerlink" href="#input-data-structure" title="Permalink to this headline">¶</a></h1>
+<p>Necessary source input depends in part on the modality of the dataset. Currently supported modalities are rsfMRI and
+dMRI. Modality-independent input data includes (1) a binary ROI file in the 3-dimensional NIfTI image data format, and
+(2) an optional 3-dimensional target mask in the same data format, used to define the connections that are considered
+for each ROI voxel. If not provided by the user, the <a class="reference external" href="http://www.fmrib.ox.ac.uk/fsl/">FSL</a> distributed Montreal
+Neurological Institute (MNI) whole-brain gray matter group template will be used as the target. Note that this
+necessitates the required input data to be in the MNI152 template space as well.</p>
+<p>For rsfMRI data, a 4D time-series NIfTI image must be provided per subject, optionally accompanied by a tab-separated
+text file containing confounds for each time point as columns. CBPtools requires rsfMRI data to be treated with
+standard fMRI preprocessing including realignment and normalisation to a template space (e.g. MNI152) in NIfTI format.
+If the default target mask is used, then the voxel size should be 2 mm isotropic. Denoising based on independent
+component analysis like Automatic Removal of Motion Artifacts (ICA-AROMA) (Pruim et al., 2015) or FMRIB’s ICA-based
+X-noiseifier (FIX) (Salimi-Khorshidi et al., 2014) is encouraged. In particular, FIX has been shown to work well in
+combination with mean white matter and cerebrospinal fluid signal regression (Plachti et al., 2019). The dMRI modality
+requires input necessary to perform FSL’s probabilistic diffusion tractography (probtrackx2), consisting of: (1)
+bedpostx sampling results,  (2) a brain extraction (BET) binary mask file, (3) a transform file taking seed space to
+DTI space (either a FLIR matrix or FNIR warpfield), and (4) a file describing the transformation from DTI space to seed
+space. Each of these files is subject-specific and can be obtained from FSL’s bedpostx command.</p>
+<p>All input data should be quality controlled prior to using CBPtools, as only marginal validation is performed on the
+input data. Faulty data may halt processing until the issues are resolved, but in a worst-case scenario such data may
+provide untrustworthy output. Further specified during the setup are options to modify the connectivity measures, the
+clustering parameters (e.g., the range of k clusters requested) and validity measures, as well as the desired output
+file formats.</p>
+<div class="section" id="resting-state-data">
+<h2>Resting-State Data<a class="headerlink" href="#resting-state-data" title="Permalink to this headline">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Signal time series</dt>
+<dd class="field-odd"><p>The time-series must be in a 4D NIfTI format (x, y, z, timepoints) for each subject. The
+time-series shape and affine must also match that of the seed- and target masks.</p>
+</dd>
+<dt class="field-even">Confounds time series</dt>
+<dd class="field-even"><p><em>(optional)</em> A delimited (e.g., .tsv for tab-delimited) file with signals as columns and a
+1-line header. Columns can be selected using the <cite>usecols</cite> parameter (see <a class="reference internal" href="configuration/input_data.html#inputdata"><span class="std std-ref">Input Data</span></a>). The column length must
+match the length of the timepoints in the signal time series.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="diffusion-weighted-imaging">
+<h2>Diffusion-Weighted Imaging<a class="headerlink" href="#diffusion-weighted-imaging" title="Permalink to this headline">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">BET binary mask</dt>
+<dd class="field-odd"><p>Each subject must have a <a class="reference external" href="https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#bet">BET</a> binary
+mask file.</p>
+</dd>
+<dt class="field-even">XFM</dt>
+<dd class="field-even"><p>Transform taking seed space to DTI space (either FLIRT matrix of FNIRT warpfield), per subject.</p>
+</dd>
+<dt class="field-odd">Inverse XFM</dt>
+<dd class="field-odd"><p>Transform taking DTI space to seed space, per subject.</p>
+</dd>
+<dt class="field-even">Samples</dt>
+<dd class="field-even"><p>Merged samples derived from bedpostX output.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="connectivity">
+<h2>Connectivity<a class="headerlink" href="#connectivity" title="Permalink to this headline">¶</a></h2>
+<p>When connectivity is used as input rather than resting-state or difussion-weighted imaging data, the <cite>masking</cite> and
+<cite>connectivity</cite> tasks are skipped. This means that connectivity matrices must be presented in the way <em>CBPtools</em>
+generates them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Connectivity Matrix</dt>
+<dd class="field-odd"><p>A seed by target connectivity matrix. The number of seed voxels on the first dimension must match
+the number of seed voxels in the seed mask image. The order in which the seed voxels are listed along the first
+dimension depends on the order that was used to extract the voxels from the mask (i.e., F- or C-contiguous order).
+For <em>CBPtools</em> output, the ‘dmri’ <cite>input_data_type</cite> provides them in F-order, while the ‘rsfmri’ <cite>input_data_type</cite>
+provides them in C-order.</p>
+</dd>
+<dt class="field-even">Seed Indices</dt>
+<dd class="field-even"><p>This is a 2-dimensional NumPy array (in .npy format) with shape seed voxels by 3. The order in which the
+indices appear should be identical to the order in which they appear in the connectivity matrix.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<p>Plachti A, Eickhoff SB, Hoffstaedter F, Patil KR, Laird AR, Fox PT, Amunts K, Genon S (2019): Multimodal parcellations
+and extensive behavioral profiling tackling the hippocampus gradient. Cereb Cortex.</p>
+<p>Pruim RHR, Mennes M, van Rooij D, Llera A, Buitelaar JK, Beckmann CF (2015): ICA-AROMA: A robust ICA-based strategy
+for removing motion artifacts from fMRI data. Neuroimage 112:267–277.</p>
+<p>Salimi-Khorshidi G, Douaud G, Beckmann CF, Glasser MF, Griffanti L, Smith SM (2014): Automatic denoising of functional
+MRI data: combining independent component analysis and hierarchical fusion of classifiers. Neuroimage 90:449–468.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="input_validation.html" class="btn btn-neutral float-right" title="Input Validation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="Quick Start Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Niels Reuter
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

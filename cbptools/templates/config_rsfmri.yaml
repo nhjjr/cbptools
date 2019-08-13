@@ -32,6 +32,7 @@ parameters:
     seed_low_variance_threshold: 0.05
     target_low_variance_threshold: 0.1
     tr: 0.72
+    compress: true
   clustering:
     algorithm: auto
     group_method: mode

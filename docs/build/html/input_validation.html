@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Input Validation &mdash; cbptools 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Execution" href="execution.html" />
+    <link rel="prev" title="Input Data Structure" href="input_data_structure.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> cbptools
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Workflow</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Configuration File</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configuration/instructions.html">Configuration File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration/input_data.html">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration/parameters.html">Parameters</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input_data_structure.html">Input Data Structure</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Input Validation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution.html">Execution</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">cbptools</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Input Validation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/input_validation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="input-validation">
+<h1>Input Validation<a class="headerlink" href="#input-validation" title="Permalink to this headline">¶</a></h1>
+<p>Upon the creation of a project, following the set up of the configuration file, all input data and parameters will be
+validated to see whether they meet the requirements (outlined in the <a class="reference internal" href="configuration/instructions.html#configfile"><span class="std std-ref">Configuration File</span></a>). Only if validation passes
+without errors (critical mistakes in the configuration file or input data) will the project be created. If there are
+errors they are outlined in the log file which accessible from the chosen <cite>workdir</cite>. All errors must be addressed
+before the project will be set up properly. Furthermore, warnings should not be ignored!</p>
+<p>Once validation passes mask files are processed using the parameters for the <cite>masking</cite> task. The resulting mask files
+are saved to the <cite>workdir</cite>. Once completed, the working directory will have the following files:</p>
+<dl class="field-list simple">
+<dt class="field-odd">cluster.json</dt>
+<dd class="field-odd"><p>Used by snakemake to define cluster parameters for each rule. When using a cluster environment (e.g.,
+SLURM or qsub) thisf ile defines timing, account name, cluster name, etc. For more information, read the
+<a class="reference external" href="https://snakemake.readthedocs.io/en/stable/snakefiles/configuration.html#cluster-configuration">snakemake guidelines</a></p>
+</dd>
+<dt class="field-even">participants.tsv</dt>
+<dd class="field-even"><p>The input participants file is converted to a .tsv format (tab-delimited). The index column is always
+named ‘participant_id’ and contains all participants for which the data is included in this project. If at any time
+a participant is to be removed, this file can be edited. Be careful when adding participants this way, because
+no validation is performed after creating the project.</p>
+</dd>
+<dt class="field-odd">participants_bad.tsv</dt>
+<dd class="field-odd"><p>This file contains all the participant indices that were removed during project creation. These
+are participants for which either data was missing, or the data did not meet the requirements.</p>
+</dd>
+<dt class="field-even">log/project_&lt;timestamp&gt;.log</dt>
+<dd class="field-even"><p>This log file contains information about the project creation.</p>
+</dd>
+<dt class="field-odd">seed_mask.nii</dt>
+<dd class="field-odd"><p>Binary region-of-interest mask after processing</p>
+</dd>
+<dt class="field-even">target_mask.nii</dt>
+<dd class="field-even"><p>Binary target mask after processing (default is the 2mm MNI152 gray matter mask). This mask will not
+appear for the ‘connectivity’ <cite>input_data_type</cite> because it is not necessary.</p>
+</dd>
+<dt class="field-odd">highres_seed_mask.nii</dt>
+<dd class="field-odd"><p>seed mask stretched to a higher resolution. This mask is only used for the ‘dmri’
+<cite>input_data_type</cite></p>
+</dd>
+<dt class="field-even">seed_indices.npy</dt>
+<dd class="field-even"><p>These are the indices (3D ‘coordinates’) of all seed voxels in a NumPy 2D array. The order of the
+indices is determined by the order in which the seed mask will be extracted (F- or C-contiguous). This file must be
+provided as input in case connectivity matrices are used as input.</p>
+</dd>
+<dt class="field-odd">Snakefile</dt>
+<dd class="field-odd"><p>The workflow for the processing pipeline, used by snakemake to initiate it. This file also contains all
+external and internal input files as well as parameters used during project creation.</p>
+</dd>
+</dl>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="execution.html" class="btn btn-neutral float-right" title="Execution" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="input_data_structure.html" class="btn btn-neutral float-left" title="Input Data Structure" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Niels Reuter
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

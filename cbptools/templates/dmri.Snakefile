@@ -33,15 +33,16 @@ rule connectivity:
     input:
         fdt_matrix2 = 'probtrackx2/{participant_id}/fdt_matrix2.dot',
         seed = 'seed_mask.nii'
-    output: 'connectivity/connectivity_{participant_id}.npy'
+    output: 'connectivity/connectivity_{participant_id}.npz'
     resources:
         mem_mb = <cbptools['!mem_mb:clustering']>
     params:
         <cbptools['parameters:connectivity:cleanup_fsl']>,
         <cbptools['parameters:connectivity:pca_transform']>,
-        <cbptools['parameters:connectivity:cubic_transform']>
+        <cbptools['parameters:connectivity:cubic_transform']>,
+        <cbptools['parameters:connectivity:compress']>,
     run:
         tasks.connectivity_dmri(
             fdt_matrix2=input.fdt_matrix2, seed=input.seed, out=output[0], cleanup_fsl=params.cleanup_fsl,
-            pca_transform=params.pca_transform, cubic_transform=params.cubic_transform
+            pca_transform=params.pca_transform, cubic_transform=params.cubic_transform, compress_output=params.compress
         )

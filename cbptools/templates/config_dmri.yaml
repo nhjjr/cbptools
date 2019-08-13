@@ -30,6 +30,7 @@ parameters:
     correct_path_distribution: true
     cleanup_fsl: true
     cubic_transform: true
+    compress: true
   clustering:
     algorithm: auto
     group_method: mode

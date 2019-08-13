@@ -37,7 +37,7 @@ def internal_validity(connectivity: str, labels: list, participant_id: str,
     """
 
     df = pd.DataFrame(columns=['participant_id', 'n_clusters'] + metrics)
-    connectivity = np.load(connectivity)
+    connectivity = np.load(connectivity).get('connectivity')
 
     for label in labels:
         label = np.load(label) + 1
