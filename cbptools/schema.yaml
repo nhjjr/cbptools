@@ -5,7 +5,7 @@ input:
     required: true
     template: true
     input_type: ['connectivity']
-    file_type: ['.npz']
+    file_type: ['.npz', '.npy']
   seed_indices:
     required: true
     template: false

@@ -6,11 +6,10 @@ input_data:
     sep: "\t"
     index_col: participant_id
   connectivity_matrix: /path/to/dataset/{participant_id}/connectivity_matrix.npy
+  seed_indices: /path/to/seed_indices.npy
   seed_mask: /path/to/seed_mask.nii.gz
 
 parameters:
-  connectivity:
-    order: C
   clustering:
     algorithm: auto
     group_method: mode

@@ -10,6 +10,7 @@ import pandas as pd
 import itertools
 import numpy as np
 import seaborn as sns
+import os
 
 
 def internal_validity(connectivity: str, labels: list, participant_id: str,
@@ -37,7 +38,12 @@ def internal_validity(connectivity: str, labels: list, participant_id: str,
     """
 
     df = pd.DataFrame(columns=['participant_id', 'n_clusters'] + metrics)
-    connectivity = np.load(connectivity).get('connectivity')
+
+    _, ext = os.path.splitext(connectivity)
+    connectivity = np.load(connectivity)
+
+    if ext == '.npz':
+        connectivity = connectivity.get('connectivity')
 
     for label in labels:
         label = np.load(label) + 1
@@ -127,24 +133,44 @@ def summary_internal_validity(participants: str, validity: list,
     plt.subplots_adjust(left=None, bottom=0.2, right=None, top=None,
                         wspace=1.5, hspace=None)
 
-    for i, (metric, ax) in enumerate(zip(metrics, axes.flat[0:])):
+    if n_cols == 1:
         sns.boxplot(
             x='clusters',
-            y=metric,
+            y=metrics[0],
             data=data,
-            ax=ax,
+            ax=axes,
             showfliers=False,
             saturation=0.6,
             width=.8,
             dodge=True,
             linewidth=.75
         )
-        ylabel = 'score' if i == 0 else ''
-        ax.set_ylabel(ylabel, fontsize=10)
-        ax.set_xlabel('')
-        title = metric.replace("_", " ").title()
-        ax.set_title(title, weight='bold').set_fontsize('10')
-        ax.tick_params(axis='both', which='major', labelsize=8)
+        ylabel = 'score'
+        axes.set_ylabel(ylabel, fontsize=10)
+        axes.set_xlabel('')
+        title = metrics[0].replace("_", " ").title()
+        axes.set_title(title, weight='bold').set_fontsize('10')
+        axes.tick_params(axis='both', which='major', labelsize=8)
+
+    else:
+        for i, (metric, ax) in enumerate(axes):
+            sns.boxplot(
+                x='clusters',
+                y=metric,
+                data=data,
+                ax=ax,
+                showfliers=False,
+                saturation=0.6,
+                width=.8,
+                dodge=True,
+                linewidth=.75
+            )
+            ylabel = 'score' if i == 0 else ''
+            ax.set_ylabel(ylabel, fontsize=10)
+            ax.set_xlabel('')
+            title = metric.replace("_", " ").title()
+            ax.set_title(title, weight='bold').set_fontsize('10')
+            ax.tick_params(axis='both', which='major', labelsize=8)
 
     fig.text(0.5, 0.04, 'clusters', ha='center', fontsize=10)
     sns.despine(offset=10, trim=True)

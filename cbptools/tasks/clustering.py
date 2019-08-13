@@ -7,6 +7,7 @@ from scipy.cluster import hierarchy
 from scipy import stats
 import nibabel as nib
 import numpy as np
+import os
 
 
 def participant_level_clustering(connectivity, out: str, n_clusters: int,
@@ -39,7 +40,11 @@ def participant_level_clustering(connectivity, out: str, n_clusters: int,
         See sklearn.cluster.KMeans
     """
 
-    connectivity = np.load(connectivity).get('connectivity')
+    _, ext = os.path.splitext(connectivity)
+    connectivity = np.load(connectivity)
+
+    if ext == '.npz':
+        connectivity = connectivity.get('connectivity')
 
     # If the connectivity file is empty (connectivity could not be computed),
     # create an empty labels file

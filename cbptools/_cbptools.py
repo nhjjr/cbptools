@@ -394,7 +394,17 @@ def validate_connectivity(connectivity_matrix: Union[str, dict],
         file = file.format(participant_id=pid)
 
         try:
-            mat = np.load(file, mmap_mode='r').get('connectivity')
+            mat = np.load(file, mmap_mode='r')
+            _, ext = os.path.splitext(file)
+
+            if ext == '.npz':
+                if 'connectivity' not in list(mat.keys()):
+                    logging.warning('Cannot find connectivity.npy inside %s'
+                                    % file)
+                    bad_pids.append(pid)
+                    continue
+
+                mat = mat.get('connectivity')
 
         except:
             logging.warning('Unable to open %s' % file)
@@ -587,7 +597,7 @@ def process_masks(config: dict) -> Union[dict, bool]:
         target = 'Default MNI152 Gray Matter template'
         target_img = nib.load(
             pkg_resources.resource_filename(__name__,
-                                            'templates/MNI152GM.nii'))
+                                            'templates/MNI152GM.nii.gz'))
         logging.warning('DefaultValue: [target_mask] Using default MNI152 '
                         'Gray Matter template')
 
