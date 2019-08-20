@@ -10,7 +10,7 @@ input_data:
   confounds: 
     file: /path/to/dataset/{participant_id}/confounds.tsv
     sep: "\t"
-    usecols: ['constant', 'linearTrend', 'wm', 'csf', 'motion-*']
+    usecols: ['constant', 'linear_trend', 'wm.linear', 'csf.linear', 'motion-*']
   seed_mask: /path/to/region_of_interest.nii.gz
   target_mask: /path/to/MNI152GM.nii.gz
 
@@ -36,7 +36,7 @@ parameters:
   clustering:
     algorithm: auto
     group_method: mode
-    init: random
+    init: k-means++
     internal_validity_metrics: ['silhouette_score', 'davies_bouldin_score', 'calinski_harabasz_score']
     linkage: complete
     max_iter: 10000

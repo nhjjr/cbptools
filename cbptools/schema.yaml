@@ -165,7 +165,7 @@ parameters:
       required: false
       input_type: ['dmri']
       instance_type: int
-      default: 200
+      default: 5000
     n_steps:
       required: false
       input_type: ['dmri']
@@ -205,7 +205,7 @@ parameters:
     init:
       required: false
       input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: 'random'
+      default: 'k-means++'
       instance_type: str
       allowed: ['random', 'k-means++']
     max_iter:

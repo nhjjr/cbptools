@@ -20,12 +20,12 @@ parameters:
     upsample_seed_to: [1, 1, 1]
     downsample_target_to: [3, 3, 3]
   connectivity:
-    pca_transform: 0.95
+    pca_transform: null
     dist_thresh: 5.0
     loop_check: true
     c_thresh: 0.2
     step_length: 0.5
-    n_samples: 200
+    n_samples: 5000
     n_steps: 2000
     correct_path_distribution: true
     cleanup_fsl: true
@@ -34,7 +34,7 @@ parameters:
   clustering:
     algorithm: auto
     group_method: mode
-    init: random
+    init: k-means++
     internal_validity_metrics: ['silhouette_score', 'davies_bouldin_score', 'calinski_harabasz_score']
     linkage: complete
     max_iter: 10000
