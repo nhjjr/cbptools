@@ -128,3 +128,24 @@ rule group_similarity:
             out_table1=output.table1, out_table2=output.table2, out_figure=output.figure,
             figure_format=params.figure_format
         )
+
+
+rule plot_labeled_roi:
+    input:
+        labels = expand('clustering/clustering_group_k{n_clusters}.npz', n_clusters=n_clusters),
+        seed_img = 'seed_mask.nii'
+    output:
+        figures = expand(
+            'summary/figures/group_clustering_k{n_clusters}_{view}.<cbptools['!parameters:summary:figure_format']>',
+            n_clusters=n_clusters,
+            view=['right', 'left', 'superior', 'inferior', 'posterior', 'anterior']
+        )
+    threads: 1
+    params:
+        outdir = 'summary/figures',
+        <cbptools['parameters:summary:figure_format']>
+    run:
+        tasks.plot_labeled_roi(
+            group_labels=input.labels, seed_img=input.seed_img, outdir=params.outdir,
+            figure_format=params.figure_format
+        )

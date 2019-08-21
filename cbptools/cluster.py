@@ -12,11 +12,7 @@ import numpy as np
 def relabel(reference: np.ndarray, x: np.ndarray) -> (np.ndarray, list):
     """Relabel cluster labels to best match a reference"""
 
-    if all(np.unique(x) != np.unique(reference)):
-        raise ValueError('Reference and target labels have different cluster '
-                         'indices')
-
-    permutations = itertools.permutations(np.unique(reference))
+    permutations = itertools.permutations(np.unique(x))
     accuracy = 0.
     relabeled = None
 
