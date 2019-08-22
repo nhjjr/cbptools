@@ -131,7 +131,7 @@ def plot_heatmap(data: np.ndarray, out_file: str, source: str = None,
 
 def plot_volumetric_roi(data: np.ndarray, out_file: str, view: str = 'orig',
                         skew: tuple = None, facecolor: str = 'bright',
-                        edgecolor: str = 'dark') -> None:
+                        edgecolor: str = 'dark', lrflip: bool = False) -> None:
     """ Plot a volumetric ROI, color coding the cluster labels.
 
     Parameters
@@ -156,12 +156,18 @@ def plot_volumetric_roi(data: np.ndarray, out_file: str, view: str = 'orig',
     edgecolor : str, optional
         The colors the borders around the voxels will take, ordered
         by cluster-id. Same as facecolor.
+    lrflip : bool, optional
+        Left-right flip of the ROI for viewing purposes
+
     """
 
     # Modify data matrix for optimal viewing
     data = data[
         find_objects(data.astype(bool).astype(int))[0]]  # remove whitespace
-    data = np.fliplr(data)  # flip to neurological view
+
+    if lrflip:
+        data = np.fliplr(data)
+
     data = make_hollow(data)  # Remove voxels that aren't visible
 
     # Viewing angle
