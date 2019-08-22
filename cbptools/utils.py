@@ -6,6 +6,8 @@ import pandas as pd
 import nibabel as nib
 import math
 import yaml
+import numpy as np
+import zipfile
 
 spatialimage = nib.spatialimages.SpatialImage
 
@@ -105,3 +107,28 @@ def pyyaml_ordereddict(dumper, data):
         value.append((node_key, node_value))
 
     return yaml.nodes.MappingNode(u'tag:yaml.org,2002:map', value)
+
+
+def npy_header(npy):
+    """Takes a path to an .npy file. Generates a sequence of (shape, np.dtype).
+    """
+    with open(npy, 'rb') as f:
+        version = np.lib.format.read_magic(f)
+        shape, fortran, dtype = np.lib.format._read_array_header(f, version)
+        return shape, dtype
+
+
+def npz_headers(npz):
+    """Takes a path to an .npz file, which is a Zip archive of .npy files.
+    Generates a sequence of (name, shape, np.dtype).
+    """
+    with zipfile.ZipFile(npz) as archive:
+        for name in archive.namelist():
+            if not name.endswith('.npy'):
+                continue
+
+            npy = archive.open(name)
+            version = np.lib.format.read_magic(npy)
+            shape, fortran, dtype = np.lib.format._read_array_header(npy,
+                                                                     version)
+            yield name[:-4], shape, dtype

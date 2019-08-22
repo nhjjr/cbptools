@@ -69,7 +69,7 @@ rule internal_validity:
         )
 
 
-rule summary_internal_validity:
+rule merge_internal_validity:
     input:
         participants = 'participants.tsv',
         validity = expand(
@@ -77,56 +77,73 @@ rule summary_internal_validity:
             participant_id=participants,
             n_clusters=n_clusters
         )
-    output:
-        table = 'summary/internal_validity.tsv',
-        figure = 'summary/figures/internal_validity.<cbptools['!parameters:summary:figure_format']>'
+    output: 'summary/internal_validity.tsv'
     params:
-        <cbptools['parameters:clustering:internal_validity_metrics']>,
-        <cbptools['parameters:summary:figure_format']>
+        <cbptools['parameters:clustering:internal_validity_metrics']>
     threads: 1
     run:
-        tasks.summary_internal_validity(
+        tasks.merge_internal_validity(
             participants=input.participants, validity=input.validity, metrics=params.internal_validity_metrics,
-            out_table=output.table, out_figure=output.figure, figure_format=params.figure_format
+            out=output[0]
         )
 
 
-rule individual_similarity:
-    input:
-        labels = 'clustering/clustering_group_k{n_clusters}.npz'
-    output:
-        matrix = 'summary/individual_similarity_{n_clusters}_clusters.npy',
-        figure1 = 'summary/figures/individual_similarity_{n_clusters}clusters_heatmap.<cbptools['!parameters:summary:figure_format']>',
-        figure2 = 'summary/figures/individual_similarity_{n_clusters}clusters_clustermap.<cbptools['!parameters:summary:figure_format']>'
-    threads: 1
-    params:
-        <cbptools['parameters:clustering:similarity_metric']>,
-        <cbptools['parameters:summary:figure_format']>
-    run:
-        tasks.individual_similarity(
-            labels=input.labels, metric=params.similarity_metric, n_clusters=wildcards.n_clusters,
-            out_matrix=output.matrix, out_figure1=output.figure1, out_figure2=output.figure2,
-            figure_format=params.figure_format
-        )
-
-
-rule group_similarity:
+rule similarity:
     input:
         participants = 'participants.tsv',
         labels = expand('clustering/clustering_group_k{n_clusters}.npz', n_clusters=n_clusters)
     output:
-        table1 = 'summary/group_similarity.tsv',
-        table2 = 'summary/cophenetic_correlation.tsv',
-        figure = 'summary/figures/group_scores.<cbptools['!parameters:summary:figure_format']>'
+        individual_similarity = 'summary/individual_similarity.npz',
+        group_similarity = 'summary/group_similarity.tsv',
+        cophenetic_correlation = 'summary/cophenetic_correlation.tsv'
     threads: 1
     params:
-        <cbptools['parameters:clustering:similarity_metric']>,
+        <cbptools['parameters:clustering:similarity_metric']>
+    run:
+        tasks.similarity(
+            participants=input.participants, labels_files=input.labels, metric=params.similarity_metric,
+            out1=output.individual_similarity, out2=output.group_similarity, out3=output.cophenetic_correlation
+        )
+
+
+rule plot_internal_validity:
+    input: 'summary/internal_validity.tsv'
+    output:
+        figures = expand(
+            'summary/figures/internal_validity_{metric}.<cbptools['!parameters:summary:figure_format']>',
+            metric=<cbptools['!parameters:clustering:internal_validity_metrics']>  # TODO: Check if this returns a list
+        )
+    params:
+        outdir='summary/figures',
+        <cbptools['parameters:clustering:internal_validity_metrics']>,
+        <cbptools['parameters:summary:figure_format']>
+    threads: 1
+    run:
+        tasks.plot_internal_validity(
+            internal_validity=input[0], metrics=params.internal_validity_metrics, outdir=params.outdir,
+            figure_format=params.figure_format
+        )
+
+
+rule plot_similarity:
+    input:
+        individual_similarity = 'summary/individual_similarity.npz',
+        group_similarity = 'summary/group_similarity.tsv',
+        cophenetic_correlation = 'summary/cophenetic_correlation.tsv'
+    output:
+        expand('summary/figures/individual_similarity_{n_clusters}clusters_heatmap.png', n_clusters=n_clusters),
+        expand('summary/figures/individual_similarity_{n_clusters}clusters_clustermap.png', n_clusters=n_clusters),
+        'summary/figures/group_similarity.<cbptools['!parameters:summary:figure_format']>',
+        'summary/figures/relabeling_accuracy.<cbptools['!parameters:summary:figure_format']>',
+        'summary/figures/cophenetic_correlation.<cbptools['!parameters:summary:figure_format']>'
+    threads: 1
+    params:
+        outdir='summary/figures',
         <cbptools['parameters:summary:figure_format']>
     run:
-        tasks.group_similarity(
-            participants=input.participants, labels_files=input.labels, metric=params.similarity_metric,
-            out_table1=output.table1, out_table2=output.table2, out_figure=output.figure,
-            figure_format=params.figure_format
+        tasks.plot_similarity(
+            individual=input.individual_similarity, group=input.group_similarity, cophenet=input.cophenetic_correlation,
+            outdir=params.outdir, figure_format=params.figure_format
         )
 
 

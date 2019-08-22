@@ -4,7 +4,7 @@
 
 from . import __version__
 from .utils import readable_bytesize, CallCountDecorator, TColor, \
-    pyyaml_ordereddict, bytes_to
+    pyyaml_ordereddict, bytes_to, npy_header, npz_headers
 from .image import binarize_3d, stretch_img, median_filter_img, subtract_img, \
     subsample_img, map_voxels, imgs_equal_3d, get_mask_indices
 from nibabel.processing import resample_from_to, vox2out_vox
@@ -389,32 +389,44 @@ def validate_connectivity(connectivity_matrix: Union[str, dict],
     """Assess whether connectivity matrices have the correct shape"""
     bad_pids = []
     n_voxels = np.count_nonzero(seed_mask.get_data())
+
     for pid in participants:
         file = get_filepath(connectivity_matrix)
         file = file.format(participant_id=pid)
 
         try:
-            mat = np.load(file, mmap_mode='r')
             _, ext = os.path.splitext(file)
 
             if ext == '.npz':
-                if 'connectivity' not in list(mat.keys()):
+                headers = npz_headers(file)
+                d = {k: v for k, v, _ in headers}
+                if 'connectivity' not in list(d.keys()):
                     logging.warning('Cannot find connectivity.npy inside %s'
                                     % file)
                     bad_pids.append(pid)
                     continue
 
-                mat = mat.get('connectivity')
+                shape = d.get('connectivity', None)
+
+            elif ext == '.npy':
+                shape, _ = npy_header(file)
+
+            else:
+                logging.warning('Unknown extension for file %s, must be .npy '
+                                'or .npz' % file)
+                bad_pids.append(pid)
+                continue
+
+            if shape[0] != n_voxels:
+                logging.warning('Mismatch: [connectivity] Expected shape '
+                                '(%s, x), not (%s, x)' % (
+                                n_voxels, shape[0]))
+                bad_pids.append(pid)
 
         except:
             logging.warning('Unable to open %s' % file)
             bad_pids.append(pid)
             continue
-
-        if mat.shape[0] != n_voxels:
-            logging.warning('Mismatch: [connectivity] Expected shape '
-                            '(%s, x), not (%s, x)' % (n_voxels, mat.shape[0]))
-            bad_pids.append(pid)
 
     bad_pids = list(set(bad_pids))
     return bad_pids
