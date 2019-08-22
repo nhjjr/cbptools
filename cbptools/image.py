@@ -325,29 +325,30 @@ def map_labels(img: spatialimage, labels: np.ndarray,
     return nib.Nifti1Image(np.float32(mapped_img), img.affine, img.header)
 
 
-def make_hollow(img: spatialimage) -> spatialimage:
+def make_hollow(arr: np.ndarray) -> spatialimage:
     """ Hollow out a volumetric image so that only voxels on the edge remain.
     This is used for 3D plotting, where voxels on the inside are not visible
     but still taking up resources by being plotted.
 
     Parameters
     ----------
-    img : spatialimage
-        ROI NIfTI image to which cluster labels are mapped
+    arr : np.ndarray
+        3D array to be hollowed out
 
     Returns
     -------
-    spatialimage
-        Hollowed out ROI NIfTI image
+    np.ndarray
+        Hollowed out 3D matrix
     """
-    voxels = np.asarray(np.where(img > 0)).transpose()
-    hollowed = np.zeros(img.shape)
+    voxels = np.asarray(np.where(arr > 0)).transpose()
+    hollowed = np.zeros(arr.shape)
 
     for x, y, z in voxels:
-        area = img[x - 1:x + (1 + 1), y - 1:y + (1 + 1), z - 1:z + (1 + 1)]
+        area = arr[x - 1:x + (1 + 1), y - 1:y + (1 + 1), z - 1:z + (1 + 1)]
 
         if np.count_nonzero(area == 0):
             hollowed[x, y, z] = 1
 
-    img *= hollowed
-    return img
+    tmp = arr.copy()
+    tmp *= hollowed
+    return tmp
