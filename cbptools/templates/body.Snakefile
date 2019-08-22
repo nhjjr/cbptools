@@ -2,7 +2,7 @@
 rule participant_level_clustering:
     input:
         <cbptools['input_data:connectivity_matrix']>
-    output: 'clustering/clustering_k{n_clusters}_{participant_id}.npy'
+    output: temp('clustering/clustering_k{n_clusters}_{participant_id}.npy')
     threads: 1
     resources:
         mem_mb = <cbptools['!mem_mb:clustering']>
