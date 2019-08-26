@@ -6,7 +6,8 @@ rule connectivity:
         <cbptools['input_data:time_series']>,
         <cbptools['input_data:confounds']>
     output:
-        connectivity_matrix = 'connectivity/connectivity_{participant_id}.npz'
+        connectivity_matrix = 'connectivity/connectivity_{participant_id}.npz',
+        log_file = temp('connectivity/connectivity_{participant_id}.tsv')
     threads: 1
     resources:
         mem_mb = <cbptools['!mem_mb:connectivity']>,
@@ -22,12 +23,11 @@ rule connectivity:
         <cbptools['parameters:connectivity:smoothing_fwhm']>,
         <cbptools['parameters:connectivity:seed_low_variance_threshold']>,
         <cbptools['parameters:connectivity:target_low_variance_threshold']>,
-        <cbptools['parameters:connectivity:compress']>,
-        log_file = '%s/connectivity/connectivity_{participant_id}.tsv' % os.getcwd()
+        <cbptools['parameters:connectivity:compress']>
     run:
         tasks.connectivity_fmri(
             time_series=input.time_series, seed=input.seed, target=input.target, confounds=input.get('confounds', None),
-            participant_id=wildcards.participant_id, out=output.connectivity_matrix, log_file=params.log_file,
+            log_file=output.log_file, participant_id=wildcards.participant_id, out=output.connectivity_matrix,
             sep=params.sep, usecols=params.usecols, arctanh_transform=params.arctanh_transform,
             pca_transform=params.pca_transform, band_pass=(params.high_pass, params.low_pass, params.tr),
             smoothing_fwhm=params.smoothing_fwhm, seed_low_variance=params.seed_low_variance_threshold,
@@ -36,19 +36,11 @@ rule connectivity:
 
 
 rule merge_connectivity_logs:
-    input:
-        labels = expand(
-            'clustering/clustering_k{n_clusters}_{participant_id}.npy',
-            n_clusters=n_clusters,
-            participant_id=participants
-        ),
-        connectivity_matrices = expand('connectivity/connectivity_{participant_id}.npy', participant_id=participants)
+    input: expand('connectivity/connectivity_{participant_id}.tsv', participant_id=participants)
     output: 'log/connectivity_log.tsv'
-    params:
-        log_file = lambda wildcards: '%s/connectivity/connectivity_{participant_id}.tsv' % os.getcwd()
     threads: 1
     run:
-        tasks.merge_connectivity_logs(log_file=params.log_file, participants=participants, out=output[0])
+        tasks.merge_connectivity_logs(log_files=input, out=output[0])
 
 
 rule validate_connectivity:

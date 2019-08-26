@@ -748,7 +748,7 @@ def create_workflow(config: dict, mem_mb: dict, work_dir: str) -> None:
     if input_data_type in ('rsfmri', 'dmri'):
         snakefiles.insert(1, '%s.Snakefile' % input_data_type)
         config['input_data']['connectivity_matrix'] = \
-            'connectivity/connectivity_{participant_id}.npy'
+            'connectivity/connectivity_{participant_id}.npz'
 
     if input_data_type == 'rsfmri':
         config['input_data']['touchfile'] = 'log/.touchfile'

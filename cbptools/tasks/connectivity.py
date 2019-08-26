@@ -215,15 +215,9 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
         np.savez(out, connectivity=connectivity)
 
 
-def merge_connectivity_logs(log_file: str, participants: list,
-                            out: str) -> None:
-    log_files = [log_file.format(participant_id=participant)
-                 for participant in participants]
+def merge_connectivity_logs(log_files: list, out: str) -> None:
     df = pd.concat((pd.read_csv(f, sep='\t', index_col=False)
                     for f in log_files), axis=0).reset_index(drop=True)
-
-    for file in log_files:
-        os.remove(file)
 
     df.to_csv(out, sep='\t', index=False)
 
