@@ -54,9 +54,10 @@ def plot_scores(data, out_file, x, y=None, figure_format='png', hue=None,
     else:
         raise ValueError('Unknown plot type: \'%s\'' % plot_type)
 
-    ax.set_ylabel(y.replace('_', ' ').title(), fontsize=10)
-    ax.set_xlabel(x.replace('_', ' ').title(), fontsize=10)
-    ax.tick_params(labelsize=8)
+    if ax:
+        ax.set_ylabel(y.replace('_', ' ').title(), fontsize=10)
+        ax.set_xlabel(x.replace('_', ' ').title(), fontsize=10)
+        ax.tick_params(labelsize=8)
 
     if source:
         fig.text(.0, .0, 'Source: %s' % source, ha='left', fontsize=8)

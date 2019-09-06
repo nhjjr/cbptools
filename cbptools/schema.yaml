@@ -20,7 +20,7 @@ schema-general:
         method: {type: string, allowed: [mode, agglomerative], default: mode}
       validity:
         internal: {type: 'list[string]', allowed: [silhouette_score, davies_bouldin_score, calinski_harabasz_score],
-                   default: silhouette_score}
+                   default: [silhouette_score]}
         similarity: {type: string, allowed: [adjusted_rand_score, adjusted_mutual_info_score, v_measure_score],
                      default: adjusted_rand_score}
     report:

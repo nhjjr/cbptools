@@ -152,11 +152,18 @@ class DataSet:
 
                 if usecols:
                     header = df.columns.tolist()
-                    found = [x for x in header if
-                             any(fnmatch.fnmatch(x, p) for p in usecols)]
+                    xusecols = []
+                    for col in usecols:
+                        if '*' in col:
+                            xusecols += [x for x in header if any(
+                                fnmatch.fnmatch(x, p) for p in [col])]
+                        else:
+                            xusecols.append(col)
 
-                    if set(usecols) != set(found):
-                        missing = set(usecols) - set(found)
+                    usecols = [i for i in xusecols if i is not None]
+
+                    if not set(usecols).issubset(set(header)):
+                        missing = list(set(usecols) - set(header))
                         logging.warning(
                             'missing confounds columns for subject-id %s: %s'
                             % (ppid, ', '.join(missing)))
@@ -230,6 +237,23 @@ class DataSet:
 
         n_voxels = np.count_nonzero(seed.get_data())
 
+        # validate seed coordinates file
+        seed_coords_file = self.data['seed_coordinates']
+
+        try:
+            self.seed_coordinates = np.load(seed_coords_file)
+
+        except Exception as exc:
+            logging.error('unable to read contents of file: %s'
+                          % seed_coords_file)
+            return False
+
+        if self.seed_coordinates.shape != (n_voxels, 3):
+            logging.error('expected shape (%s, 3), not %s for seed '
+                          'coordinates' % (n_voxels,
+                                           str(self.seed_coordinates.shape)))
+            return False
+
         # validate connectivity matrices
         template_conn = self.data['connectivity']
 
@@ -243,8 +267,8 @@ class DataSet:
                     headers = npz_headers(file)
                     d = {k: v for k, v, _ in headers}
                     if 'connectivity' not in list(d.keys()):
-                        logging.warning(
-                            'cannot find connectivity.npy in %s' % file)
+                        logging.warning('cannot find connectivity.npy in %s'
+                                        % file)
                         self.ppids_bad.append(ppid)
                         continue
 
@@ -637,7 +661,7 @@ class Setup:
 
         if isinstance(self.data_set.highres_seed, SpatialImage):
             fpath = os.path.join(workdir, 'highres_seed_mask.nii.gz')
-            nib.save(self.data_set.target, fpath)
+            nib.save(self.data_set.highres_seed, fpath)
             logging.info('created file %s' % fpath)
 
         if isinstance(self.data_set.seed_coordinates, np.ndarray):
