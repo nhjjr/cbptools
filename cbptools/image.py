@@ -6,17 +6,16 @@ spatial images. This cuts down in computation cost for loading data
 and formatting the data back into spatial image objects."""
 
 from .exceptions import ShapeError
-from sys import float_info
 from scipy.ndimage.morphology import binary_dilation
+from nibabel.spatialimages import SpatialImage
 from scipy.spatial import distance
 from typing import Union, List
+from sys import float_info
 import nibabel as nib
 import numpy as np
 
-spatialimage = nib.spatialimages.SpatialImage
 
-
-def imgs_equal_3d(imgs: List[spatialimage]) -> bool:
+def imgs_equal_3d(imgs: List[SpatialImage]) -> bool:
     """Checks whether the first 3 dimensions of input spatial
     images have the same shape and affine"""
 
@@ -37,12 +36,12 @@ def imgs_equal_3d(imgs: List[spatialimage]) -> bool:
         else True
 
 
-def img_is_3d(img: spatialimage) -> bool:
+def img_is_3d(img: SpatialImage) -> bool:
     """ Check if the input spatial image is 3D """
     return False if len(img.shape) != 3 else True
 
 
-def img_is_4d(img: spatialimage) -> bool:
+def img_is_4d(img: SpatialImage) -> bool:
     """ Check if the input spatial image is 3D """
     return False if len(img.shape) != 4 else True
 
@@ -77,17 +76,21 @@ def img_is_mask(img: np.ndarray, allow_empty: bool = True) -> bool:
     return True
 
 
-def binarize_3d(img: spatialimage, threshold: float = 0.0) -> spatialimage:
-    """binarize 3D spatial image"""
+def binarize_3d(img: SpatialImage, threshold: float = 0.0) -> SpatialImage:
+    """binarize 3D spatial image. NaNs and infs in the image are set to 0."""
     if not img_is_3d(img):
         raise ShapeError(3, len(img.shape))
 
-    return nib.Nifti1Image(np.where(img.get_data() > threshold, 1, 0),
-                           img.affine, img.header)
+    data = img.get_data()
+    data[np.where(np.isnan(data))] = 0
+    data[np.where(np.isinf(data))] = 0
+    data = np.where(data > threshold, 1, 0)
+
+    return nib.Nifti1Image(data, img.affine, img.header)
 
 
-def subtract_img(source_img: spatialimage, target_img: spatialimage,
-                 edge_dist: int = 0) -> spatialimage:
+def subtract_img(source_img: SpatialImage, target_img: SpatialImage,
+                 edge_dist: int = 0) -> SpatialImage:
     """Subtracts 3D array y from x. Optionally, y is expanded by the
     edge_dist value (in milimeters), using the x and y affine values
     to calculate Euclidean distance."""
@@ -117,19 +120,19 @@ def subtract_img(source_img: spatialimage, target_img: spatialimage,
                            source_img.header)
 
 
-def subsample_img(img: spatialimage, f: int = 2) -> spatialimage:
+def subsample_img(img: SpatialImage, f: int = 2) -> SpatialImage:
     """Reduce image features of a 3D array by a given factor f."""
     if not img_is_3d(img):
         raise ShapeError(3, len(img.shape))
 
-    data = img.get_data()
-    mask = np.zeros(img.shape)
+    data = img.get_data().astype(int)
+    mask = np.zeros(img.shape).astype(int)
     mask[::f, ::f, ::f] = 1
     data *= mask
     return nib.Nifti1Image(data, img.affine, img.header)
 
 
-def median_filter_img(img: spatialimage, dist: int = 1) -> spatialimage:
+def median_filter_img(img: SpatialImage, dist: int = 1) -> SpatialImage:
     """Median filtering of non-zero elements in an image.
 
     Median filter all selected voxels of a binary 3D input image
@@ -157,8 +160,8 @@ def median_filter_img(img: spatialimage, dist: int = 1) -> spatialimage:
     return nib.Nifti1Image(np.float32(filtered), img.affine, img.header)
 
 
-def stretch_img(source_img: spatialimage,
-                target: Union[tuple, spatialimage]) -> spatialimage:
+def stretch_img(source_img: SpatialImage,
+                target: Union[tuple, SpatialImage]) -> SpatialImage:
     """Stretch a binary image to meet the dimensions of a
     template image.
 
@@ -178,8 +181,8 @@ def stretch_img(source_img: spatialimage,
     s_affine = np.abs(np.diag(source_img.affine[:3]))
     t_affine = np.abs(np.diag(target_affine[:3]))
     if np.all(s_affine <= t_affine):
-        return ValueError('This function is meant for upsampling, not '
-                          'downsampling')
+        raise ValueError('This function is meant for upsampling, not '
+                         'downsampling')
 
     x, y, z = np.nonzero(source_img.get_data())
     xyz = np.asarray([x, y, z, np.ones(len(z))]).T
@@ -195,14 +198,14 @@ def stretch_img(source_img: spatialimage,
     return nib.Nifti1Image(np.float32(m), target_affine, source_img.header)
 
 
-def get_masked_series(time_series: spatialimage, mask: spatialimage):
+def get_masked_series(time_series: SpatialImage, mask: SpatialImage):
     """Apply a 3D mask to a 4D image
 
     Parameters
     ----------
-    time_series : spatialimage
+    time_series : SpatialImage
         4D nifti image, with time-series on the 4th dimension
-    mask : spatialimage
+    mask : SpatialImage
         3D boolean mask image
     """
     if not imgs_equal_3d([time_series, mask]):
@@ -222,7 +225,7 @@ def find_low_variance_voxels(data, tol: float = np.finfo(np.float32).eps):
     return np.where(data.var(axis=0) < tol)[0]
 
 
-def get_f2c_order(img: spatialimage) -> np.ndarray:
+def get_f2c_order(img: SpatialImage) -> np.ndarray:
     """The order in which voxels are extracted from a mask is either
     F-contiguous or C-contiguous (C by default in NumPy), which is reflected
     by the order in which they are placed in an array.
@@ -232,7 +235,7 @@ def get_f2c_order(img: spatialimage) -> np.ndarray:
 
     Parameters
     ----------
-    img : spatialimage
+    img : SpatialImage
         Mask NIfTI image
     """
     mask = img.get_data()
@@ -244,7 +247,7 @@ def get_f2c_order(img: spatialimage) -> np.ndarray:
     return reorder
 
 
-def get_c2f_order(img: spatialimage) -> np.ndarray:
+def get_c2f_order(img: SpatialImage) -> np.ndarray:
     """The order in which voxels are extracted from a mask is either
     F-contiguous or C-contiguous (C by default in NumPy), which is reflected
     by the order in which they are placed in an array. 
@@ -254,7 +257,7 @@ def get_c2f_order(img: spatialimage) -> np.ndarray:
 
     Parameters
     ----------
-    img : spatialimage
+    img : SpatialImage
         Mask NIfTI image
     """
     mask = img.get_data()
@@ -265,12 +268,12 @@ def get_c2f_order(img: spatialimage) -> np.ndarray:
     return reorder
 
 
-def get_mask_indices(img: spatialimage, order: str = 'C') -> np.ndarray:
+def get_mask_indices(img: SpatialImage, order: str = 'C') -> np.ndarray:
     """Get voxel space coordinates (indices) of seed voxels
 
     Parameters
     ----------
-    img : spatialimage
+    img : SpatialImage
         Mask NIfTI image
     order : str, optional
         Order that the seed-mask voxels will be extracted in.
@@ -298,13 +301,13 @@ def get_mask_indices(img: spatialimage, order: str = 'C') -> np.ndarray:
     return indices
 
 
-def map_labels(img: spatialimage, labels: np.ndarray,
-               indices: np.ndarray) -> spatialimage:
+def map_labels(img: SpatialImage, labels: np.ndarray,
+               indices: np.ndarray) -> SpatialImage:
     """Map cluster labels onto the seed mask
 
     Parameters
     ----------
-    img : spatialimage
+    img : SpatialImage
         Mask NIfTI image to which the labels will be mapped
     labels : np.ndarray
         1D array of cluster labels (sklearn.cluster.KMeans._labels)
@@ -314,7 +317,7 @@ def map_labels(img: spatialimage, labels: np.ndarray,
 
     Returns
     -------
-    spatialimage
+    SpatialImage
         Mask image with the labels mapped onto it.
     """
     if len(indices) != len(labels):
@@ -325,7 +328,7 @@ def map_labels(img: spatialimage, labels: np.ndarray,
     return nib.Nifti1Image(np.float32(mapped_img), img.affine, img.header)
 
 
-def make_hollow(arr: np.ndarray) -> spatialimage:
+def make_hollow(arr: np.ndarray) -> SpatialImage:
     """ Hollow out a volumetric image so that only voxels on the edge remain.
     This is used for 3D plotting, where voxels on the inside are not visible
     but still taking up resources by being plotted.

@@ -167,6 +167,9 @@ def group_level_clustering(seed_img: str, participants: str,
             method='mode'
         )
 
+        # Set group labels to mode for mapping
+        group_labels = np.squeeze(mode)
+
     # Map labels to seed-mask image based on indices
     seed_img = nib.load(seed_img)
     seed_indices = np.load(seed_indices)

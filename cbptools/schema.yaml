@@ -1,251 +1,124 @@
-input_data_types: ['rsfmri', 'dmri', 'connectivity']
+modality: {type: string, allowed: [rsfmri, dmri, connectivity], required: true}
 
-input:
-  connectivity_matrix:
-    required: true
-    template: true
-    input_type: ['connectivity']
-    file_type: ['.npz', '.npy']
-  seed_indices:
-    required: true
-    template: false
-    input_type: ['connectivity']
-    file_type: ['.npy']
-  seed_mask:
-    required: true
-    template: false
-    input_type: ['rsfmri', 'dmri', 'connectivity']
-    file_type: ['.nii', '.nii.gz']
-  target_mask:
-    required: false
-    template: false
-    input_type: ['rsfmri', 'dmri']
-    file_type: ['.nii', '.nii.gz']
-  time_series:
-    required: true
-    template: true
-    input_type: ['rsfmri']
-    subs: ['validate_shape']
-  confounds:
-    required: false
-    template: true
-    input_type: ['rsfmri']
-    file_type: ['.tsv', '.csv']
-    subs: ['sep', 'usecols']
-  bet_binary_mask:
-    required: true
-    template: true
-    input_type: ['dmri']
-    file_type: ['.nii', '.nii.gz']
-  xfm:
-    required: true
-    template: true
-    input_type: ['dmri']
-    file_type: ['.nii', '.nii.gz']
-  inv_xfm:
-    required: true
-    template: true
-    input_type: ['dmri']
-    file_type: ['.nii', '.nii.gz']
-  samples:
-    required: true
-    template: true
-    input_type: ['dmri']
-    expand: true
+schema-general:
+  data:
+    participants:
+      file: {type: string, allowed: ['*.tsv', '*.csv', '*.xls', '*.xlsx'], default: /path/to/file.tsv, required: true}
+      delimiter: {type: string, default: '\t'}
+      index_column: {type: string, default: 'participant_id'}
+    seed_mask: {type: string, allowed: ['*.nii', '*.nii.gz'], default: /path/to/file.nii, required: true}
+  parameters:
+    clustering:
+      n_clusters: {type: 'list[integer]', min: 2, minlength: 1, default: [], required: true}
+      kmeans:
+        algorithm: {type: string, allowed: [auto, full, elkan], default: auto}
+        init: {type: string, allowed: [k-means++, random], default: k-means++}
+        max_iter: {type: integer, min: 1, default: 10000}
+        n_init: {type: integer, min: 1, default: 256}
+      grouping:
+        linkage: {type: string, allowed: [complete, average, single], default: complete}
+        method: {type: string, allowed: [mode, agglomerative], default: mode}
+      validity:
+        internal: {type: 'list[string]', allowed: [silhouette_score, davies_bouldin_score, calinski_harabasz_score],
+                   default: silhouette_score}
+        similarity: {type: string, allowed: [adjusted_rand_score, adjusted_mutual_info_score, v_measure_score],
+                     default: adjusted_rand_score}
+    report:
+      figure_format: {type: string, allowed: [png, svg, pdf, ps, eps], default: png}
 
-parameters:
-  masking:
-    threshold:
-      required: false
-      instance_type: float
-      input_type: ['dmri', 'rsfmri']
-      default: 0.0
-    median_filter:
-      required: false
-      instance_type: bool
-      input_type: ['dmri', 'rsfmri']
-      default: false
-    median_filter_dist:
-      required: false
-      instance_type: int
-      input_type: ['dmri', 'rsfmri']
-      default: 1
-    del_seed_from_target:
-      required: false
-      input_type: ['rsfmri', 'dmri']
-      instance_type: bool
-      default: false
-    del_seed_expand:
-      required: false
-      input_type: ['rsfmri', 'dmri']
-      instance_type: int
-      default: 0
-    subsample:
-      required: false
-      input_type: ['rsfmri']
-      instance_type: bool
-      default: false
-    resample_to_mni:
-      required: false
-      input_type: ['dmri', 'rsfmri']
-      instance_type: bool
-      default: true
-    upsample_seed_to:
-      required: false
-      input_type: ['dmri']
-      instance_type: list
-      default: null
-    downsample_target_to:
-      required: false
-      input_type: ['dmri']
-      instance_type: list
-      default: null
-  connectivity:
-    seed_low_variance_threshold:
-      required: false
-      input_type: ['rsfmri']
-      instance_type: float
-      default: 0.05
-    target_low_variance_threshold:
-      required: false
-      input_type: ['rsfmri']
-      instance_type: float
-      default: 0.1
-    high_pass:
-      required: false
-      input_type: ['rsfmri']
-      instance_type: float
-      default: null
-    low_pass:
-      required: false
-      input_type: ['rsfmri']
-      instance_type: float
-      default: null
-    tr:
-      required: false
-      input_type: ['rsfmri']
-      instance_type: float
-      default: null
-    smoothing_fwhm:
-      required: false
-      input_type: ['rsfmri']
-      instance_type: int
-      default: null
-    arctanh_transform:
-      required: false
-      input_type: ['rsfmri']
-      instance_type: bool
-      default: true
-    pca_transform:
-      required: false
-      input_type: ['dmri', 'rsfmri']
-      instance_type: float
-      default: null
-    dist_thresh:
-      required: false
-      input_type: ['dmri']
-      instance_type: float
-      default: 5.0
-    loop_check:
-      required: false
-      input_type: ['dmri']
-      instance_type: bool
-      default: true
-    c_thresh:
-      required: false
-      input_type: ['dmri']
-      instance_type: float
-      default: 0.2
-    step_length:
-      required: false
-      input_type: ['dmri']
-      instance_type: float
-      default: 0.5
-    n_samples:
-      required: false
-      input_type: ['dmri']
-      instance_type: int
-      default: 5000
-    n_steps:
-      required: false
-      input_type: ['dmri']
-      instance_type: int
-      default: 2000
-    correct_path_distribution:
-      required: false
-      input_type: ['dmri']
-      instance_type: bool
-      default: true
-    cleanup_fsl:
-      required: false
-      input_type: ['dmri']
-      default: true
-      instance_type: bool
-    cubic_transform:
-      required: false
-      input_type: ['dmri']
-      default: true
-      instance_type: bool
-    compress:
-      required: false
-      input_type: ['dmri', 'rsfmri']
-      default: true
-      instance_type: bool
-  clustering:
-    n_clusters:
-      required: true
-      input_type: ['dmri', 'rsfmri', 'connectivity']
-      instance_type: list
-    algorithm:
-      required: false
-      input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: 'auto'
-      instance_type: str
-      allowed: ['auto', 'full', 'elkan']
-    init:
-      required: false
-      input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: 'k-means++'
-      instance_type: str
-      allowed: ['random', 'k-means++']
-    max_iter:
-      required: false
-      input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: 10000
-      instance_type: int
-    n_init:
-      required: false
-      input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: 256
-      instance_type: int
-    linkage:
-      required: false
-      input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: 'complete'
-      allowed: ['complete', 'average', 'single']
-      instance_type: str
-    group_method:
-      required: false
-      input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: 'agglomerative'
-      allowed: ['agglomerative', 'mode']
-      instance_type: str
-    internal_validity_metrics:
-      required: false
-      input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: ['silhouette_score']
-      allowed: ['silhouette_score', 'davies_bouldin_score', 'calinski_harabasz_score']
-      instance_type: list
-    similarity_metric:
-      required: false
-      input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: 'adjusted_rand_score'
-      allowed: ['adjusted_rand_score', 'adjusted_mutual_info_score', 'v_measure_score']
-      instance_type: str
-  summary:
-    figure_format:
-      required: false
-      input_type: ['dmri', 'rsfmri', 'connectivity']
-      default: 'png'
-      allowed: ['png', 'svg', 'pdf', 'ps', 'eps']
-      instance_type: str
+
+schema-connectivity:
+  data:
+    connectivity: {type: string, required: true, allowed: ['*.npy', '*.npz'], contains: '{participant_id}',
+                   default: '/path/to/{participant_id}/file.npz'}
+    seed_coordinates: {type: string, required: true, allowed: ['*.npy', '*.npz'],
+                       default: '/path/to/seed_coordinates.npy'}
+
+schema-rsfmri:
+  data:
+    time_series: {type: string, allowed: ['*.nii', '*.nii.gz'], contains: '{participant_id}',
+                  default: '/path/to/{participant_id}/file.nii', required: true}
+    confounds:
+      file: {type: string, allowed: ['*.tsv', '*.csv'], contains: '{participant_id}',
+             default: '/path/to/{participant_id}/file.tsv'}
+      delimiter: {type: string, default: '\t'}
+      columns: {type: 'list[string]', default: []}
+    target_mask: {type: string, allowed: ['*.nii', '*.nii.gz']}
+
+  parameters:
+    mask_preproc_seed:
+      binarization: {type: float, min: 0.0, default: 0.0}
+      median_filtering:
+        apply: {type: boolean, default: false}
+        distance: {type: integer, min: 0, default: 1}
+    mask_preproc_target:
+      binarization: {type: float, min: 0.0, default: 0.0}
+      remove_seed:
+        apply: {type: boolean, default: false}
+        distance: {type: integer, min: 0, default: 0}
+      subsampling: {type: boolean, default: true}
+    time_series_proc:
+      low_variance_error:
+        apply: {type: boolean, default: true}
+        in_seed: {type: float, min: 0.0, max: 1.0, default: 0.05}
+        in_target: {type: float, min: 0.0, max: 1.0, default: 0.1}
+        behavior: {type: string, allowed: [remove, zero], default: zero}
+      band_pass_filtering:
+        apply: {type: boolean, default: false}
+        band: {type: 'list[float]', min: 0.0, minlength: 2, maxlength: 2, default: [0.01, 0.08], custom: [bandpass]}
+        tr: {type: float, min: 0.0, default: null, custom: [tr]}
+      smoothing:
+        apply: {type: boolean, default: false}
+        fwhm: {type: integer, min: 0, default: 5}
+      arctanh_transform:
+        apply: {type: boolean, default: true}
+      pca_transform:
+        apply: {type: boolean, default: false}
+        components: {type: float, default: 0.95}
+      compress: {type: boolean, default: true}
+
+
+schema-dmri:
+  data:
+    target_mask: {type: string, allowed: ['*.nii', '*.nii.gz']}
+    bet_binary_mask: {type: string, required: true, allowed: ['*.nii', '*.nii.gz'], contains: '{participant_id}',
+                      default: '/path/to/{participant_id}/file.nii'}
+    xfm: {type: string, required: true, allowed: ['*.nii', '*.nii.gz'], contains: '{participant_id}',
+          default: '/path/to/{participant_id}/file.nii'}
+    inv_xfm: {type: string, required: true, allowed: ['*.nii', '*.nii.gz'], contains: '{participant_id}',
+              default: '/path/to/{participant_id}/file.nii'}
+    samples: {type: string, required: true, contains: '{participant_id}', default: '/path/to/{participant_id}/dir/'}
+
+  parameters:
+    mask_preproc_seed:
+      binarization: {type: float, min: 0.0, default: 0.0}
+      median_filtering:
+        apply: {type: boolean, default: false}
+        distance: {type: integer, min: 0, default: 1}
+      upsample_to:
+        apply: {type: boolean, default: false}
+        voxel_dimensions: {type: 'list[float]', min: 1, minlength: 1, maxlength: 3, default: [1, 1, 1], custom: [voxdim]}
+    mask_preproc_target:
+      binarization: {type: float, min: 0.0, default: 0.0}
+      remove_seed:
+        apply: {type: boolean, default: false}
+        distance: {type: integer, min: 0, default: 0}
+      downsample_to:
+        apply: {type: boolean, default: false}
+        voxel_dimensions: {type: 'list[float]', min: 1.0, minlength: 1, maxlength: 3, default: [3, 3, 3], custom: [voxdim]}
+    probtract_proc:
+      dist_thresh: {type: float, min: 0.0, default: 5.0}
+      loop_check: {type: boolean, default: true}
+      c_thresh: {type: float, min: 0.0, default: 0.2}
+      step_length: {type: float, min: 0.0, default: 0.5}
+      n_samples: {type: integer, min: 1, default: 5000}
+      n_steps: {type: integer, min: 1, default: 2000}
+      correct_path_distribution: {type: boolean, default: true}
+      cubic_transform:
+        apply: {type: boolean, default: true}
+      pca_transform:
+        apply: {type: boolean, default: false}
+        components: {type: float, default: 0.95}
+      compress: {type: boolean, default: true}
+      cleanup_fsl: {type: boolean, default: true}
+

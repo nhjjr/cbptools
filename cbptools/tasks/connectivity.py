@@ -19,15 +19,20 @@ import gc
 import os
 
 
-def connectivity_fmri(time_series: str, seed: str, target: str,
-                      participant_id: str, out: str, log_file: str,
-                      seed_low_variance: float = 0.05,
-                      target_low_variance: float = 0.1,
-                      smoothing_fwhm: int = None, confounds: str = None,
+def connectivity_fmri(time_series: str, seed: str, target: str, log_file: str,
+                      participant_id: str, out: str, confounds: str = None,
                       sep: str = None, usecols: list = None,
-                      band_pass: tuple = None, arctanh_transform: bool = True,
-                      pca_transform: float = None,
-                      compress_output: bool = False) -> None:
+                      apply_arctanh: bool = True, apply_pca: bool = False,
+                      pca_components: float=0.95, apply_bandpass: bool = False,
+                      bandpass_band: tuple = (0.01, 0.08),
+                      bandpass_tr: float = None, apply_smoothing: bool=False,
+                      smoothing_fwhm: float = 0.,
+                      apply_low_variance_threshold: bool = True,
+                      low_variance_in_seed: float = 0.05,
+                      low_variance_in_target: float = 0.1,
+                      low_variance_behavior: str='zero',
+                      compress_output: bool = True) -> None:
+
     """ Compute a connectivity matrix from functional data.
 
     Processing steps:
@@ -105,7 +110,7 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
     if not img_is_4d(time_series):
         raise DimensionError(4, len(time_series.shape))
 
-    if smoothing_fwhm is not None:
+    if apply_smoothing:
         time_series = smooth_image(time_series, fwhm=smoothing_fwhm)
 
     seed_series = get_masked_series(time_series, seed_img)
@@ -114,12 +119,13 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
     gc.collect()
 
     # Identify low-variance voxels and log them
+
     in_seed = find_low_variance_voxels(data=seed_series)
     in_target = find_low_variance_voxels(data=target_series)
     bad_seed = in_seed.size / np.count_nonzero(
-        seed_img.get_data()) > seed_low_variance
+        seed_img.get_data()) > low_variance_in_seed
     bad_target = in_target.size / np.count_nonzero(
-        target_img.get_data()) > target_low_variance
+        target_img.get_data()) > low_variance_in_target
 
     pd.DataFrame(
         data=[[participant_id, in_seed, in_target, bad_seed or bad_target]],
@@ -127,11 +133,12 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
                  'low_variance_in_target', 'low_variance_excluded']
     ).to_csv(log_file, sep='\t', index=False)
 
-    # If the participant has data exceeding the seed- or target low variance
-    # threshold, output an empty file
-    if bad_seed or bad_target:
-        np.savez(out, connectivity=np.array([]))
-        return
+    # If the participant has data exceeding the seed- or target low
+    # variance threshold, output an empty file
+    if apply_low_variance_threshold:
+        if bad_seed or bad_target:
+            np.savez(out, connectivity=np.array([]))
+            return
 
     # Nuisance Signal Regression
     if confounds is not None:
@@ -167,20 +174,21 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
         )
 
     # Apply band-pass filter if high_pass, low_pass, and tr are defined
-    high_pass, low_pass, tr = band_pass
-    if all([low_pass, high_pass, tr]):
-        seed_series = fft_filter(
-            seed_series,
-            low_pass=low_pass,
-            high_pass=high_pass,
-            tr=tr
-        )
-        target_series = fft_filter(
-            target_series,
-            low_pass=low_pass,
-            high_pass=high_pass,
-            tr=tr
-        )
+    if apply_bandpass:
+        high_pass, low_pass = bandpass_band
+        if all([low_pass, high_pass, bandpass_tr]):
+            seed_series = fft_filter(
+                seed_series,
+                low_pass=low_pass,
+                high_pass=high_pass,
+                tr=bandpass_tr
+            )
+            target_series = fft_filter(
+                target_series,
+                low_pass=low_pass,
+                high_pass=high_pass,
+                tr=bandpass_tr
+            )
 
     connectivity = seed_based_correlation(
         x=seed_series,
@@ -188,7 +196,7 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
         standardize=True
     )
 
-    if arctanh_transform:
+    if apply_arctanh:
         # Values at 1 or -1 causing atanh inf's, here we set them slightly
         # below 1 or above -1.
         connectivity[connectivity >= 1] = np.nextafter(
@@ -201,9 +209,9 @@ def connectivity_fmri(time_series: str, seed: str, target: str,
         )
         connectivity = np.arctanh(connectivity)
 
-    if pca_transform is not None:
+    if apply_pca:
         connectivity = detrend(connectivity, axis=1, type='constant')
-        pca = PCA(n_components=pca_transform)
+        pca = PCA(n_components=pca_components)
         connectivity = pca.fit_transform(connectivity)
 
     # Ensure float32
@@ -263,8 +271,9 @@ def validate_connectivity(log_file: str, connectivity: str, labels: str,
 
 
 def connectivity_dmri(fdt_matrix2: str, seed: str, out: str,
-                      cleanup_fsl: bool = True, pca_transform: float = None,
-                      cubic_transform: bool = False,
+                      cleanup_fsl: bool = True, apply_pca: bool = False,
+                      pca_components: float = 0.95,
+                      apply_cubic_transform: bool = False,
                       compress_output: bool = False) -> None:
     """ Compute a connectivity matrix from functional data. This
     method uses FSL's probtrackx2 function which must be accessible
@@ -308,12 +317,12 @@ def connectivity_dmri(fdt_matrix2: str, seed: str, out: str,
     connectivity = coo_matrix((value, (i, j)))
     connectivity = connectivity.todense(order='F')
 
-    if cubic_transform:
+    if apply_cubic_transform:
         connectivity = np.power(connectivity, 1 / 3)
 
-    if pca_transform is not None:
+    if apply_pca:
         connectivity = detrend(connectivity, axis=1, type='constant')
-        pca = PCA(n_components=pca_transform)
+        pca = PCA(n_components=pca_components)
         connectivity = pca.fit_transform(connectivity)
 
     # Reorder seed-voxels from F- to C-order

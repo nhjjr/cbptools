@@ -1,11 +1,11 @@
 
 rule probtrackx2:
     input:
-        seed = 'highres_seed_mask.nii',
-        target = 'target_mask.nii',
-        <cbptools['input_data:bet_binary_mask']>,
-        <cbptools['input_data:xfm']>,
-        <cbptools['input_data:inv_xfm']>
+        seed = 'highres_seed_mask.nii.gz',
+        target = 'target_mask.nii.gz',
+        <cbptools['data:bet_binary_mask']>,
+        <cbptools['data:xfm']>,
+        <cbptools['data:inv_xfm']>
     output: 'probtrackx2/{participant_id}/fdt_matrix2.dot'
     threads: 1
     resources:
@@ -13,14 +13,14 @@ rule probtrackx2:
         io = 1
     params:
         outdir = 'probtrackx2/{participant_id}',
-        <cbptools['input_data:samples']>,
-        <cbptools['parameters:connectivity:dist_thresh']>,
-        <cbptools['parameters:connectivity:loop_check']>,
-        <cbptools['parameters:connectivity:c_thresh']>,
-        <cbptools['parameters:connectivity:step_length']>,
-        <cbptools['parameters:connectivity:n_samples']>,
-        <cbptools['parameters:connectivity:n_steps']>,
-        <cbptools['parameters:connectivity:correct_path_distribution']>
+        <cbptools['data:samples']>,
+        <cbptools['parameters:probtract_proc:dist_thresh']>,
+        <cbptools['parameters:probtract_proc:loop_check']>,
+        <cbptools['parameters:probtract_proc:c_thresh']>,
+        <cbptools['parameters:probtract_proc:step_length']>,
+        <cbptools['parameters:probtract_proc:n_samples']>,
+        <cbptools['parameters:probtract_proc:n_steps']>,
+        <cbptools['parameters:probtract_proc:correct_path_distribution']>
     shell:
         "probtrackx2 --seed={input.seed} --target2={input.target} --samples={params.samples} \
         --mask={input.bet_binary_mask} --xfm={input.xfm} --invxfm={input.inv_xfm} --dir={params.outdir} \
@@ -32,17 +32,19 @@ rule probtrackx2:
 rule connectivity:
     input:
         fdt_matrix2 = 'probtrackx2/{participant_id}/fdt_matrix2.dot',
-        seed = 'seed_mask.nii'
+        seed = 'seed_mask.nii.gz'
     output: 'connectivity/connectivity_{participant_id}.npz'
     resources:
         mem_mb = <cbptools['!mem_mb:clustering']>
     params:
-        <cbptools['parameters:connectivity:cleanup_fsl']>,
-        <cbptools['parameters:connectivity:pca_transform']>,
-        <cbptools['parameters:connectivity:cubic_transform']>,
-        <cbptools['parameters:connectivity:compress']>,
+        apply_cubic_transform = <cbptools['!parameters:probtract_proc:cubic_transform:apply']>,
+        apply_pca = <cbptools['!parameters:probtract_proc:pca_transform:apply']>,
+        pca_components = <cbptools['!parameters:probtract_proc:pca_transform:components']>,
+        <cbptools['parameters:probtract_proc:compress']>,
+        <cbptools['parameters:probtract_proc:cleanup_fsl']>,
     run:
         tasks.connectivity_dmri(
             fdt_matrix2=input.fdt_matrix2, seed=input.seed, out=output[0], cleanup_fsl=params.cleanup_fsl,
-            pca_transform=params.pca_transform, cubic_transform=params.cubic_transform, compress_output=params.compress
+            apply_pca=params.apply_pca, pca_components=params.pca_components,
+            apply_cubic_transform=params.apply_cubic_transform, compress_output=params.compress
         )

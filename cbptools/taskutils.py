@@ -13,7 +13,7 @@ def get_participant_ids(file: pd.DataFrame, sep: str = None,
 
 
 def expected_output(n_clusters: list, figure_format: str = 'png',
-                    internal_validity_metrics: list = None):
+                    internal: list = None) -> list:
     out = []
 
     # Add cluster labels
@@ -39,11 +39,11 @@ def expected_output(n_clusters: list, figure_format: str = 'png',
             'summary/figures/cophenetic_correlation.%s' % figure_format]
 
     # Add internal validity metrics
-    if internal_validity_metrics:
+    if internal:
         out += ['summary/internal_validity.tsv']
         out += ['summary/figures/internal_validity_%s.%s'
                 % (metric, figure_format)
-                for metric in internal_validity_metrics]
+                for metric in internal]
 
     # Add 3D volumetric plots
     out += ['summary/figures/group_clustering_k%s_%s.%s'
