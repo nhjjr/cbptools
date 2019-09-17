@@ -1,1 +1,3 @@
 pyyaml==5.1.2
+sphinx-jinja==1.1.0
+sphinxcontrib-bibtex==0.4.2
