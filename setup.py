@@ -31,10 +31,9 @@ setup(
     name='cbptools',
     version=version,
     python_requires='>=3.5.0',
-    description='Regional Connectivity-Based Parcellation tool for Python '
-                'using Snakemake',
+    description='Regional Connectivity-Based Parcellation tool for Python',
     long_description=long_description,
-    url='https://github.com/nreuter/cbptools',
+    url='https://github.com/inm7/cbptools',
     author='Niels Reuter',
     author_email='niels.reuter@gmail.com',
     license='Apache',
@@ -46,7 +45,7 @@ setup(
         ],
     },
     install_requires=[
-        'datrie@git+https://github.com/pytries/datrie.git',
+        # 'datrie@git+https://github.com/pytries/datrie.git',
         'matplotlib>=3.0.3',
         'nibabel>=2.5.0',
         'numpy>=1.17.0',
