@@ -1,0 +1,8 @@
+=======
+License
+=======
+The copyright and all other rights related to the hereby provided products are held by Forschungszentrum Jülich GmbH.
+The use of the products is only permitted for own educational, scientific or private purposes. The source of the
+products must be quoted correctly. It is not allowed to revise or amend the provided products or extract only parts
+of it without the explicit permission of Forschungszentrum Jülich GmbH. Likewise it is not allowed to grant
+sublicences to third partys.

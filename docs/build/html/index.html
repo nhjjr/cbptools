@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>CBPtools Documentation &mdash; cbptools 0.1.0 documentation</title>
+  <title>Quick Start Guide &mdash; cbptools 1.0.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Installation" href="installation.html" /> 
+    <link rel="next" title="Workflow" href="overview/workflow.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -81,21 +81,24 @@
             
               <p class="caption"><span class="caption-text">Overview</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="workflow.html">Workflow</a></li>
-</ul>
-<p class="caption"><span class="caption-text">Configuration File</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="configuration/instructions.html">Configuration File</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration/input_data.html">Input Data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration/parameters.html">Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview/workflow.html">Workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview/quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview/examples.html">Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Getting Started</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="input_data_structure.html">Input Data Structure</a></li>
-<li class="toctree-l1"><a class="reference internal" href="input_validation.html">Input Validation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution.html">Execution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/input_data.html">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/parameters.html">Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/validation_and_setup.html">Validation &amp; Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/execution.html">Execution</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Project Info</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="zbibliography.html">Bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abbreviations.html">Abbreviations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
 </ul>
 
             
@@ -141,7 +144,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>CBPtools Documentation</li>
+      <li>Quick Start Guide</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -160,55 +163,32 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="cbptools-documentation">
-<h1>CBPtools Documentation<a class="headerlink" href="#cbptools-documentation" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="quick-start-guide">
+<h1>Quick Start Guide<a class="headerlink" href="#quick-start-guide" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="connectivity-based-parcellation-tools">
 <h2>Connectivity-Based Parcellation Tools<a class="headerlink" href="#connectivity-based-parcellation-tools" title="Permalink to this headline">¶</a></h2>
-<p>Regional <strong>connectivity-based parcellation</strong> (CBP) is a procedure for regional mapping by long-range connectivity
-profiles (Eickhoff et al., 2015), revealing brain organization within a region-of-interest (ROI).</p>
-<p>The procedure clusters ROI voxels/vertices based on similarity in their profile of connection strengths to a set of
-target voxels/vertices, referred to as a connectivity profile. The connectivity profile for each ROI voxel/vertex
-reflects that voxel/vertex’s connectivity to a target space, for instance all gray matter voxels/vertices within the
-brain for functional data. Voxels/vertices are clustered using the
+<p>Regional <strong>connectivity-based parcellation</strong> (rCBP) is a procedure for revealing the differentiation within a
+region of interest (ROI) based on its long-range connectivity profiles. <em>CBPtools</em>
+<a class="reference internal" href="zbibliography.html#reuter-submitted" id="id1">[1]</a> is an open-source distributed workflow for applying this procedure using the
+Python programming language.</p>
+<p>The rCBP procedure groups ROI voxels based on similarity in their connection strengths to a set of target voxels,
+i.e., their connectivity profile. The grouping is done using the
 <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html">k-means clustering</a> algorithm, which
-is optimized such that within-group similarity of profiles is high and between-group similarity is low. The resulting
-clusters form units of homogeneity within an ROI delineated by differences in connectivity, with the units being
-spatially consistent due to neighboring voxels/vertices having more similar patterns in connectivity than those further
-away. This provides the CBP procedure with the ability to map distinct brain regions, useful for localizing
-(dys)function or outlining functional or structural subdivisions/clusters within a particular ROI. Group results are
-generated by applying a <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/cluster.hierarchy.html">hierarchical clustering</a>
-algorithm on the individual clustering results. Further processing options can configured by the user.</p>
-<p>The type of connectivity depends crucially on the imaging modality, where connectivity means the patterns of anatomical
-links for structural data through diffusion-weighted imaging (DWI), and statistical dependencies for functional data.
-CBPtools currently supports two neuroimaging modalities: resting-state bloox-oxygen-level dependent (BOLD) time-series
-typically used to measure task-independent functional connectivity, and probabilistic diffusion tractography to
-estimate anatomical fiber-connectivity.</p>
-<div class="section" id="citation">
-<h3>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h3>
-<p>Niels Reuter, Xiaojin Liu, Sarah Genon, Shahrzad Kharabian, Tobias Kalenscher, Felix Hoffstaedter, Simon B. Eickhoff,
-Kaustubh R. Patil. “CBPtools: A python package for regional connectivity-based parcellation”. Submitted 2019.</p>
-</div>
-<div class="section" id="references">
-<h3>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h3>
-<p>Eickhoff SB, Thirion B, Varoquaux G, Bzdok D (2015): Connectivity-based parcellation: Critique and implications.
-Hum Brain Mapp 36:4771–4792.</p>
+is optimized such that within-group similarity of connectivity profiles is high and between-group similarity is low.
+Grouped voxels form homogenous units, i.e., parcels, with regards to the measured connectivity marker within an ROI
+that best describes the input data at hand. The rCBP procedure can map functional or structural clusters within a
+particular ROI. Individual subject results are grouped by applying a
+<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/cluster.hierarchy.html">hierarchical clustering</a>
+algorithm on the individual clustering results.</p>
+<p>For a more detailed overview of the procedure, we recommend reading <a class="reference internal" href="zbibliography.html#eickhoff-2015" id="id2">[2]</a> and <a class="reference internal" href="zbibliography.html#eickhoff-2018" id="id3">[3]</a>.</p>
 <div class="toctree-wrapper compound">
 </div>
 <div class="toctree-wrapper compound" id="overview">
 </div>
-<div class="toctree-wrapper compound" id="configuration">
-</div>
 <div class="toctree-wrapper compound" id="getting-started">
 </div>
+<div class="toctree-wrapper compound" id="info">
 </div>
-</div>
-<div class="section" id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
 </div>
 </div>
 
@@ -220,7 +200,7 @@ Hum Brain Mapp 36:4771–4792.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="overview/workflow.html" class="btn btn-neutral float-right" title="Workflow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>
