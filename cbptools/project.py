@@ -190,7 +190,7 @@ class DataSet:
         if target is None:
             logging.warning('using default 2mm isotropic MNI152 gray matter '
                             'template as target')
-            target = self.template
+            target = self.load_img(self.template, level='error')
         else:
             target = self.load_img(target, level='error')
 
