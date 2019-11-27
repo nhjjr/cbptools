@@ -1,16 +1,16 @@
-from cbptools.utils import readable_bytesize, CallCountDecorator, TColor, \
-    bytes_to, npy_header, npz_headers
-from cbptools.image import binarize_3d, stretch_img, median_filter_img, \
-    subtract_img, subsample_img, imgs_equal_3d, get_mask_indices
-from nibabel.processing import resample_from_to, vox2out_vox
+from .utils import (readable_bytesize, CallCountDecorator, TColor, bytes_to,
+                    npy_header, npz_headers)
+from .image import imgs_equal_3d, extract_regions
+from .workflow import build_workflow
 from nibabel.filebasedimages import ImageFileError
 from nibabel.spatialimages import SpatialImage
 from pandas.io.common import EmptyDataError
-from typing import Union
+from typing import Union, Tuple
 import nibabel as nib
 import pandas as pd
 import numpy as np
 import pkg_resources
+import itertools
 import logging
 import fnmatch
 import shutil
@@ -18,27 +18,41 @@ import yaml
 import glob
 import os
 
+logging.error = CallCountDecorator(logging.error)
+logging.warning = CallCountDecorator(logging.warning)
+
+
+class MaskError(Exception):
+    """Raised when an input mask fails validation"""
+    pass
+
+
+class SilentError(Exception):
+    """Error without message in case the message has already been logged"""
+    pass
+
 
 class DataSet:
     def __init__(self, document: dict):
         self.modality = document.get('modality', None)
         self.data = document.get('data', {})
-        self.parameters = document.get('parameters', {})
         self.template = pkg_resources.resource_filename(
             __name__, 'templates/MNI152GM.nii.gz')
-        self.template = self.template
-        self.is_validated = False
-        self.target = None
-        self.seed = None
-        self.highres_seed = None
         self.seed_coordinates = None
+        self.references = None
         self.mem_mb = {'connectivity': 0, 'clustering': 0}
         self.ppids = []
         self.ppids_bad = []
+        self.n_seed_voxels = 0
+        self.n_target_voxels = 0
+
+        # Padding for memory estimate in MB
+        self.mem_padding = 250
 
     @staticmethod
-    def _get_subject_ids(file: str, delimiter: str = None,
-                         index_column: str = None) -> list:
+    def get_ppids(file: str, delimiter: str = None,
+                  index_column: str = None) -> list:
+        """Retrieve participant ids from participant file"""
         if not os.path.exists(file):
             logging.error('No such file: %s' % file)
             return []
@@ -46,17 +60,16 @@ class DataSet:
         df = pd.read_csv(file, sep=delimiter, engine='python')
 
         if delimiter is None:
-            logging.warning('no delimiter set, inferred delimiter is %s'
-                            % df._engine.data.dialect.delimiter)
+            sep = df._engine.data.dialect.delimiter
+            logging.warning('no delimiter set, inferred delimiter is %s' % sep)
 
         if index_column is None:
-            index_column = 'participant_id'
-            logging.warning('no index_column set, inferred index_column is %s'
-                            % index_column)
+            index = 'participant_id'
+            logging.warning('index_column is undefined, using %s' % index)
 
         if index_column not in df.columns:
-            logging.error(
-                'index_column %s does not exist in %s' % (index_column, file))
+            logging.error('index_column %s not found in %s'
+                          % (index_column, file))
             return []
 
         ppids = list(df.get(index_column))
@@ -67,197 +80,291 @@ class DataSet:
         return list(set(ppids))
 
     @staticmethod
-    def load_img(file: str, level: str = None):
+    def load_img(file: str, level: str = None) -> Union[SpatialImage, None]:
+        """Attempt to load a NIfTI image"""
         try:
             return nib.load(file)
-
         except (ImageFileError, FileNotFoundError) as exc:
             if level == 'error':
                 logging.error(exc)
             elif level == 'warning':
                 logging.warning(exc)
-
             return None
 
-    @staticmethod
-    def _validate_imgs(seed: SpatialImage, target: SpatialImage) -> bool:
-        equal_affines = np.equal(seed.affine, target.affine)
-        equal_shapes = np.equal(seed.shape, target.shape)
+    def _masks(self, seed: str, target: str,
+               space: str) -> Union[Tuple[SpatialImage, SpatialImage], None]:
+        """Load and validate standard-space input masks"""
+        level = 'warning' if space == 'native' else 'error'
+        seed_img = self.load_img(seed, level=level)
 
-        if not equal_affines or not equal_shapes:
-            logging.error('seed- and target-mask are not in the same space')
-            return False
+        # Check if seed_img may be an atlas
+        region_id = self.data['masks'].get('region_id', None)
+        if region_id and seed_img is not None:
+            try:
+                seed_img = extract_regions(seed_img, region_id)
+            except ValueError as exc:
+                raise MaskError(exc)
 
-        return True
-
-    def _validate_rsfmri(self) -> bool:
-        seed = self.load_img(self.data['seed_mask'], level='error')
-        target = self.data.get('target_mask', None)
-
-        if target is None:
-            logging.warning('using default 2mm isotropic MNI152 gray matter '
-                            'template as target')
-            target = self.load_img(self.template, level='error')
+        if target is None and space == 'standard':
+            logging.warning('using default target: 2mm^3 MNI152 gray matter')
+            target_img = self.load_img(self.template, level=level)
         else:
-            target = self.load_img(target, level='error')
+            target_img = self.load_img(target, level=level)
 
-        if target is None or seed is None:
-            return False
+        # Check if masks were loaded
+        if seed_img is None or target_img is None:
+            raise SilentError()
 
-        if not imgs_equal_3d([seed, target]):
-            logging.error('seed- and target-mask are not in the same space')
-            return False
+        # Check if masks are in the same space
+        if not imgs_equal_3d([seed_img, target_img]):
+            raise MaskError('seed- and target-mask are not in the same space')
 
-        # validate time-series and confounds
-        template_time_series = self.data['time_series']
-        template_confounds = self.data.get('confounds', None)
+        # Ensure that masks have no weird values and can be binarized
+        masks = (('seed', seed, seed_img), ('target', target, target_img))
+        for name, file, img in masks:
+            data = img.get_data()
+            n_voxels = np.count_nonzero(data)
 
-        if isinstance(template_confounds, dict):
-            sep = template_confounds.get('delimiter', None)
-            usecols = template_confounds.get('columns', None)
+            # Get maximum seed/target size for size/memory estimation
+            if name == 'seed' and n_voxels > self.n_seed_voxels:
+                self.n_seed_voxels = n_voxels
 
-            if sep is None:
-                sep = '\t'
-                logging.warning('no confounds delimiter set, using default '
-                                'tab')
+            elif name == 'target' and n_voxels > self.n_target_voxels:
+                self.n_target_voxels = n_voxels
 
-            if not usecols:
-                logging.warning('no confounds columns selected, including all')
+            # Assess validity of input mask
+            if not np.array_equal(data, data.astype(bool)):
+                logging.warning('%s is not a binary mask file' % file)
 
-        for ppid in self.ppids:
-            time_series = template_time_series.format(participant_id=ppid)
-            time_series_img = self.load_img(time_series)
+                n_nans = np.count_nonzero(np.isnan(data))
+                n_infs = np.count_nonzero(np.isinf(data))
 
-            if time_series_img is None:
-                logging.warning(
-                    'required file(s) is/are missing for subject-id %s' % ppid)
+                if n_nans > 0:
+                    raise MaskError('%s NaN values in %s. Please manually'
+                                    'verify %s' % (n_nans, name, file))
+
+                if n_infs > 0:
+                    raise MaskError('%s inf values in %s. Please manually'
+                                    'verify %s' % (n_nans, name, file))
+
+        return seed_img, target_img
+
+    def _rsfmri(self) -> bool:
+        """Validate rsfMRI input data"""
+        seed_file = self.data['masks']['seed']
+        target_file = self.data['masks'].get('target', None)
+        space = self.data['masks']['space']
+        ts_file = self.data['time_series']
+        confounds = self.data.get('confounds', {})
+        sessions = self.data.get('session', [None])
+
+        # Prepare confounds
+        if confounds.get('file', None):
+            if confounds.get('delimiter', None) is None:
+                confounds['delimiter'] = '\t'
+                logging.warning('no confounds delimiter, using default: \\t')
+
+            if confounds.get('columns', None) is None:
+                logging.warning('no confounds columns defined, using all '
+                                'columns')
+
+        # Prepare seed and target if standard space is used
+        if space == 'standard':
+            try:
+                seed_img, target_img = self._masks(
+                    seed_file, target_file, space)
+            except MaskError as exc:
+                logging.error(exc)
+                return False
+            except SilentError:
+                return False
+
+        # Validate subject-specific files
+        for ppid, session in itertools.product(self.ppids, sessions):
+            if session:
+                name = 'subject-id %s, session %s' % (ppid, session)
+            else:
+                name = 'subject-id %s' % ppid
+
+            # Check if time-series file exists
+            ts = ts_file.format(participant_id=ppid, session=session)
+            ts_img = self.load_img(ts)
+            if ts_img is None:
+                logging.warning('missing expected file: %s' % ts)
                 self.ppids_bad.append(ppid)
                 continue
 
-            if not imgs_equal_3d([time_series_img, seed]):
-                logging.warning('time_series and seed_mask are not in the '
-                                'same space for subject-id %s' % ppid)
+            # Validate native masks
+            if space == 'native':
+                ppid_seed = seed_file.format(participant_id=ppid)
+                ppid_target = target_file.format(participant_id=ppid)
+
+                try:
+                    seed_img, target_img = self._masks(
+                        ppid_seed, ppid_target, space)
+                except MaskError as exc:
+                    logging.warning(exc)
+                    self.ppids_bad.append(ppid)
+                    continue
+                except SilentError:
+                    self.ppids_bad.append(ppid)
+                    continue
+
+            # Check if time-series and masks are in the same space
+            if not imgs_equal_3d([ts_img, seed_img, target_img]):
+                logging.warning('time_series and masks are not in the '
+                                'same space for %s' % name)
                 self.ppids_bad.append(ppid)
                 continue
 
-            if isinstance(template_confounds, dict):
+            # Check if confounds are valid
+            if confounds.get('file', None):
                 try:
                     df = pd.read_csv(
-                        template_confounds['file'].format(participant_id=ppid),
-                        sep=sep, engine='python')
+                        confounds['file'].format(
+                            participant_id=ppid,
+                            session=session
+                        ),
+                        sep=confounds['delimiter'],
+                        engine='python'
+                    )
                 except (EmptyDataError, FileNotFoundError) as exc:
                     logging.warning(exc)
                     self.ppids_bad.append(ppid)
                     continue
 
-                if usecols:
+                if confounds.get('columns', None):
                     header = df.columns.tolist()
-                    xusecols = []
-                    for col in usecols:
+                    usecols = []
+                    for col in confounds.get('columns', None):
                         if '*' in col:
-                            xusecols += [x for x in header if any(
+                            usecols += [x for x in header if any(
                                 fnmatch.fnmatch(x, p) for p in [col])]
                         else:
-                            xusecols.append(col)
+                            usecols.append(col)
 
-                    usecols = [i for i in xusecols if i is not None]
+                    usecols = [i for i in usecols if i is not None]
 
                     if not set(usecols).issubset(set(header)):
                         missing = list(set(usecols) - set(header))
                         logging.warning(
-                            'missing confounds columns for subject-id %s: %s'
-                            % (ppid, ', '.join(missing)))
+                            'missing confounds columns for %s: %s'
+                            % (name, ', '.join(missing)))
                         self.ppids_bad.append(ppid)
                         continue
 
-                if len(df) != time_series_img.shape[-1]:
-                    logging.warning('confounds and time-series for subject-id '
-                                    '%s do not have matching timepoints'
-                                    % ppid)
+                if len(df) != ts_img.shape[-1]:
+                    logging.warning('confounds and time-series for %s do not '
+                                    'have matching timepoints' % name)
                     self.ppids_bad.append(ppid)
                     continue
 
-        self.seed = seed
-        self.target = target
         self.ppids_bad = list(set(self.ppids_bad))
         self.ppids = list(set(self.ppids) - set(self.ppids_bad))
         return True
 
-    def _validate_dmri(self) -> bool:
-        seed = self.load_img(self.data['seed_mask'], level='error')
-        target = self.data.get('target_mask', None)
-
-        if target is None:
-            logging.warning('using default 2mm isotropic MNI152 gray matter '
-                            'template as target')
-            target = self.load_img(self.template, level='error')
-        else:
-            target = self.load_img(target, level='error')
-
-        if seed is None or target is None:
-            return False
-
-        if not imgs_equal_3d([seed, target]):
-            logging.error('seed- and target-mask are not in the same space')
-            return False
-
-        # validate bedpostx output
-        bet_binary_mask = self.data['bet_binary_mask']
-        xfm = self.data['xfm']
-        inv_xfm = self.data['inv_xfm']
+    def _dmri(self) -> bool:
+        """Validate dMRI input data"""
+        seed_file = self.data['masks']['seed']
+        target_file = self.data['masks'].get('target', None)
+        space = self.data['masks']['space']
+        bet_binary_mask_file = self.data['bet_binary_mask']
+        xfm_file = self.data['xfm']
+        inv_xfm_file = self.data['inv_xfm']
         samples = self.data['samples']
+        sessions = self.data.get('session', [None])
 
-        # TODO: validate more thoroughly
+        # Prepare seed and target if standard space is used
+        if space == 'standard':
+            try:
+                _, _ = self._masks(seed_file, target_file, space)
+            except MaskError as exc:
+                if exc is not None:
+                    logging.error(exc)
+                return False
 
-        for ppid in self.ppids:
-            merged = glob.glob(samples.format(participant_id=ppid) + '*')
-            if not merged:
-                logging.warning('file(s) are missing for subject-id %s' % ppid)
-                self.ppids_bad.append(ppid)
-
+        for ppid, session in itertools.product(self.ppids, sessions):
+            if session:
+                name = 'subject-id %s, session %s' % (ppid, session)
             else:
-                for file in [bet_binary_mask, xfm, inv_xfm]:
-                    if self.load_img(file.format(participant_id=ppid)) is None:
-                        logging.warning(
-                            'file(s) are missing for subject-id %s' % ppid)
-                        self.ppids_bad.append(ppid)
-                        break
+                name = 'subject-id %s' % ppid
 
-        self.seed = seed
-        self.target = target
+            # Validate native masks
+            if space == 'native':
+                ppid_seed = seed_file.format(participant_id=ppid)
+                ppid_target = target_file.format(participant_id=ppid)
+
+                try:
+                    _, _ = self._masks(ppid_seed, ppid_target, space)
+                except MaskError as exc:
+                    if exc is not None:
+                        logging.warning(exc)
+                    self.ppids_bad.append(ppid)
+                    continue
+
+            # Validate merged samples
+            merged = glob.glob(samples.format(
+                participant_id=ppid, session=session) + '*')
+
+            if not merged:
+                logging.warning('required file(s) is/are missing for %s'
+                                % name)
+                self.ppids_bad.append(ppid)
+                continue
+
+            # Validate bet_binary_mask
+            for file in [bet_binary_mask_file, xfm_file, inv_xfm_file]:
+                img = file.format(participant_id=ppid, session=session)
+                if not self.load_img(img, level='warning'):
+                    self.ppids_bad.append(ppid)
+                    break
+
         self.ppids_bad = list(set(self.ppids_bad))
         self.ppids = list(set(self.ppids) - set(self.ppids_bad))
         return True
 
-    def _validate_connectivity(self):
-        seed = self.load_img(self.data['seed_mask'], level='error')
+    def _connectivity(self):
+        """Validate connectivity matrix input data"""
+        seed_file = self.data['masks']['seed']
+        seed = self.load_img(seed_file, level='error')
+        seed_data = seed.get_data()
+        seed_coords_file = self.data['seed_coordinates']
+        n_voxels = np.count_nonzero(seed_data)
 
+        # Check if seed mask was loaded
         if seed is None:
             return False
 
-        n_voxels = np.count_nonzero(seed.get_data())
+        # Validate seed mask (must be binary, cannot be atlas)
+        if not np.array_equal(seed_data, seed_data.astype(bool)):
+            logging.error('seed mask %s is not binary' % seed_file)
 
         # validate seed coordinates file
-        seed_coords_file = self.data['seed_coordinates']
-
         try:
             self.seed_coordinates = np.load(seed_coords_file)
 
         except Exception as exc:
+            # TODO: More specific exception
             logging.error('unable to read contents of file: %s'
                           % seed_coords_file)
             return False
 
         if self.seed_coordinates.shape != (n_voxels, 3):
+            shape = str(self.seed_coordinates.shape)
             logging.error('expected shape (%s, 3), not %s for seed '
-                          'coordinates' % (n_voxels,
-                                           str(self.seed_coordinates.shape)))
+                          'coordinates' % (n_voxels, shape))
             return False
 
         # validate connectivity matrices
         template_conn = self.data['connectivity']
+        sessions = self.data.get('session', [None])
 
-        for ppid in self.ppids:
+        for ppid, session in itertools.product(self.ppids, sessions):
+            if session:
+                name = 'subject-id %s, session %s' % (ppid, session)
+            else:
+                name = 'subject-id %s' % ppid
+
             file = template_conn.format(participant_id=ppid)
 
             try:
@@ -283,327 +390,199 @@ class DataSet:
 
                 if shape[0] != n_voxels:
                     logging.warning('expected connectivity matrix shape '
-                                    '(%s, x), not (%s, x) for subject-id %s'
-                                    % (n_voxels, shape[0], ppid))
+                                    '(%s, x), not (%s, x) for %s'
+                                    % (n_voxels, shape[0], name))
                     self.ppids_bad.append(ppid)
 
-            except:  # TODO: make exception more specific
+            except:
+                # TODO: more specific exception
                 logging.warning('Unable to open %s' % file)
                 self.ppids_bad.append(ppid)
                 continue
 
-        self.seed = seed
         self.ppids_bad = list(set(self.ppids_bad))
         self.ppids = list(set(self.ppids) - set(self.ppids_bad))
         return True
 
-    @staticmethod
-    def _preproc_binarize(field: str, img: SpatialImage,
-                          bin_threshold: float = 0.0) -> SpatialImage:
-        data = img.get_data()
+    def get_size(self) -> None:
+        """Estimate size of interim output"""
+        if self.modality in ('rsfmri', 'dmri'):
+            target_size = self.n_target_voxels
+            conn_size = self.n_seed_voxels * target_size * len(self.ppids)
+            conn_size = readable_bytesize(conn_size, 8)
+            logging.info('Approximate size of all connectivity matrices: %s'
+                         % conn_size)
 
-        if not np.array_equal(data, data.astype(bool)):
-            n_nans = np.count_nonzero(np.isnan(data))
-            n_infs = np.count_nonzero(np.isinf(data))
+        cluster_size = self.n_seed_voxels * len(self.ppids)
+        cluster_size += self.n_seed_voxels * 2
+        cluster_size += len(self.ppids) + 1
+        cluster_size = readable_bytesize(cluster_size, 8)
+        logging.info('Approximate size of all cluster label files: %s'
+                     % cluster_size)
 
-            if n_nans > 0:
-                logging.warning(
-                    '%s NaN values in %s. Please manually verify %s.nii'
-                    % (n_nans, field, field))
-
-            if n_infs > 0:
-                logging.warning(
-                    '%s inf values in %s. Please manually verify %s.nii'
-                    % (n_infs, field, field))
-
-        img = binarize_3d(img, threshold=bin_threshold)
-        return img
-
-    def _preprocess_rsfmri(self, parameters: dict) -> None:
-        mask_preproc_seed = parameters.get('mask_preproc_seed', {})
-        mask_preproc_target = parameters.get('mask_preproc_target', {})
-        subsampling = mask_preproc_target['subsampling']
-
-        if subsampling:
-            logging.info('applying subsampling on target_mask')
-            self.target = subsample_img(self.target, f=2)
-
-    def _preprocess_dmri(self, parameters: dict) -> None:
-        mask_preproc_seed = parameters.get('mask_preproc_seed', {})
-        mask_preproc_target = parameters.get('mask_preproc_target', {})
-
-        upsampling = mask_preproc_seed['upsample_to']['apply']
-        vox_dim = mask_preproc_seed['upsample_to']['voxel_dimensions']
-
-        if upsampling:
-            if len(vox_dim) == 1:
-                vox_dim *= 3
-
-            logging.info('stretching seed_mask to %s'
-                         % 'x'.join(map(str, vox_dim)))
-            mapping = list(
-                vox2out_vox((self.seed.shape, self.seed.affine), vox_dim))
-            a = np.sign(self.seed.affine)
-            b = np.sign(mapping[1])
-            mapping[1] *= (a * b)
-            self.highres_seed = stretch_img(self.seed, mapping)
-
-        # Target
-        downsampling = mask_preproc_target['downsample_to']['apply']
-        vox_dim = mask_preproc_target['downsample_to']['voxel_dimensions']
-
-        if downsampling:
-            if len(vox_dim) == 1:
-                vox_dim *= 3
-
-            logging.info('resampling target_mask to %s'
-                         % 'x'.join(map(str, vox_dim)))
-            mapping = list(vox2out_vox((
-                self.target.shape, self.target.affine), vox_dim))
-            a = np.sign(self.target.affine)
-            b = np.sign(mapping[1])
-            mapping[1] *= (a * b)
-            self.target = resample_from_to(self.target, mapping, order=0,
-                                           mode='nearest')
-
-    def _memory_estimate(self):
-        buffer = 250  # in MB
+    def get_mem(self) -> None:
+        """Estimate memory usage per task"""
         mem_mb_conn = 0
         mem_mb_clust = 0
+        sessions = self.data.get('session', [None])
 
         # Connectivity task
         if self.modality == 'rsfmri':
             time_series = self.data['time_series']
             sizes = [
-                os.path.getsize(time_series.format(participant_id=ppid))
-                for ppid in self.ppids
+                os.path.getsize(time_series.format(
+                    participant_id=ppid, session=session
+                ))
+                for ppid, session in itertools.product(self.ppids, sessions)
             ]
             mem_mb_conn = bytes_to(np.ceil(max(sizes) * 2.5), 'mb')
             mem_mb_conn = int(np.ceil(mem_mb_conn))
-            mem_mb_conn += buffer
+            mem_mb_conn += self.mem_padding
 
         elif self.modality == 'dmri':
             samples = self.data['samples'] + '*'
             sizes = []
-            for ppid in self.ppids:
+
+            for ppid, session in itertools.product(self.ppids, sessions):
                 sizes.append(sum([
                     os.path.getsize(sample)
                     for sample in glob.glob(
-                        samples.format(participant_id=ppid)
+                        samples.format(participant_id=ppid, session=session)
                     )
                 ]))
             mem_mb_conn = bytes_to(np.ceil(max(sizes) * 2.5), 'mb')
             mem_mb_conn = int(np.ceil(mem_mb_conn))
-            mem_mb_conn += buffer
+            mem_mb_conn += self.mem_padding
 
         # Clustering task
         if self.modality in ('rsfmri', 'dmri'):
-            seed = np.count_nonzero(self.seed.get_data())
-            target = np.count_nonzero(self.target.get_data())
+            seed = self.n_seed_voxels
+            target = self.n_target_voxels
             mem_mb_clust = bytes_to(seed * target * len(self.ppids), 'mb')
             mem_mb_clust = int(np.ceil(mem_mb_clust))
-            mem_mb_clust += buffer
+            mem_mb_clust += self.mem_padding
 
         elif self.modality == 'connectivity':
             # TODO: If .npz, then estimate larger size!
             connectivity = self.data['connectivity']
             sizes = [
-                os.path.getsize(connectivity.format(participant_id=ppid))
-                for ppid in self.ppids
+                os.path.getsize(connectivity.format(
+                    participant_id=ppid, session=session
+                ))
+                for ppid, session in itertools.product(self.ppids, sessions)
             ]
             mem_mb_clust = bytes_to(np.ceil(max(sizes)), 'mb')
             mem_mb_clust = int(np.ceil(mem_mb_clust))
-            mem_mb_clust += buffer
+            mem_mb_clust += self.mem_padding
 
-            # TODO: temporary until above to-do resolved
+            # TODO: temporary padding until above to-do resolved
             mem_mb_clust += 750
 
         self.mem_mb['connectivity'] = mem_mb_conn
         self.mem_mb['clustering'] = mem_mb_clust
 
+    def _references(self, imgs: list) -> bool:
+        """Validate reference images to ensure they are valid nifti images
+        that have the same space as the input seed mask.
+
+        References should also at least have 2 clusters.
+        """
+
+        # TODO: references can still be different after mask processing
+        # basically: median filtering cannot be used if references are given
+        #   unless references are also median filtered
+
+        seed = self.data['masks']['seed']
+        seed = self.load_img(seed, level=None)
+        if seed is None:
+            logging.error('cannot validate references because the seed mask '
+                          'could not be loaded')
+            return False
+
+        valid = True
+        for file in imgs:
+            # Check if image can be loaded
+            img = self.load_img(file, level='error')
+            if img is None:
+                valid = False
+                continue
+
+            # Check if image is in the same space as the seed
+            if not imgs_equal_3d([img, seed]):
+                valid = False
+                logging.error('reference \'%s\' is not in the same space as '
+                              'the seed mask' % file)
+                continue
+
+            # Check if image covers the same voxels as the seed
+            data = img.get_data()
+            ref_coords = np.asarray(tuple(zip(*np.where(data > 0))))
+            seed_coords = np.asarray(
+                tuple(zip(*np.where(seed.get_data() > 0))))
+
+            if not np.array_equal(ref_coords, seed_coords):
+                valid = False
+                logging.error('reference \'%s\' does not cover the same '
+                              'voxels as the seed mask' % file)
+                continue
+
+            # Check if image has integer-based cluster-ids
+            if not np.all(data == data.astype(int)):
+                valid = False
+                logging.error('reference \'%s\' does not have integer-based'
+                              'cluster-ids (they may be floats)' % file)
+                continue
+
+            # Check if the reference image has at least 2 clusters
+            # That is, 3 unique values (including 0 for background)
+            if np.unique(data).size <= 2:
+                valid = False
+                logging.error('No clusters found in reference \'%s\'' % file)
+                continue
+
+        return valid
+
     def validate(self) -> bool:
-        self.ppids = self._get_subject_ids(**self.data['participants'])
+        """Validate input data set"""
+        # Retrieve and validate participant-ids
+        self.ppids = self.get_ppids(**self.data['participants'])
         if len(self.ppids) == 0:
             return False
 
-        if hasattr(self, '_validate_%s' % self.modality):
-            data_validation = getattr(self, '_validate_%s' % self.modality)
+        # Validate modality-specific input data
+        if hasattr(self, '_%s' % self.modality):
+            data_validation = getattr(self, '_%s' % self.modality)
             if not data_validation():
                 return False
         else:
-            raise ValueError(
-                'method self._validate_%s not found' % self.modality)
+            raise ValueError('method self._%s not found' % self.modality)
+
+        # Validate reference images
+        self.references = self.data.get('references', None)
+        if self.references:
+            if not self._references(self.references):
+                return False
 
         if not len(self.ppids) > 0:
             logging.error('No subjects left after removing those with missing '
                           'or bad data')
             return False
 
-        self.is_validated = True
+        self.get_mem()
+        self.get_size()
         return True
-
-    def preprocess(self) -> None:
-        if not self.is_validated:
-            raise ValueError('cannot initiate preprocessing before validation')
-
-        if self.modality == 'connectivity':
-            self._memory_estimate()
-            return
-
-        mask_preproc_seed = self.parameters.get('mask_preproc_seed', {})
-        mask_preproc_target = self.parameters.get('mask_preproc_target', {})
-
-        # Seed
-        bin_thresh = mask_preproc_seed['binarization']
-        medfilt = mask_preproc_seed['median_filtering']['apply']
-        medfilt_dist = mask_preproc_seed['median_filtering']['distance']
-        self.seed = self._preproc_binarize('seed_mask', self.seed, bin_thresh)
-
-        if medfilt:
-            logging.info('applying median filter on seed_mask (distance=%s)'
-                         % medfilt_dist)
-            self.seed = median_filter_img(self.seed, dist=medfilt_dist)
-
-        # Target
-        bin_thresh = mask_preproc_target['binarization']
-        remove_seed = mask_preproc_target['remove_seed']['apply']
-        remove_seed_dist = mask_preproc_target['remove_seed']['distance']
-
-        self.target = self._preproc_binarize('target_mask', self.target,
-                                             bin_thresh)
-
-        if remove_seed:
-            logging.info('removing seed_mask from target_mask (distance=%s)'
-                         % remove_seed_dist)
-            self.target = subtract_img(self.target, self.seed,
-                                       remove_seed_dist)
-
-        if hasattr(self, '_preprocess_%s' % self.modality):
-            preproc = getattr(self, '_preprocess_%s' % self.modality)
-            preproc(self.parameters)
-        else:
-            raise ValueError(
-                'method self._preprocess_%s not found' % self.modality)
-
-        # Get seed voxel coordinates
-        self.seed_coordinates = get_mask_indices(self.seed, order='C')
-        self._memory_estimate()
-
-
-class Workflow:
-    def __init__(self, workdir, modality):
-        self.workdir = workdir
-        self.modality = modality
-        self.templates = pkg_resources.resource_filename(__name__, 'templates')
-        self.workflow = os.path.join(self.workdir, 'Snakefile')
-        self.cluster_json = os.path.join(self.templates, 'cluster.json')
-        self.snakefiles = ['header.Snakefile', 'body.Snakefile']
-
-    def _get(self, data: dict, *args: str) -> Union[str, None]:
-        if not isinstance(data, dict):
-            return None
-
-        return data.get(args[0], None) if len(args) == 1 \
-            else self._get(data.get(args[0], {}), *args[1:])
-
-    def _parse(self, line: str, document: dict) -> Union[str, bool]:
-        """Parse <cbptools['key1:key2:key3']> string"""
-
-        s, e = "<cbptools[\'", "\']>"
-        if line.find(s) != -1:
-            content = line[line.find(s) + len(s):line.find(e)]
-            inplace, force = False, False
-
-            if content.startswith('!'):
-                content = content[1:]
-                inplace = True
-
-            elif content.startswith('+'):
-                content = content[1:]
-                force = True
-
-            keys = content.split(':')
-            value = self._get(document, *keys)
-
-            if isinstance(value, dict):
-                value = value if not value.get('file', None) else value.get(
-                    'file')
-
-            # TODO: Check if False can be returned for any value that is None
-            if keys[0] == 'data' and not value:
-                return False
-
-            if inplace:
-                value = repr(value).encode('utf-8').decode('unicode_escape') \
-                    if isinstance(value, str) else str(value)
-                line = line.replace('%s!%s%s' % (s, content, e), value)
-
-            elif force:
-                line = line.replace('%s+%s%s' % (s, content, e), str(value))
-
-            else:
-                value = repr(value) if isinstance(value, str) else str(value)
-                line = line.replace(
-                    '%s%s%s' % (s, content, e),
-                    '%s = %s' % (keys[-1], value)
-                )
-
-        return line
-
-    def create(self, data: dict, parameters: dict, mem_mb: tuple) -> None:
-        # Add temporary fields for creaeting the workflow
-        if self.modality in ('rsfmri', 'dmri'):
-            self.snakefiles.insert(1, '%s.Snakefile' % self.modality)
-            data['connectivity'] = \
-                'connectivity/connectivity_{participant_id}.npz'
-            data['seed_coordinates'] = 'seed_coordinates.npy'
-
-        if self.modality == 'rsfmri':
-            data['touchfile'] = 'log/.touchfile'
-
-        if self.modality == 'dmri':
-            pd = parameters.get(
-                'probtract_proc', {}).get('correct_path_distribution', False)
-            loop_check = parameters.get(
-                'probtract_proc', {}).get('loop_check', False)
-            parameters['probtract_proc']['correct_path_distribution'] = \
-                '--pd' if pd else ''
-            parameters['probtract_proc']['loop_check'] = \
-                '-l' if loop_check else ''
-
-        document = {
-            'data': data,
-            'parameters': parameters,
-            'mem_mb': {'connectivity': mem_mb[0], 'clustering': mem_mb[1]}
-        }
-
-        # Parse workflow
-        with open(self.workflow, 'w') as sf:
-            for snakefile in self.snakefiles:
-                template = os.path.join(self.templates, snakefile)
-                with open(template, 'r') as f:
-                    for line in f:
-                        line = self._parse(line, document)
-
-                        if line is not False:
-                            sf.write(line)
-
-        # Copy cluster.json file
-        shutil.copy(self.cluster_json, self.workdir)
 
 
 class Setup:
-    """Validates and prepares data and configuration"""
-
     def __init__(self, document: dict):
-        logging.error = CallCountDecorator(logging.error)
-        logging.warning = CallCountDecorator(logging.warning)
+        """Validates and prepares data and configuration"""
         self.document = document
         self.modality = document.get('modality', None)
         self.data_set = None
 
     @staticmethod
     def _fsl_available():
+        """Check if FSL's probtrackx2 is accessible"""
         fsl = shutil.which('fsl')
         fsl_outputtype = os.getenv('FSLOUTPUTTYPE')
         fsl_dir = os.getenv('FSLDIR')
@@ -620,17 +599,21 @@ class Setup:
             logging.warning('no module named \'probtrackx2\' (FSL)')
 
     def overview(self):
+        """Provide an overview of errors and warnings during setup"""
         if logging.error.count > 0:
-            display('%s error(s) during setup' % logging.error.count)
+            display('%s error(s) during setup {red}[ERROR]{endc}'
+                    % logging.error.count)
 
         if logging.warning.count > 0:
-            display('%s warning(s) during setup' % logging.warning.count)
+            display('%s warning(s) during setup {yellow}[WARNING]{endc}'
+                    % logging.warning.count)
 
         if len(self.data_set.ppids_bad) > 0:
-            display('%s participant(s) removed due to missing or bad data'
-                    % len(self.data_set.ppids_bad))
+            display('%s participant(s) removed due to missing or bad data '
+                    '{yellow}[WARNING]{endc}' % len(self.data_set.ppids_bad))
 
     def save(self, workdir: str) -> None:
+        """Save/copy files to project directory"""
         # Create folder structure
         os.makedirs(workdir, exist_ok=True)
         os.makedirs(os.path.join(workdir, 'log'), exist_ok=True)
@@ -649,52 +632,34 @@ class Setup:
             fpath = os.path.join(workdir, 'participants_bad.tsv')
             df.to_csv(fpath, sep='\t', index=False)
 
-        if isinstance(self.data_set.seed, SpatialImage):
-            fpath = os.path.join(workdir, 'seed_mask.nii.gz')
-            nib.save(self.data_set.seed, fpath)
-            logging.info('created file %s' % fpath)
-
-        if isinstance(self.data_set.target, SpatialImage):
-            fpath = os.path.join(workdir, 'target_mask.nii.gz')
-            nib.save(self.data_set.target, fpath)
-            logging.info('created file %s' % fpath)
-
-        if isinstance(self.data_set.highres_seed, SpatialImage):
-            fpath = os.path.join(workdir, 'highres_seed_mask.nii.gz')
-            nib.save(self.data_set.highres_seed, fpath)
-            logging.info('created file %s' % fpath)
-
         if isinstance(self.data_set.seed_coordinates, np.ndarray):
             fpath = os.path.join(workdir, 'seed_coordinates.npy')
-            np.save(fpath, self.data_set.seed_coordinates)
+            # np.save(fpath, self.data_set.seed_coordinates)
+            np.save(fpath, self.data_set.data['seed_coordinates'])
             logging.info('created file %s' % fpath)
+
+        if isinstance(self.data_set.references, list):
+            os.makedirs(os.path.join(workdir, 'references'), exist_ok=True)
+            for reference in self.data_set.references:
+                fname = os.path.basename(reference)
+                fpath = os.path.join(workdir, 'references', fname)
+                shutil.copy(reference, fpath)
+                logging.info('copied file %s' % fpath)
 
         logging.info('Removed participants: %s' % len(self.data_set.ppids_bad))
         logging.info('Included participants: %s' % len(self.data_set.ppids))
 
-        # Estimate size of interim output
-        seed_size = np.count_nonzero(self.data_set.seed.get_data())
-
-        if self.modality in ('rsfmri', 'dmri'):
-            target_size = np.count_nonzero(self.data_set.target.get_data())
-            conn_size = seed_size * target_size * len(self.data_set.ppids)
-            conn_size = readable_bytesize(conn_size, 8)
-            logging.info('Approximate size of all connectivity matrices: %s'
-                         % conn_size)
-
-        cluster_size = seed_size * len(self.data_set.ppids)
-        cluster_size += seed_size * 2
-        cluster_size += len(self.data_set.ppids) + 1
-        cluster_size = readable_bytesize(cluster_size, 8)
-        logging.info(
-            'Approximate size of all cluster label files: %s' % cluster_size)
-
         # Create the workflow
-        mem_mb = (self.data_set.mem_mb.get('connectivity'),
-                  self.data_set.mem_mb.get('clustering'))
-        workflow = Workflow(workdir, self.modality)
-        workflow.create(self.data_set.data.copy(),
-                        self.data_set.parameters.copy(), mem_mb)
+        document = {
+            'modality': self.modality,
+            'data': self.data_set.data.copy(),
+            'parameters': self.document['parameters'].copy(),
+            'mem_mb': {
+                'connectivity': self.data_set.mem_mb.get('connectivity'),
+                'clustering': self.data_set.mem_mb.get('clustering')
+            }
+        }
+        build_workflow(document, save_at=workdir)
 
         # Save the final configuration file
         fpath = os.path.join(workdir, 'configuration.yaml')
@@ -702,8 +667,8 @@ class Setup:
             yaml.dump(self.document, f, default_flow_style=False)
 
     def process(self) -> bool:
-        logging.info('Selected modality for input validation: %s'
-                     % self.modality)
+        """Start the data validation procedure"""
+        logging.info('starting %s data validation' % self.modality)
         if self.modality == 'dmri':
             self._fsl_available()
 
@@ -713,12 +678,17 @@ class Setup:
         if not data_is_valid:
             return False
 
-        if not len(self.data_set.ppids) >= 2:
+        space = self.document.get('masks', {}).get('space')
+        if not len(self.data_set.ppids) > 1 and space == 'standard':
+            # Standard space does group analysis, thus needing at least 2 pps
             logging.error('not enough participants left to continue '
                           '(the bare minimum is 2)')
             return False
+        elif not len(self.data_set.ppids) > 0:
+            # Native space can work with just 1 pp
+            logging.error('no participants left to process')
+            return False
 
-        self.data_set.preprocess()
         return True
 
 

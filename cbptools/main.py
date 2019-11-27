@@ -59,12 +59,13 @@ def main():
     )
 
     args = parser.parse_args()
+    args.run(args, parsers=[create_command, example_command])
 
-    try:
-        args.run(args, parsers=[create_command, example_command])
-
-    except AttributeError:
-        parser.error('too few arguments')
+    # try:
+    #     args.run(args, parsers=[create_command, example_command])
+    #
+    # except AttributeError as exc:
+    #     parser.error('too few arguments')
 
 
 def create(params, parsers) -> None:
@@ -144,9 +145,9 @@ def create(params, parsers) -> None:
             display('{blue}Log file:{endc} %s' % logfile)
             sys.exit()
     else:
-        display('Validating data set files {red}[FAILED]{endc}')
+        display('Validating data set files {red}[FAILED]{endc}\n')
         setup.overview()
-        display('{red}Project Creation Failed: Resolve all errors before '
+        display('\n{red}Project Creation Failed: Resolve all errors before '
                 'continuing{endc}')
         display('{blue}Log file:{endc} %s' % logfile)
         sys.exit()
@@ -159,11 +160,10 @@ def create(params, parsers) -> None:
                 copy_function=shutil.copytree)
 
     setup.overview()
-
-    display('New project created in {yellow}%s{endc}' % workdir)
+    display('\n{blue}Project directory:{endc} %s' % workdir)
     display('{blue}Log file:{endc} %s' % os.path.join(workdir, 'log', logfile))
-    display('\nManually edit cluster.json to execute the workflow on a '
-            'cluster environment (e.g., SLURM or qsub)')
+    display('\nManually edit %s to execute the workflow on a cluster '
+            'environment' % os.path.join(workdir, 'cluster.json'))
     sys.exit()
 
 
@@ -171,6 +171,9 @@ def example(params, parsers):
     """Copy an example configuration file to the current working directory"""
     filename = 'config_%s.yaml' % params.modality
     dest = os.path.join(os.getcwd(), filename)
+
+    # Turn off validation logging
+    logging.basicConfig(level=logging.CRITICAL)
 
     if os.path.exists(dest):
         path, ext = os.path.splitext(dest)

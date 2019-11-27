@@ -74,7 +74,7 @@ def plot_scores(data, out_file, x, y=None, figure_format='png', hue=None,
 
 
 def plot_heatmap(data: np.ndarray, out_file: str, source: str = None,
-                 plot_type: str = 'heatmap') -> None:
+                 plot_type: str = 'heatmap', **kwargs) -> None:
     """ Plot a volumetric ROI, color coding the cluster labels.
 
     Parameters
@@ -88,7 +88,12 @@ def plot_heatmap(data: np.ndarray, out_file: str, source: str = None,
     plot_type : str, optional
         Type of plot to generate. Allowed values are {'clustermap', 'heatmap'},
         with 'heatmap' being the default.
+    kwargs : dict, optional
+        Keyword arguments passed to the seaborn heatmap function
     """
+    if kwargs is None:
+        kwargs = dict()
+
     plt.ioff()
     sns.set_style('whitegrid',
                   {'font.family': 'Arial', 'font.sans-serif': 'Arial'})
@@ -105,11 +110,17 @@ def plot_heatmap(data: np.ndarray, out_file: str, source: str = None,
         data = data[index, :]
         data = data[:, index]
 
+    if kwargs.get('xticklabels', None) is None:
+        kwargs['xticklabels'] = False
+
+    if kwargs.get('yticklabels', None) is None:
+        kwargs['xticklabels'] = False
+
+    if kwargs.get('robust', None) is None:
+        kwargs['robust'] = True
+
     ax = sns.heatmap(
         data,
-        xticklabels=False,
-        yticklabels=False,
-        robust=True,
         cbar_kws=dict(
             use_gridspec=False,
             location="right",
@@ -117,7 +128,8 @@ def plot_heatmap(data: np.ndarray, out_file: str, source: str = None,
             aspect=5,
             anchor=(-0.25, 1.0),
             ticks=[0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
-        )
+        ),
+        **kwargs
     )
     cbar = ax.collections[0].colorbar
     cbar.ax.tick_params(axis='y', direction='in')
@@ -127,6 +139,40 @@ def plot_heatmap(data: np.ndarray, out_file: str, source: str = None,
 
     plt.savefig(out_file, format='png', bbox_inches='tight', pad_inches=0.01,
                 facecolor=fig.get_facecolor(), transparent=False)
+    plt.close(fig)
+
+
+def plot_comparison(data: np.ndarray, out_file: str,
+                    source: str = None, figure_format: str = 'png',
+                    title: str = None) -> None:
+
+    plt.tight_layout()
+    plt.ioff()
+    sns.set_style('whitegrid',
+                  {'font.family': 'Arial', 'font.sans-serif': 'Arial'})
+    sns.set_context('paper', font_scale=1.)
+    sns.set_palette('bright')
+
+    plt.figure(figsize=(2, 2))
+    ax = sns.heatmap(data, annot=True, linewidth=.5, square=True, cbar=False)
+    ax.set_ylabel('')
+    ax.set_xlabel('group clusters')
+    ax.xaxis.set_label_position('top')
+    ax.xaxis.set_ticks_position('top')
+    ax.tick_params(axis=u'both', which=u'both', length=0)
+
+    fig = ax.get_figure()
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+
+    if title:
+        ax.set_title(title, weight='bold')
+
+    if source:
+        fig.text(.1, .0, 'Source: %s' % source, ha='left', fontsize=8)
+
+    fig.savefig(out_file, format=figure_format, bbox_inches='tight',
+                pad_inches=0.01)
     plt.close(fig)
 
 

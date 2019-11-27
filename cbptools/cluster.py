@@ -4,6 +4,7 @@
 
 from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
+from sklearn import metrics
 from scipy.spatial.distance import euclidean
 import itertools
 import numpy as np
@@ -50,6 +51,12 @@ def find_centers(x: np.ndarray, labels: list) -> np.ndarray:
     """
     return np.asarray([np.mean(x[labels == i], axis=0)
                        for i in np.unique(labels)])
+
+
+def silhouette_score(x, y):
+    """helper function to automatically append the euclidean metric to
+    the silhouette_score function"""
+    return metrics.silhouette_score(x, y, metric='euclidean')
 
 
 def weak_deletion_stability_score(x: np.ndarray, y: list,

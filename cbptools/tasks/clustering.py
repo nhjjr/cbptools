@@ -1,7 +1,6 @@
 from cbptools.utils import sort_files
 from cbptools.cluster import relabel
 from cbptools.image import map_labels
-from sklearn.cluster import KMeans
 from scipy.spatial.distance import pdist
 from scipy.cluster import hierarchy
 from scipy import stats
@@ -10,38 +9,33 @@ import numpy as np
 import os
 
 
-def participant_level_clustering(connectivity, out: str, n_clusters: int,
-                                 algorithm: str = 'auto',
-                                 init: str = 'random', max_iter: int = 10000,
-                                 n_init: int = 100) -> None:
+def participant_level_clustering(input: dict, output: dict,
+                                 params: dict) -> None:
     """ Perform k-means clustering on the input connectivity
     matrix.
 
     Parameters
     ----------
-    connectivity : str
-        Path to the connectivity matrix that should be clustered
-        (.npy)
-    out : str
-        Output filename for the k-means labels (.npy)
-    n_clusters : int
-        The number of clusters to form. See
-        sklearn.cluster.KMeans
-    algorithm : str, optional
-        K-means algorithm to use. See sklearn.cluster.KMeans
-    init : str, optional
-        Method for initialization, defaults to ‘random’.
-        See sklearn.cluster.KMeans
-    max_iter : int, optional
-        Number of iterations of the k-means algorithm.
-        See sklearn.cluster.KMeans
-    n_init : int
-        Number of initializations of the k-means algorithm.
-        See sklearn.cluster.KMeans
+    input : dict
+        Input files, allowed: {connectivity}
+    output : dict
+        Output file, allowed {labels}
+    params : dict
+        Parameters, allowed {method, options, n_clusters}. The options
+        parameter is equivalent to cluster_options in the CBPtools
+        documentation on readthedocs.io under the parameters for 'clustering'.
+
     """
 
-    _, ext = os.path.splitext(connectivity)
-    connectivity = np.load(connectivity)
+    # Input, output, params
+    connectivity_file = input.get('connectivity')
+    labels_file = output.get('labels')
+    method = params.get('method')
+    options = params.get('options')
+    n_clusters = params.get('n_clusters')
+
+    _, ext = os.path.splitext(connectivity_file)
+    connectivity = np.load(connectivity_file)
 
     if ext == '.npz':
         connectivity = connectivity.get('connectivity')
@@ -49,74 +43,87 @@ def participant_level_clustering(connectivity, out: str, n_clusters: int,
     # If the connectivity file is empty (connectivity could not be computed),
     # create an empty labels file
     if connectivity.size == 0:
-        np.save(out, np.array([]))
+        np.save(labels_file, np.array([]))
         return
 
-    kmeans = KMeans(
-        algorithm=algorithm,
-        init=init,
-        max_iter=max_iter,
-        n_clusters=n_clusters,
-        n_init=n_init
-    )
-    kmeans.fit(connectivity)
+    # Import clustering method
+    if method == 'kmeans':
+        from sklearn.cluster import KMeans as Cluster
+
+    elif method == 'spectral':
+        from sklearn.cluster import SpectralClustering as Cluster
+        from sklearn.metrics.pairwise import kernel_metrics
+
+        if isinstance(options.get('eigen_tol', None), str):
+            # Convert scientific notation from string to float
+            options['eigen_tol'] = float(options['eigen_tol'])
+
+        if options.get('kernel', None):
+            options['affinity'] = options.pop('kernel')
+        else:
+            options['affinity'] = None
+
+        if options['affinity'] != 'nearest_neighbors':
+            if options['affinity'] not in kernel_metrics().keys():
+                raise ValueError('Unknown kernel: %s' % options['affinity'])
+
+    elif method == 'agglomerative':
+        from sklearn.cluster import AgglomerativeClustering as Cluster
+
+        if options.get('distance_metric', None):
+            options['affinity'] = options.pop('distance_metric')
+        else:
+            options['affinity'] = None
+
+        if options['affinity'] is None:
+            raise ValueError('Distance metric not specified')
+
+    else:
+        raise ValueError('Unknown clustering method: %s' % method)
+
+    clustering = Cluster(n_clusters=n_clusters, **options)
+    clustering.fit(connectivity)
+    labels = clustering.labels_
 
     # cluster labels are 0-indexed
-    np.save(out, kmeans.labels_)
+    np.save(labels_file, labels)
 
 
-def group_level_clustering(seed_img: str, participants: str,
-                           individual_labels: list, linkage: str,
-                           out_labels: str, out_img: str,
-                           method: str = 'mode',
-                           seed_indices: str = None) -> None:
+def group_level_clustering(input: dict, output: dict, params: dict) -> None:
     """ Perform group-level analysis on all individual participant
     clustering results.
 
     Parameters
     ----------
-    seed_img : str
-        Path to the region-of-interest mask nifti image. This is
-        used for projecting the cluster labels upon the
-        region-of-interest mask.
-    participants : str
-        Path to the participants tsv file. This is used to order
-        the group labels by participant_id.
-    individual_labels : list
-        Paths to all the participant clustering results. This is
-        used as input for generating the group-clustering.
-    linkage : str
-        Linkage method to use for agglomerative clustering.
-        Allowed values are: 'complete', 'average', 'single'.
-        However, single is not recommended for this type of data.
-    out_labels : str
-        Output filename (.npz) for the relabeled individual participant
-        labels, the relabeling accuracy, the hierarchical group labels,
-        the cophenetic correlation for the hierarchical clustering, and
-        if the method is 'mode' also the mode group labels and the counts
-        for the mode.
-    out_img : str
-        Output filename for a nifti image in which the group-cluster
-        labels are projected upon the region-of-interest
-        mask.
-    method : str
-        Method defining the final group labels. Allowed values are:
-        {'agglomerative', 'mode'}. For the agglomerative method, the
-        group labels are defined as the labels obtained from hierarchical
-        clustering. For the mode method, the individual participant
-        labels are relabeled using the hierarchical clustering results
-        as a reference. The mode is then taken from all relabeled
-        participant clusterings and used as a group level clustering.
-    seed_indices : str
-        Path to the numpy file containing the indices of the seed voxels.
+    input : dict
+        Input files, allowed: {seed_img, participants, seed_coordinates,
+        labels}
+    output : dict
+        Output file, allowed {group_labels, group_img}
+    params : dict
+        Parameters, allowed {linkage, method}. The options parameter is
+        equivalent to grouping in the CBPtools documentation on readthedocs.io
+        under the parameters for 'clustering'.
+
     """
+
+    # Input, output, params
+    participants = input.get('participants')
+    individual_labels = input.get('labels')
+    out_labels = output.get('group_labels')
+    out_img = output.get('group_img')
+    method = params.get('method')
+    linkage = params.get('linkage')
+    seed_img = input.get('seed_img')
+    seed_coordinates = input.get('seed_coordinates')
 
     if method not in ('agglomerative', 'mode'):
         raise ValueError('Unknown group cluster method: %s' % method)
 
     # Aggregate subject-level cluster labels into one matrix
     # Resulting shape is (participants, voxels)
-    individual_labels = sort_files(participants, individual_labels, pos=-1)
+    individual_labels = sort_files(participants, individual_labels,
+                                   sep='/', pos=1)
     individual_labels = np.asarray([np.load(f) for f in individual_labels])
 
     if len(individual_labels.shape) != 2:
@@ -172,7 +179,7 @@ def group_level_clustering(seed_img: str, participants: str,
 
     # Map labels to seed-mask image based on indices
     seed_img = nib.load(seed_img)
-    seed_indices = np.load(seed_indices)
+    seed_indices = np.load(seed_coordinates)
     group_labels += 1  # avoid 0-labeling
     group_img = map_labels(
         img=seed_img,
@@ -180,3 +187,30 @@ def group_level_clustering(seed_img: str, participants: str,
         indices=seed_indices
     )
     nib.save(group_img, out_img)
+
+
+def merge_individual_labels(input: dict, output: dict) -> None:
+    """ Merge individual label results when no group analysis will be
+    performed.
+
+    Parameters
+    ----------
+    input : dict
+        Input files, allowed: {labels}
+    output : dict
+        Output file, allowed {merged_labels}
+    """
+
+    # Input, output, params
+    label_files = input.get('labels')
+    merged_labels = output.get('merged_labels')
+
+    all_labels = dict()
+
+    for label_file in label_files:
+        basename = os.path.basename(label_file)
+        basename, _ = os.path.splitext(basename)
+        labels = np.load(label_file)
+        all_labels[basename] = labels
+
+    np.savez(merged_labels, **all_labels)

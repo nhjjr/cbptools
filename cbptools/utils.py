@@ -2,11 +2,26 @@
 # -*- coding: utf-8 -*-
 """Utilities for logging and file processing"""
 
+from typing import Union
 import pandas as pd
 import math
 import yaml
 import numpy as np
 import zipfile
+
+
+def config_get(keymap, config, default=None):
+    """Retrieve a nested value from a dict using a key mapping"""
+    def delve(data: dict, *args: str) -> Union[str, dict, None]:
+        if not isinstance(data, dict):
+            return None
+
+        return data.get(args[0], None) if len(args) == 1 \
+            else delve(data.get(args[0], {}), *args[1:])
+
+    mapping = keymap.split('.')
+    value = delve(config, *mapping)
+    return value if value is not None else default
 
 
 class TColor:

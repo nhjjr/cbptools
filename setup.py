@@ -46,7 +46,7 @@ setup(
     },
     install_requires=[
         # 'datrie@git+https://github.com/pytries/datrie.git',
-        'matplotlib>=3.0.3',
+        'matplotlib==3.0.3',  # >=3.1.1
         'nibabel>=2.5.0',
         'numpy>=1.17.0',
         'pandas>=0.25.0',

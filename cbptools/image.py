@@ -355,3 +355,24 @@ def make_hollow(arr: np.ndarray) -> SpatialImage:
     tmp = arr.copy()
     tmp *= hollowed
     return tmp
+
+
+def extract_regions(atlas: SpatialImage,
+                    region_ids: Union[list, int]) -> SpatialImage:
+    """Extract regions from an atlas"""
+    if isinstance(region_ids, int):
+        region_ids = [region_ids]
+
+    data = atlas.get_data()
+
+    if not np.all(np.isin(region_ids, data)):
+        raise ValueError('could not find some (or all) of the given '
+                         'region-ids in the atlas')
+
+    data[~np.isin(data, region_ids)] = 0
+    data[np.where(data > 0)] = 1
+
+    if len(np.unique(data)) != 2:
+        raise ValueError('mask is empty after extracting region from atlas')
+
+    return nib.Nifti1Image(data.astype(int), atlas.affine, atlas.header)

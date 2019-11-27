@@ -1,17 +1,14 @@
-from cbptools.utils import pyyaml_ordereddict
+from .utils import pyyaml_ordereddict, config_get
 from collections import OrderedDict
-from functools import partial as fp
+from functools import partial as fp, reduce
+import operator
 import logging
 import fnmatch
+import string
 import yaml
 
 
 class DocumentError(Exception):
-    """ Raised when the target document is missing or has the wrong format """
-    pass
-
-
-class ModalityError(Exception):
     """ Raised when the target document is missing or has the wrong format """
     pass
 
@@ -21,12 +18,54 @@ class RuleError(Exception):
     pass
 
 
+class DependencyError(Exception):
+    """ Raised when an input value is given but its dependencies are not met"""
+    pass
+
+
 class SetDefault(Exception):
     """ Raised when an input value is not required and not given """
     pass
 
 
+class MetaData(object):
+    """Meta data storage for a configuration parameter/field"""
+    priority = ('required', 'type', 'contains', 'allowed', 'min',
+                'max', 'minlength', 'maxlength')
+
+    def __init__(self, field: str, schema: dict):
+        self.field = field
+        self.value = None
+        self.required = schema.get('required', False)
+        self.type = schema.get('type', None)
+        self.allowed = schema.get('allowed', None)
+        self.contains = schema.get('contains', None)
+        self.default = schema.get('default', None)
+        self.custom = schema.get('custom', None)
+        self.description = schema.get('desc', None)
+        self.min = schema.get('min', None)
+        self.max = schema.get('max', None)
+        self.minlength = schema.get('minlength', None)
+        self.maxlength = schema.get('maxlength', None)
+        self.dependency = schema.get('dependency', None)
+
+        if self.dependency is not None:
+            self.dependency = {k: v for d in self.dependency
+                               for k, v in d.items()}
+
+        # Rule validation order
+        self.rules = list(schema.keys())
+
+        if 'required' not in self.rules:
+            self.rules.append('required')
+
+        priority = list(self.priority) + list(
+            set(self.rules) - set(self.priority))
+        self.rules.sort(key=lambda x: priority.index(x))
+
+
 class Validator(object):
+    """Validation for configuration files using a schema"""
     priority = ('required', 'type', 'contains', 'allowed', 'min',
                 'max', 'minlength', 'maxlength')
 
@@ -36,94 +75,72 @@ class Validator(object):
         self.schema = None
         self.document = None
         self.errors = 0
+        self._document = None  # temporary (non-validated) input data
+
+    def get(self, keymap, default=None):
+        return config_get(keymap, self._document, default)
 
     @staticmethod
     def load(path) -> dict:
-        with open(path, 'r') as stream:
+        """Load a YML document"""
+        with open(path, 'r', encoding='utf-8') as stream:
             try:
                 return OrderedDict(yaml.safe_load(stream))
             except yaml.YAMLError as exc:
                 raise DocumentError(exc)
 
-    @staticmethod
-    def construct_schema(modality: str, schema_template: dict) -> dict:
-        def merge(a, b, path=None):
-            "merges b into a"
-            if path is None:
-                path = []
-
-            for k in b:
-                if k in a:
-                    if isinstance(a[k], dict) and isinstance(b[k], dict):
-                        merge(a[k], b[k], path + [str(k)])
-                    elif a[k] == b[k]:
-                        pass  # same leaf value
-                    else:
-                        raise Exception(
-                            'Conflict at %s' % '.'.join(path + [str(k)]))
-                else:
-                    a[k] = b[k]
-            return a
-
-        general_schema = schema_template.get('schema-general')
-        specific_schema = 'schema-%s' % modality
-
-        if specific_schema in schema_template.keys():
-            modality = {'modality': schema_template.get('modality')}
-            general_schema = merge(modality, general_schema)
-            return merge(general_schema, schema_template.get(specific_schema))
-
-        raise ModalityError('Modality %s not recognized' % modality)
-
-    def _rule_parser(self, field: str, value: str, schema: dict):
-        """Return a list containing all rule functions to be executed"""
-        rulelst = []
-
-        if 'required' not in schema.keys():
-            schema['required'] = False
-
-        order = list(schema.keys())
-        priority = list(self.priority) + list(set(order) - set(self.priority))
-        order.sort(key=lambda x: priority.index(x))
-
-        for k in order:
-            if hasattr(self, '_rule_%s' % k):
-                rule = getattr(self, '_rule_%s' % k)
-                rule = fp(rule, field, value, schema.get(k))
-                rulelst.append(rule)
-
-        if 'custom' in schema.keys():
-            for k in schema['custom']:
-                if hasattr(self, '_rule_custom_%s' % k):
-                    rule = getattr(self, '_rule_custom_%s' % k)
-                    rule = fp(rule, field, value)
-                    rulelst.append(rule)
-
-        return rulelst
-
     def depth(self, d, level=0):
+        """Traverse through a dictionary"""
         if not isinstance(d, dict) or not d:
             return level
 
         return max(self.depth(d[k], level + 1) for k in d.keys())
 
+    def _rule_parser(self, this):
+        """Return a list containing all rule functions to be executed"""
+        partials = []
+        for k in this.rules:
+            if hasattr(self, '_rule_%s' % k):
+                rule = getattr(self, '_rule_%s' % k)
+                rule = fp(rule, this)
+                partials.append(rule)
+
+        if this.custom is not None:
+            for k in this.custom:
+                if hasattr(self, '_rule_custom_%s' % k):
+                    rule = getattr(self, '_rule_custom_%s' % k)
+                    rule = fp(rule, this)
+                    partials.append(rule)
+
+        return partials
+
     def _validate_against(self, document, schema, path: list = []):
+        """Execute validation rules per field"""
         for k, v in schema.items():
             path.append(k)
+            field = '.'.join(path)
+            this = MetaData(field, schema[k])
+            this.rules = self._rule_parser(this)
 
             if isinstance(v, dict) and self.depth(v) == 1 and not isinstance(
                     document, dict):
                 self.errors += 1
-                logging.error('%s must be %s, not %s'
-                              % (type(document).__name__, '.'.join(path[:-1])))
+                logging.error(
+                    '%s must be %s, not %s'
+                    % (type(document).__name__, '.'.join(path[:-1]), field)
+                )
                 break
 
             elif isinstance(v, dict) and self.depth(v) == 1:
-                value = document.get(k, None) if isinstance(document,
-                                                            dict) else None
-                rules = self._rule_parser('.'.join(path), value, v)
+                this.value = document.get(k, None) \
+                    if isinstance(document, dict) else None
 
-                for rule in rules:
+                # Remove escape characters added by yaml.safe_load
+                if isinstance(this.value, str):
+                    document[k] = this.value.encode('utf-8').decode(
+                        'unicode_escape')
+
+                for rule in this.rules:
                     try:
                         rule()
                     except RuleError as exc:
@@ -132,10 +149,20 @@ class Validator(object):
                         break
                     except SetDefault as exc:
                         default = schema[k].get('default', None)
-                        if value is None and default is not None:
+                        if this.value is None and default is not None:
                             logging.warning(
-                                'using default value for %s' % '.'.join(path))
+                                'using default value for %s' % field)
                             document[k] = default
+                        break
+                    except DependencyError as exc:
+                        # Dependencies are not met, parameter will not be used
+                        if this.value is not None:
+                            logging.warning(
+                                '%s is defined but will not be used' % field)
+
+                        if k in document.keys():
+                            del document[k]
+
                         break
 
             elif isinstance(v, dict) and self.depth(v) > 1:
@@ -144,20 +171,21 @@ class Validator(object):
 
                 elif not isinstance(document, dict):
                     self.errors += 1
-                    logging.error('%s must be dict, not %s'
-                                  % ('.'.join(path[:-1]),
-                                     type(document).__name__))
+                    logging.error(
+                        '%s must be dict, not %s'
+                        % ('.'.join(path[:-1]), type(document).__name__))
                     del path[-1]
                     break
 
-                document[k] = self._validate_against(document.get(k, {}), v,
-                                                     path)
+                document[k] = self._validate_against(
+                    document.get(k, {}), v, path)
 
             del path[-1]
 
         return document
 
     def _del_invalid(self, document: dict, schema: dict, path: list = []):
+        """Delete invalid fields"""
         for k, v in list(document.items()):
             path.append(k)
             if k not in schema.keys():
@@ -174,20 +202,20 @@ class Validator(object):
         return document
 
     def validate(self, document) -> bool:
-        """Validate YAML and then schema"""
-        document = OrderedDict(self.load(document))
-        modality = document.get('modality', None)
-        schema_template = self.load(self.schema_path)
+        """Validate YML structure and then against a validation schema"""
+        if isinstance(document, str):
+            document = self.load(document)
 
-        if modality not in schema_template['modality']['allowed']:
+        self._document = document
+        modality = document.get('modality', None)
+        schema = self.load(self.schema_path)
+
+        if modality not in schema['modality']['allowed']:
             self.errors += 1
             logging.error('modality must be %s, not %s'
-                          % (', '.join(schema_template['modality']['allowed']),
+                          % (', '.join(schema['modality']['allowed']),
                              modality))
             return False
-
-        # Create the validation schema
-        schema = self.construct_schema(modality, schema_template)
 
         # Validate and set defaults
         document = self._validate_against(document, schema)
@@ -203,146 +231,280 @@ class Validator(object):
             return False
 
     def _set_defaults(self, d):
+        """Return a document with all default values"""
+        d_copy = d.copy()
+
         for k, v in d.items():
             if isinstance(v, dict) and self.depth(v) <= 1:
                 default = v.get('default', None)
-                d[k] = default
+                d_copy[k] = default
 
             elif isinstance(v, dict):
-                d[k] = self._set_defaults(v)
+                d_copy[k] = self._set_defaults(v)
 
-        return d
+        return d_copy
 
     def example(self, modality: str, out: str = None):
-        schema_template = self.load(self.schema_path)
+        """Create an example configuration file for the requested modality"""
+        schema = self.load(self.schema_path)
 
-        if modality not in schema_template['modality']['allowed']:
+        if modality not in schema['modality']['allowed']:
             return False
 
-        schema = OrderedDict(self.construct_schema(modality, schema_template))
-        self.document = self._set_defaults(schema)
-        self.document['modality'] = modality
+        document = self._set_defaults(schema)
+        document['modality'] = modality
+        self.validate(document)
 
         if out:
             with open(out, 'w') as f:
-                yaml.dump(self.document, f, default_flow_style=False)
+                yaml.dump(document, f, default_flow_style=False)
 
-    @staticmethod
-    def _rule_required(field, value, *args) -> bool:
-        if args[0] and value is None:
-            raise RuleError('%s is a required field' % field)
-        elif not args[0] and value is None:
+    def _rule_required(self, this) -> bool:
+        """Check if entry will be used and if so, is required"""
+        if this.dependency is not None:
+            for k, v in this.dependency.items():
+                mapping = k.split('.')
+                try:
+                    dep_value = reduce(operator.getitem, mapping,
+                                       self._document)
+                except (KeyError, TypeError) as exc:
+                    # Dependency is not provided, try default value
+                    mapping = mapping.append('default')
+
+                    try:
+                        dep_value = reduce(operator.getitem, mapping,
+                                           self.schema)
+                    except (KeyError, TypeError) as exc:
+                        # No default value, assuming dependency not met
+                        raise DependencyError()
+
+                if (isinstance(v, str) and dep_value != v) or \
+                        (isinstance(v, list) and dep_value not in v) or \
+                        (isinstance(v, bool) and dep_value != v):
+
+                    raise DependencyError()
+
+        if this.required and this.value is None:
+            raise RuleError('%s is a required field' % this.field)
+        elif not this.required and this.value is None:
             raise SetDefault()
         else:
             return True
 
     @staticmethod
-    def _rule_type(field, value, *args) -> bool:
+    def _rule_type(this) -> bool:
+        """Check if the field type is correct"""
         types = {'integer': int, 'string': str, 'boolean': bool,
                  'float': (int, float), 'list': list}
-        oftype = args[0]
+        oftype = this.type
 
         if oftype.startswith('list'):
-            ofsubtype = args[0][args[0].find('[') + 1:args[0].find(']')]
+            ofsubtype = this.type[this.type.find('[') + 1:this.type.find(']')]
             oftype = 'list'
 
         else:
             ofsubtype = None
 
-        if not isinstance(value, types.get(oftype)):
-            raise RuleError('%s should be of type %s' % (field, oftype))
+        if oftype == 'float' and isinstance(this.value, str):
+            # Catch scientific notation
+            try:
+                this.value = float(this.value)
+            except ValueError:
+                pass
+
+        if not isinstance(this.value, types.get(oftype)):
+            raise RuleError('%s should be of type %s' % (this.field, oftype))
         else:
             if ofsubtype:
-                if not all(isinstance(i, types.get(ofsubtype)) for i in value):
+                if not all(isinstance(i, types.get(ofsubtype))
+                           for i in this.value):
                     raise RuleError('%s list items should be of type %s'
-                                    % (field, ofsubtype))
+                                    % (this.field, ofsubtype))
 
             return True
 
     @staticmethod
-    def _rule_contains(field, value, *args) -> bool:
-        if args[0] not in value:
-            raise RuleError('%s must contain %s' % (field, args[0]))
+    def _rule_contains(this) -> bool:
+        """Check if the field contains a must-have value"""
+        if this.contains not in this.value:
+            raise RuleError('%s must contain %s' % (this.field, this.contains))
         else:
             return True
 
     @staticmethod
-    def _rule_allowed(field, value, *args) -> bool:
-        readable_allowed = " or ".join([", ".join(args[0][:-1]), args[0][-1]]
-                                       if len(args[0]) > 1 else args[0])
+    def _rule_allowed(this) -> bool:
+        """Check if the field consists only out of allowed values"""
+        readable_allowed = " or ".join(
+            [", ".join(repr(this.allowed[:-1])),
+             repr(this.allowed[-1])]
+            if len(this.allowed) > 1 else repr(this.allowed)
+        )
 
-        if isinstance(value, list):
-            if not set(value).issubset(set(args[0])) or len(set(value)) != len(
-                    value):
+        if None in this.allowed:
+            if this.value is None:
+                return True
+
+            this.allowed.remove(None)
+
+        expansion = True if any(fnmatch.filter(this.allowed, '*')) else False
+
+        if isinstance(this.value, list) and not expansion:
+            if not set(this.value).issubset(set(this.allowed)) or len(
+                    set(this.value)) != len(this.value):
                 raise RuleError('%s must be %s, not %s'
-                                % (field, readable_allowed, value))
+                                % (this.field, readable_allowed, this.value))
             else:
                 return True
 
-        if not any(fnmatch.filter([value], i) for i in args[0]):
+        if not isinstance(this.value, list):
+            filter_value = [this.value]
+        else:
+            filter_value = this.value
+
+        if not any(fnmatch.filter(filter_value, i) for i in this.allowed):
             raise RuleError('%s must be %s, not %s'
-                            % (field, readable_allowed, value))
+                            % (this.field, readable_allowed, this.value))
         else:
             return True
 
     @staticmethod
-    def _rule_min(field, value, *args) -> bool:
-        if isinstance(value, list):
-            if any(i < args[0] for i in value):
-                raise RuleError('minimum value of %s is %s' % (field, args[0]))
+    def _rule_min(this) -> bool:
+        """Check if the field is above the minimum allowed value"""
+        if isinstance(this.value, list):
+            if any(i < this.min for i in this.value):
+                raise RuleError('minimum value of %s is %s'
+                                % (this.field, this.min))
 
-        elif value < args[0]:
-            raise RuleError('minimum value of %s is %s' % (field, args[0]))
-
-        else:
-            return True
-
-    @staticmethod
-    def _rule_max(field, value, *args) -> bool:
-        if isinstance(value, list):
-            if any(i > args[0] for i in value):
-                raise RuleError('maximum value of %s is %s' % (field, args[0]))
-
-        elif value > args[0]:
-            raise RuleError('maximum value of %s is %s' % (field, args[0]))
+        elif this.value < this.min:
+            raise RuleError('minimum value of %s is %s'
+                            % (this.field, this.min))
 
         else:
             return True
 
     @staticmethod
-    def _rule_minlength(field, value, *args) -> bool:
-        if len(value) < args[0]:
-            raise RuleError('minimum length of %s is %s' % (field, args[0]))
+    def _rule_max(this) -> bool:
+        """Check if the field is below the maximum allowed value"""
+        if isinstance(this.value, list):
+            if any(i > this.max for i in this.value):
+                raise RuleError('maximum value of %s is %s'
+                                % (this.field, this.max))
+
+        elif this.value > this.max:
+            raise RuleError('maximum value of %s is %s'
+                            % (this.field, this.max))
+
         else:
             return True
 
     @staticmethod
-    def _rule_maxlength(field, value, *args) -> bool:
-        if len(value) > args[0]:
-            raise RuleError('maximum length of %s is %s' % (field, args[0]))
+    def _rule_minlength(this) -> bool:
+        """Check if the field is above the minimum length"""
+        if len(this.value) < this.minlength:
+            raise RuleError('minimum length of %s is %s'
+                            % (this.field, this.minlength))
         else:
             return True
 
     @staticmethod
-    def _rule_custom_bandpass(field, value) -> bool:
-        high_pass, low_pass = value
+    def _rule_maxlength(this) -> bool:
+        """Check if the field is below the maximum length"""
+        if len(this.value) > this.maxlength:
+            raise RuleError('maximum length of %s is %s'
+                            % (this.field, this.maxlength))
+        else:
+            return True
+
+    @staticmethod
+    def _rule_custom_bandpass(this) -> bool:
+        """Custom rule for the bandpass field"""
+        high_pass, low_pass = this.value
         if high_pass >= low_pass:
             raise RuleError(
-                'high-pass mus be smaller than low-pass in %s' % field)
+                'high-pass mus be smaller than low-pass in %s' % this.field)
         else:
             return True
 
     @staticmethod
-    def _rule_custom_voxdim(field, value) -> bool:
-        if len(value) == 2:
-            raise RuleError('only 1 or 3 values allowed in %s, not 2' % field)
+    def _rule_custom_voxdim(this) -> bool:
+        """Custom rule for the voxel dimensions field"""
+        if len(this.value) == 2:
+            raise RuleError('only 1 or 3 values allowed in %s, not 2'
+                            % this.field)
         else:
             return True
 
     @staticmethod
-    def _rule_custom_tr(field, value) -> bool:
-        if value >= 100:
+    def _rule_custom_tr(this) -> bool:
+        """Custom rule for the repetition-time field"""
+        if this.value >= 100:
             logging.warning(
                 '%s is large. Are you sure it is repetition time in seconds?'
-                % field)
+                % this.field)
+        return True
+
+    def _rule_custom_agglomerative_linkage(self, this) -> bool:
+        """Custom rule for the linkage field for agglomerative clustering"""
+        if this.value == 'ward':
+            distance_metric = self._document.get('parameters', {})\
+                .get('clustering', {})\
+                .get('cluster_options', {})\
+                .get('distance_metric', 'euclidean')
+
+            if distance_metric != 'euclidean':
+                raise RuleError(
+                    'parameters.clustering.cluster_options.distance_metric '
+                    'must be "euclidean" if the %s is set to "ward"'
+                    % this.field)
+
+        return True
+
+    def _rule_custom_has_sessions(self, this) -> bool:
+        """Custom rule for the sessions field"""
+        sessions = self._document.get('data', {}).get('session', [])
+        wildcards = [
+            wildcard[1] for wildcard in string.Formatter().parse(this.value)
+            if wildcard[1] is not None
+        ]
+        has_wildcard = True if 'session' in wildcards else False
+
+        if sessions and not has_wildcard:
+            # sessions is defined, but wildcard is not provided
+            raise RuleError('%s must contain {session}' % this.field)
+
+        if not sessions and has_wildcard:
+            # sessions is not defined, but wildcard is provided
+            raise RuleError('%s contains {session} but data.session is not '
+                            'defined' % this.field)
+
+        return True
+
+    def _rule_custom_space_match(self, this) -> bool:
+        """Custom rule for the mask space field"""
+        if this.value == 'native':
+            seed_keymap = 'data.masks.seed'
+            target_keymap = 'data.masks.target'
+            seed_mask = self.get(seed_keymap, None)
+            target_mask = self.get(target_keymap, None)
+            sessions = self.get('data.session', None)
+
+            if target_mask is None:
+                raise RuleError('%s must be defined when native space is '
+                                'used.' % target_keymap)
+
+            masks = ((seed_keymap, seed_mask), (target_keymap, target_mask))
+            for name, mask in masks:
+                if mask is not None:
+                    if '{participant_id}' not in mask:
+                        raise RuleError(
+                            '%s must contain {participant_id} when native '
+                            'space is used' % name
+                        )
+
+                    if sessions is not None and '{session}' in mask:
+                        raise RuleError(
+                            '%s cannot contain {session} because session data '
+                            'will be merged' % name
+                        )
+
         return True
