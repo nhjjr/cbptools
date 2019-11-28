@@ -6,42 +6,6 @@ import inspect
 
 def build_workflow(config, save_at):
     """Build the Snakefile"""
-    def check_dependencies(dep, doc):
-        if dep is None:
-            return True
-
-        l = list()
-        if 'has_modality' in dep.keys():
-            # only include Rule for the given modality
-            l.append(config_get('modality', doc) in dep['has_modality'])
-
-        if 'has_sessions' in dep.keys():
-            # only include Rule if there are multiple sessions
-            l.append(True if config_get('data.session', doc) else False)
-
-        if 'has_references' in dep.keys():
-            # only include rule if reference images are given
-            l.append(True if config_get('data.references', doc) else False)
-
-        if 'group_analysis' in dep.keys():
-            if dep['group_analysis']:
-                # only include rule if a group analysis can be performed
-                l.append(True if config_get(
-                    'data.masks.space', doc) == 'standard' else False)
-            else:
-                # only include rule if no group analysis can be performed
-                l.append(True if config_get(
-                    'data.masks.space', doc) == 'native' else False)
-
-        if 'individual_plots' in dep.keys():
-            # only include rule if individual plots are requested
-            ind_plots = 'parameters.report.individual_plots'
-            ind_plots = config_get(ind_plots, doc, default=False)
-            is_native = config_get('data.masks.space', doc) == 'native'
-            l.append(True if ind_plots or is_native else False)
-
-        return all(l) if l else False
-
     def add_section(name: str, d):
         def indent(text, offset: int = 1):
             return '%s%s' % (' ' * 4 * offset, text)
@@ -83,13 +47,6 @@ def build_workflow(config, save_at):
     rule_parts = ('input', 'output', 'threads', 'resources', 'params', 'run',
                   'shell')
 
-    # Build rules list
-    used_rules = list()
-    for rule in all_rules:
-        # rule = getattr(sys.modules[__name__], rule)
-        if check_dependencies(rule.dependencies, config):
-            used_rules.append(rule)
-
     # Snakefile Header
     workflow = list()
     workflow.extend([
@@ -98,15 +55,17 @@ def build_workflow(config, save_at):
     ])
 
     # Snakefile body (rules)
-    for rule in used_rules:
+    for rule in all_rules:
         rule = rule(config)
-        workflow.append('\n')
-        workflow.append('rule %s:' % rule.name)
 
-        for part in rule_parts:
-            if getattr(rule, part):
-                section = add_section(part, getattr(rule, part))
-                workflow.extend(section)
+        if rule.is_active():
+            workflow.append('\n')
+            workflow.append('rule %s:' % rule.name)
+
+            for part in rule_parts:
+                if getattr(rule, part):
+                    section = add_section(part, getattr(rule, part))
+                    workflow.extend(section)
 
     # Snakefile footer
     workflow.append('\n')
@@ -129,6 +88,9 @@ class BaseRule(object):
 
     def __init__(self, doc):
         self._doc = doc
+
+    def is_active(self):
+        return True
 
     def get(self, keymap, default=None):
         return config_get(keymap, self._doc, default)
@@ -273,10 +235,13 @@ class RuleAll(BaseRule):
 
 class RuleProcessMasksRSFMRI(BaseRule):
     name = 'process_masks_rsfmri'
-    dependencies = {'has_modality': ['rsfmri']}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        modality = self.get('modality')
+        return True if modality == 'rsfmri' else False
 
     @property
     def input(self):
@@ -357,10 +322,13 @@ class RuleProcessMasksRSFMRI(BaseRule):
 
 class RuleProcessMasksDMRI(BaseRule):
     name = 'process_masks_dmri'
-    dependencies = {'has_modality': ['dmri']}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        modality = self.get('modality')
+        return True if modality == 'dmri' else False
 
     @property
     def input(self):
@@ -458,10 +426,13 @@ class RuleProcessMasksDMRI(BaseRule):
 
 class RuleProbtrackx2(BaseRule):
     name = 'probtrackx2'
-    dependencies = {'has_modality': ['dmri']}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        modality = self.get('modality')
+        return True if modality == 'dmri' else False
 
     @property
     def input(self):
@@ -574,10 +545,13 @@ class RuleProbtrackx2(BaseRule):
 
 class RuleConnectivityDMRI(BaseRule):
     name = 'connectivity_dmri'
-    dependencies = {'has_modality': ['dmri']}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        modality = self.get('modality')
+        return True if modality == 'dmri' else False
 
     @property
     def input(self):
@@ -673,10 +647,13 @@ class RuleConnectivityDMRI(BaseRule):
 
 class RuleConnectivityRSFMRI(BaseRule):
     name = 'connectivity_rsfmri'
-    dependencies = {'has_modality': ['rsfmri']}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        modality = self.get('modality')
+        return True if modality == 'rsfmri' else False
 
     @property
     def input(self):
@@ -822,6 +799,10 @@ class RuleMergeSessions(BaseRule):
     def __init__(self, conf):
         super().__init__(conf)
 
+    def is_active(self):
+        session = self.get('data.session', None)
+        return True if session is not None else False
+
     @property
     def input(self):
         d = dict()
@@ -888,10 +869,13 @@ class RuleMergeSessions(BaseRule):
 
 class RuleMergeConnectivityLogs(BaseRule):
     name = 'merge_connectivity_logs'
-    dependencies = {'has_modality': ['rsfmri']}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        modality = self.get('modality')
+        return True if modality == 'rsfmri' else False
 
     @property
     def input(self):
@@ -938,10 +922,13 @@ class RuleMergeConnectivityLogs(BaseRule):
 
 class RuleValidateConnectivity(BaseRule):
     name = 'validate_connectivity'
-    dependencies = {'has_modality': ['rsfmri']}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        modality = self.get('modality')
+        return True if modality == 'rsfmri' else False
 
     @property
     def input(self):
@@ -997,11 +984,15 @@ class RuleValidateConnectivity(BaseRule):
         return 'tasks.%s(input, output, params)' % self.name
 
 
-class RuleParticipantLevelClustering(BaseRule):
-    name = 'participant_level_clustering'
+class RuleKMeansClustering(BaseRule):
+    name = 'kmeans_clustering'
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self) -> bool:
+        cluster_method = self.get('parameters.clustering.method')
+        return True if cluster_method == 'kmeans' else False
 
     @property
     def input(self):
@@ -1049,13 +1040,185 @@ class RuleParticipantLevelClustering(BaseRule):
         d = dict()
 
         # Parameter keys & files
-        method = 'parameters.clustering.method'
-        options = 'parameters.clustering.cluster_options'
+        algorithm = 'parameters.clustering.cluster_options.algorithm'
+        init = 'parameters.clustering.cluster_options.init'
+        max_iter = 'parameters.clustering.cluster_options.max_iter'
+        n_init = 'parameters.clustering.cluster_options.n_init'
         n_clusters = self.wildcard('int(wildcards.n_clusters)')
 
         # Define parameters
-        d['method'] = self.get(method)
-        d['options'] = self.get(options)
+        d['algorithm'] = self.get(algorithm)
+        d['init'] = self.get(init)
+        d['max_iter'] = self.get(max_iter)
+        d['n_init'] = self.get(n_init)
+        d['n_clusters'] = n_clusters
+
+        return d
+
+    @property
+    def run(self):
+        return 'tasks.%s(input, output, params)' % self.name
+
+
+class RuleSpectralClustering(BaseRule):
+    name = 'spectral_clustering'
+
+    def __init__(self, conf):
+        super().__init__(conf)
+
+    def is_active(self) -> bool:
+        cluster_method = self.get('parameters.clustering.method')
+        return True if cluster_method == 'spectral' else False
+
+    @property
+    def input(self):
+        d = dict()
+
+        # Parameter keys & files
+        conn = self.get('data.connectivity', None)
+        conn_default = 'individual/{participant_id}/connectivity.npz'
+
+        # Define parameters
+        d['connectivity'] = conn if conn else conn_default
+
+        return d
+
+    @property
+    def output(self):
+        d = dict()
+
+        # Parameter keys & files
+        labels = 'individual/{participant_id}/{n_clusters}cluster_labels.npy'
+
+        # Define parameters
+        d['labels'] = labels
+
+        return d
+
+    @property
+    def threads(self):
+        return 1
+
+    @property
+    def resources(self):
+        d = dict()
+
+        # Parameter keys & files
+        mem_mb = 'mem_mb.clustering'
+
+        # Define parameters
+        d['mem_mb'] = self.get(mem_mb, 1000)
+
+        return d
+
+    @property
+    def params(self):
+        d = dict()
+
+        # Parameter keys & files
+        n_init = 'parameters.clustering.cluster_options.n_init'
+        kernel = 'parameters.clustering.cluster_options.kernel'
+        gamma = 'parameters.clustering.cluster_options.gamma'
+        n_neighbors = 'parameters.clustering.cluster_options.n_neighbors'
+        assign_labels = 'parameters.clustering.cluster_options.assign_labels'
+        degree = 'parameters.clustering.cluster_options.degree'
+        coef0 = 'parameters.clustering.cluster_options.coef0'
+        eigen_tol = 'parameters.clustering.cluster_options.eigen_tol'
+        eigen_solver = 'parameters.clustering.cluster_options.eigen_solver'
+        n_clusters = self.wildcard('int(wildcards.n_clusters)')
+
+        # Define parameters
+        d['n_init'] = self.get(n_init)
+        d['kernel'] = self.get(kernel)
+        d['assign_labels'] = self.get(assign_labels)
+        d['eigen_solver'] = self.get(eigen_solver)
+        d['n_clusters'] = n_clusters
+
+        if kernel in ('rbf', 'polynomial', 'sigmoid', 'laplacian', 'chi2'):
+            d['gamma'] = self.get(gamma)
+
+        if kernel == 'nearest_neighbors':
+            d['n_neighbors'] = self.get(n_neighbors)
+
+        if kernel == 'polynomial':
+            d['degree'] = self.get(degree)
+
+        if kernel in ('polynomial', 'sigmoid'):
+            d['coef0'] = self.get(coef0)
+
+        if eigen_solver == 'arpack':
+            d['eigen_tol'] = self.get(eigen_tol)
+
+        return d
+
+    @property
+    def run(self):
+        return 'tasks.%s(input, output, params)' % self.name
+
+
+class RuleAgglomerativeClustering(BaseRule):
+    name = 'agglomerative_clustering'
+
+    def __init__(self, conf):
+        super().__init__(conf)
+
+    def is_active(self) -> bool:
+        cluster_method = self.get('parameters.clustering.method')
+        return True if cluster_method == 'agglomerative' else False
+
+    @property
+    def input(self):
+        d = dict()
+
+        # Parameter keys & files
+        conn = self.get('data.connectivity', None)
+        conn_default = 'individual/{participant_id}/connectivity.npz'
+
+        # Define parameters
+        d['connectivity'] = conn if conn else conn_default
+
+        return d
+
+    @property
+    def output(self):
+        d = dict()
+
+        # Parameter keys & files
+        labels = 'individual/{participant_id}/{n_clusters}cluster_labels.npy'
+
+        # Define parameters
+        d['labels'] = labels
+
+        return d
+
+    @property
+    def threads(self):
+        return 1
+
+    @property
+    def resources(self):
+        d = dict()
+
+        # Parameter keys & files
+        mem_mb = 'mem_mb.clustering'
+
+        # Define parameters
+        d['mem_mb'] = self.get(mem_mb, 1000)
+
+        return d
+
+    @property
+    def params(self):
+        d = dict()
+
+        # Parameter keys & files
+        distance = 'parameters.clustering.cluster_options.distance_metric'
+        linkage = 'parameters.clustering.cluster_options.linkage'
+        n_clusters = self.wildcard('int(wildcards.n_clusters)')
+
+        # Define parameters
+        d['distance_metric'] = self.get(distance)
+        d['linkage'] = self.get(linkage)
         d['n_clusters'] = n_clusters
 
         return d
@@ -1067,10 +1230,13 @@ class RuleParticipantLevelClustering(BaseRule):
 
 class RuleGroupLevelClustering(BaseRule):
     name = 'group_level_clustering'
-    dependencies = {'group_analysis': True}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        space = self.get('data.masks.space', 'standard')
+        return True if space == 'standard' else False
 
     @property
     def input(self):
@@ -1269,10 +1435,13 @@ class RuleMergeInternalValidity(BaseRule):
 
 class RuleIndividualSimilarity(BaseRule):
     name = 'individual_similarity'
-    dependencies = {'group_analysis': True}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        space = self.get('data.masks.space', 'standard')
+        return True if space == 'standard' else False
 
     @property
     def input(self):
@@ -1321,10 +1490,13 @@ class RuleIndividualSimilarity(BaseRule):
 
 class RuleGroupSimilarity(BaseRule):
     name = 'group_similarity'
-    dependencies = {'group_analysis': True}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        space = self.get('data.masks.space', 'standard')
+        return True if space == 'standard' else False
 
     @property
     def input(self):
@@ -1433,10 +1605,13 @@ class RulePlotInternalValidity(BaseRule):
 
 class RulePlotIndividualSimilarity(BaseRule):
     name = 'plot_individual_similarity'
-    dependencies = {'group_analysis': True}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        space = self.get('data.masks.space', 'standard')
+        return True if space == 'standard' else False
 
     @property
     def input(self):
@@ -1476,10 +1651,13 @@ class RulePlotIndividualSimilarity(BaseRule):
 
 class RulePlotGroupSimilarity(BaseRule):
     name = 'plot_group_similarity'
-    dependencies = {'group_analysis': True}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        space = self.get('data.masks.space', 'standard')
+        return True if space == 'standard' else False
 
     @property
     def input(self):
@@ -1535,10 +1713,13 @@ class RulePlotGroupSimilarity(BaseRule):
 
 class RulePlotLabeledROI(BaseRule):
     name = 'plot_labeled_roi'
-    dependencies = {'group_analysis': True}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        space = self.get('data.masks.space', 'standard')
+        return True if space == 'standard' else False
 
     @property
     def input(self):
@@ -1600,10 +1781,14 @@ class RulePlotLabeledROI(BaseRule):
 
 class RuleMergeIndividualLabels(BaseRule):
     name = 'merge_individual_labels'
-    dependencies = {'individual_plots': True}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        ind_plots = self.get('parameters.report.individual_plots', False)
+        is_native = self.get('data.masks.space', 'standard') == 'native'
+        return True if ind_plots or is_native else False
 
     @property
     def input(self):
@@ -1642,10 +1827,14 @@ class RuleMergeIndividualLabels(BaseRule):
 
 class RulePlotIndividualLabeledROI(BaseRule):
     name = 'plot_individual_labeled_roi'
-    dependencies = {'individual_plots': True}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        ind_plots = self.get('parameters.report.individual_plots', False)
+        is_native = self.get('data.masks.space', 'standard') == 'native'
+        return True if ind_plots or is_native else False
 
     @property
     def input(self):
@@ -1710,10 +1899,14 @@ class RulePlotIndividualLabeledROI(BaseRule):
 
 class RuleReferenceSimilarity(BaseRule):
     name = 'reference_similarity'
-    dependencies = {'has_references': True, 'group_analysis': True}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        space = self.get('data.masks.space', 'standard')
+        references = self.get('data.references', False)
+        return True if space == 'standard' and references else False
 
     @property
     def input(self):
@@ -1775,10 +1968,14 @@ class RuleReferenceSimilarity(BaseRule):
 
 class RulePlotReferenceSimilarity(BaseRule):
     name = 'plot_reference_similarity'
-    dependencies = {'has_references': True, 'group_analysis': True}
 
     def __init__(self, conf):
         super().__init__(conf)
+
+    def is_active(self):
+        space = self.get('data.masks.space', 'standard')
+        references = self.get('data.references', False)
+        return True if space == 'standard' and references else False
 
     @property
     def input(self):

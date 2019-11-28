@@ -462,9 +462,7 @@ parameters:
         desc: '(sklearn.cluster.SpectralClustering) Stopping criterion for eigendecomposition of the Laplacian matrix
                when eigen_solver="arpack"'
       eigen_solver:
-        dependency: [
-          parameters.clustering.method: spectral
-        ]
+        dependency: [parameters.clustering.method: spectral]
         type: string
         default: null
         allowed: [null, arpack, lobpcg, amg]
