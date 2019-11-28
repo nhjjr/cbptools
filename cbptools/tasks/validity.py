@@ -1,6 +1,5 @@
-from cbptools.utils import sort_files
-from cbptools import cluster
-
+from .. import cluster
+from ..utils import sort_files
 from sklearn import metrics
 import nibabel as nib
 import pandas as pd

@@ -1,6 +1,6 @@
-from cbptools.utils import sort_files
-from cbptools.cluster import relabel
-from cbptools.image import map_labels
+from ..utils import sort_files
+from ..cluster import relabel
+from ..image import map_labels
 from sklearn.cluster import KMeans, SpectralClustering, AgglomerativeClustering
 from sklearn.metrics.pairwise import kernel_metrics
 from scipy.spatial.distance import pdist

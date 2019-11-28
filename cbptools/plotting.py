@@ -1,4 +1,4 @@
-from cbptools.image import make_hollow
+from .image import make_hollow
 from scipy.ndimage import find_objects
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.cluster import hierarchy

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from cbptools.exceptions import DimensionError
-from cbptools.image import (img_is_4d, get_masked_series,
-                            find_low_variance_voxels, get_f2c_order)
-from cbptools.connectivity import seed_based_correlation
-from cbptools.clean import nuisance_signal_regression, fft_filter
+from ..exceptions import DimensionError
+from ..image import (img_is_4d, get_masked_series, find_low_variance_voxels,
+                     get_f2c_order)
+from ..connectivity import seed_based_correlation
+from ..clean import nuisance_signal_regression, fft_filter
 from scipy.signal import detrend
 from scipy.sparse import coo_matrix
 from sklearn.decomposition import PCA

@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Utilities for logging and file processing"""
-
 from typing import Union
 from os.path import join as opj
 import pandas as pd
@@ -11,6 +9,14 @@ import inspect
 import math
 import yaml
 import sys
+
+
+def get_participant_ids(file: str = 'participants.tsv', sep: str = '\t',
+                        index_col: str = 'participant_id') -> list:
+    participant_ids = pd.read_csv(
+        file, sep=sep, engine='python'
+    ).get(index_col).tolist()
+    return participant_ids
 
 
 def config_get(keymap, config, default=None):
@@ -65,7 +71,10 @@ def build_workflow(config, save_at):
     snakefile = opj(save_at, 'Snakefile')
 
     # These tuples are in order of placement
-    clsmembers = inspect.getmembers(sys.modules[__name__], inspect.isclass)
+    import importlib
+    package = __name__.split('.')[0]
+    module = importlib.import_module('.workflow', package=package)
+    clsmembers = inspect.getmembers(module, inspect.isclass)
     all_rules = []
     for clsname, cls in clsmembers:
         if clsname.startswith('Rule'):
@@ -77,8 +86,8 @@ def build_workflow(config, save_at):
     # Snakefile Header
     workflow = list()
     workflow.extend([
-        'from cbptools import tasks, taskutils\n',
-        'participants = taskutils.get_participant_ids()'
+        'from cbptools import tasks, utils\n',
+        'participants = utils.get_participant_ids()'
     ])
 
     # Snakefile body (rules)

@@ -1,5 +1,5 @@
-from cbptools.cluster import relabel
-from cbptools import plotting
+from .. import plotting
+from ..cluster import relabel
 import nibabel as nib
 import numpy as np
 import pandas as pd

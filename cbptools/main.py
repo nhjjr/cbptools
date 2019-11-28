@@ -1,6 +1,6 @@
+from . import __version__, __readthedocs__
 from .validation import Validator
 from .project import Setup, display
-from . import __version__, __readthedocs__
 import shutil
 import pkg_resources
 import argparse
