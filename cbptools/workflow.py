@@ -4,6 +4,7 @@ from os.path import join as opj, basename as opb
 
 class BaseRule(object):
     nifti_ext = 'nii.gz'
+    jid = '%j'
     dependencies = None
     name = None
 
@@ -39,6 +40,10 @@ class BaseRule(object):
     @staticmethod
     def wildcard(value) -> str:
         return 'f:lambda wildcards: %s' % value
+
+    @property
+    def cluster_json(self):
+        return None
 
     @property
     def input(self):
@@ -214,6 +219,12 @@ class RuleProcessMasksRSFMRI(BaseRule):
         return 'benchmarks/%s.log' % self.name
 
     @property
+    def cluster_json(self):
+        d = dict()
+        d['out'] = 'log/{rule}-%s.out' % self.jid
+        return d
+
+    @property
     def params(self):
         d = dict()
 
@@ -312,6 +323,12 @@ class RuleProcessMasksDMRI(BaseRule):
     @property
     def benchmark(self):
         return 'benchmarks/%s.log' % self.name
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        d['out'] = 'log/{rule}-%s.out' % self.jid
+        return d
 
     @property
     def params(self):
@@ -415,6 +432,13 @@ class RuleProbtrackx2(BaseRule):
         session = self.get('data.session', None)
         prfx = '{participant_id}.{session}' if session else '{participant_id}'
         return 'benchmarks/%s.%s.log' % (prfx, self.name)
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = '{wildcards.participant_id}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
 
     @property
     def threads(self):
@@ -547,6 +571,19 @@ class RuleConnectivityDMRI(BaseRule):
         return 'benchmarks/%s.%s.log' % (prfx, self.name)
 
     @property
+    def cluster_json(self):
+        d = dict()
+
+        session = self.get('data.session', None)
+        if session:
+            wildcards = '{wildcards.participant_id}.{wildcards.session}'
+        else:
+            wildcards = '{wildcards.participant_id}'
+
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
+
+    @property
     def resources(self):
         d = dict()
 
@@ -661,6 +698,19 @@ class RuleConnectivityRSFMRI(BaseRule):
         session = self.get('data.session', None)
         prfx = '{participant_id}.{session}' if session else '{participant_id}'
         return 'benchmarks/%s.%s.log' % (prfx, self.name)
+
+    @property
+    def cluster_json(self):
+        d = dict()
+
+        session = self.get('data.session', None)
+        if session:
+            wildcards = '{wildcards.participant_id}.{wildcards.session}'
+        else:
+            wildcards = '{wildcards.participant_id}'
+
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
 
     @property
     def resources(self):
@@ -786,6 +836,13 @@ class RuleMergeSessions(BaseRule):
         return 'benchmarks/{participant_id}.%s.log' % self.name
 
     @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = '{wildcards.participant_id}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
+
+    @property
     def threads(self):
         return 1
 
@@ -870,6 +927,13 @@ class RuleMergeConnectivityLogs(BaseRule):
     def benchmark(self):
         return 'benchmarks/%s.log' % self.name
 
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        d['out'] = 'log/{rule}-%s.out' % self.jid
+        return d
+
     @property
     def threads(self):
         return 1
@@ -921,6 +985,12 @@ class RuleValidateConnectivity(BaseRule):
     @property
     def benchmark(self):
         return 'benchmarks/%s.log' % self.name
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        d['out'] = 'log/{rule}-%s.out' % self.jid
+        return d
 
     @property
     def threads(self):
@@ -985,6 +1055,13 @@ class RuleKMeansClustering(BaseRule):
     @property
     def benchmark(self):
         return 'benchmarks/{participant_id}.k{n_clusters}.%s.log' % self.name
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = '{wildcards.participant_id}.k{wildcards.n_clusters}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
 
     @property
     def threads(self):
@@ -1065,6 +1142,13 @@ class RuleSpectralClustering(BaseRule):
     @property
     def benchmark(self):
         return 'benchmarks/{participant_id}.k{n_clusters}.%s.log' % self.name
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = '{wildcards.participant_id}.k{wildcards.n_clusters}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
 
     @property
     def threads(self):
@@ -1167,6 +1251,13 @@ class RuleAgglomerativeClustering(BaseRule):
         return 'benchmarks/{participant_id}.k{n_clusters}.%s.log' % self.name
 
     @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = '{wildcards.participant_id}.k{wildcards.n_clusters}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
+
+    @property
     def threads(self):
         return 1
 
@@ -1258,6 +1349,13 @@ class RuleGroupLevelClustering(BaseRule):
         return 'benchmarks/k{n_clusters}.%s.log' % self.name
 
     @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = 'k{wildcards.n_clusters}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
+
+    @property
     def threads(self):
         return 1
 
@@ -1338,6 +1436,13 @@ class RuleInternalValidity(BaseRule):
         return 'benchmarks/{participant_id}.%s.log' % self.name
 
     @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = '{wildcards.participant_id}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
+
+    @property
     def threads(self):
         return 1
 
@@ -1412,6 +1517,12 @@ class RuleMergeInternalValidity(BaseRule):
         return 'benchmarks/%s.log' % self.name
 
     @property
+    def cluster_json(self):
+        d = dict()
+        d['out'] = 'log/{rule}-%s.out' % self.jid
+        return d
+
+    @property
     def threads(self):
         return 1
 
@@ -1457,6 +1568,13 @@ class RuleIndividualSimilarity(BaseRule):
     @property
     def benchmark(self):
         return 'benchmarks/k{n_clusters}.%s.log' % self.name
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = 'k{wildcards.n_clusters}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
 
     @property
     def threads(self):
@@ -1524,6 +1642,12 @@ class RuleGroupSimilarity(BaseRule):
         return 'benchmarks/%s.log' % self.name
 
     @property
+    def cluster_json(self):
+        d = dict()
+        d['out'] = 'log/{rule}-%s.out' % self.jid
+        return d
+
+    @property
     def threads(self):
         return 1
 
@@ -1578,6 +1702,13 @@ class RulePlotInternalValidity(BaseRule):
     @property
     def benchmark(self):
         return 'benchmarks/{metric}.%s.log' % self.name
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = '{wildcards.metric}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
 
     @property
     def threads(self):
@@ -1644,6 +1775,13 @@ class RulePlotIndividualSimilarity(BaseRule):
         return 'benchmarks/k{n_clusters}.%s.log' % self.name
 
     @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = 'k{wildcards.n_clusters}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
+
+    @property
     def threads(self):
         return 1
 
@@ -1696,6 +1834,12 @@ class RulePlotGroupSimilarity(BaseRule):
     @property
     def benchmark(self):
         return 'benchmarks/%s.log' % self.name
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        d['out'] = 'log/{rule}-%s.out' % self.jid
+        return d
 
     @property
     def threads(self):
@@ -1766,6 +1910,13 @@ class RulePlotLabeledROI(BaseRule):
         return 'benchmarks/k{n_clusters}.{view}.%s.log' % self.name
 
     @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = 'k{wildcards.n_clusters}.{wildcards.view}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
+
+    @property
     def threads(self):
         return 1
 
@@ -1832,6 +1983,13 @@ class RuleMergeIndividualLabels(BaseRule):
         return 'benchmarks/{participant_id}.%s.log' % self.name
 
     @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = '{wildcards.participant_id}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
+
+    @property
     def threads(self):
         return 1
 
@@ -1888,6 +2046,13 @@ class RulePlotIndividualLabeledROI(BaseRule):
     @property
     def benchmark(self):
         return 'benchmarks/k{n_clusters}.{view}.%s.log' % self.name
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = 'k{wildcards.n_clusters}.{wildcards.view}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        return d
 
     @property
     def threads(self):
@@ -1967,6 +2132,12 @@ class RuleReferenceSimilarity(BaseRule):
         return 'benchmarks/%s.log' % self.name
 
     @property
+    def cluster_json(self):
+        d = dict()
+        d['out'] = 'log/{rule}-%s.out' % self.jid
+        return d
+
+    @property
     def threads(self):
         return 1
 
@@ -2028,6 +2199,12 @@ class RulePlotReferenceSimilarity(BaseRule):
     @property
     def benchmark(self):
         return 'benchmarks/%s.log' % self.name
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        d['out'] = 'log/{rule}-%s.out' % self.jid
+        return d
 
     @property
     def threads(self):

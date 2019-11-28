@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 from typing import Union
 from os.path import join as opj
+from collections import OrderedDict
 import pandas as pd
 import numpy as np
 import zipfile
 import inspect
 import math
 import yaml
-import sys
+import json
 
 
 def get_participant_ids(file: str = 'participants.tsv', sep: str = '\t',
@@ -69,6 +70,7 @@ def build_workflow(config, save_at):
         return lines
 
     snakefile = opj(save_at, 'Snakefile')
+    clusterfile = opj(save_at, 'cluster.json')
 
     # These tuples are in order of placement
     import importlib
@@ -83,6 +85,20 @@ def build_workflow(config, save_at):
     rule_parts = ('input', 'output', 'benchmark', 'threads', 'resources',
                   'params', 'run', 'shell')
 
+    # Cluster json header
+    cluster_json = OrderedDict()
+    cluster_json['__default__'] = {
+        'account': 'unknown',
+        'time': '01:00:00',
+        'n': 1,
+        'N': 1,
+        'c': 1,
+        'partition': 'large',
+        'out': 'log/{rule}-%j.out',
+        'name': 'unknown',
+        'mem': '1000M'
+    }
+
     # Snakefile Header
     workflow = list()
     workflow.extend([
@@ -90,18 +106,32 @@ def build_workflow(config, save_at):
         'participants = utils.get_participant_ids()'
     ])
 
-    # Snakefile body (rules)
+    # Snakefile & cluster.json body (rules)
     for rule in all_rules:
         rule = rule(config)
 
         if rule.is_active():
+            # Construct rule
             workflow.append('\n')
             workflow.append('rule %s:' % rule.name)
-
             for part in rule_parts:
                 if getattr(rule, part):
                     section = add_section(part, getattr(rule, part))
                     workflow.extend(section)
+
+            # Construct cluster.json entry
+            content = rule.cluster_json
+            resources = rule.resources
+            name = rule.name
+            if content:
+                cluster_json[name] = content
+                cluster_json[name]['name'] = name
+
+                if resources:
+                    mem_mb = resources.get('mem_mb', None)
+
+                    if mem_mb:
+                        cluster_json[name]['mem_mb'] = '{resources.mem_mb}M'
 
     # Snakefile footer
     workflow.append('\n')
@@ -111,29 +141,25 @@ def build_workflow(config, save_at):
         for line in workflow:
             sf.write('%s\n' % line)
 
-    # TODO: make dynamic cluster.json
-    # templates = pkg_resources.resource_filename(__name__, 'templates')
-    # cluster_json = opj(templates, 'cluster.json')
-    # shutil.copy(self.cluster_json, self.workdir)
+    # Create cluster.json file
+    with open(clusterfile, 'w') as f:
+        json.dump(cluster_json, f, indent=4)
 
 
 class TColor:
     reset_all = "\033[0m"
-
     bold = "\033[1m"
     dim = "\033[2m"
     underlined = "\033[4m"
     blink = "\033[5m"
     reverse = "\033[7m"
     hidden = "\033[8m"
-
     reset_bold = "\033[21m"
     reset_dim = "\033[22m"
     reset_underlined = "\033[24m"
     reset_blink = "\033[25m"
     reset_reverse = "\033[27m"
     reset_hidden = "\033[28m"
-
     default = "\033[39m"
     black = "\033[30m"
     red = "\033[31m"
@@ -151,7 +177,6 @@ class TColor:
     light_magenta = "\033[95m"
     light_cyan = "\033[96m"
     white = "\033[97m"
-
     bg_default = "\033[49m"
     bg_black = "\033[40m"
     bg_red = "\033[41m"
