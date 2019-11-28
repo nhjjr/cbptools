@@ -1,7 +1,7 @@
 from .utils import (readable_bytesize, CallCountDecorator, TColor, bytes_to,
-                    npy_header, npz_headers)
+                    npy_header, npz_headers, build_workflow)
+from .exceptions import MaskError, SilentError
 from .image import imgs_equal_3d, extract_regions
-from .workflow import build_workflow
 from nibabel.filebasedimages import ImageFileError
 from nibabel.spatialimages import SpatialImage
 from pandas.io.common import EmptyDataError
@@ -20,16 +20,6 @@ import os
 
 logging.error = CallCountDecorator(logging.error)
 logging.warning = CallCountDecorator(logging.warning)
-
-
-class MaskError(Exception):
-    """Raised when an input mask fails validation"""
-    pass
-
-
-class SilentError(Exception):
-    """Error without message in case the message has already been logged"""
-    pass
 
 
 class DataSet:

@@ -1,3 +1,4 @@
+from .exceptions import DocumentError, RuleError, DependencyError, SetDefault
 from .utils import pyyaml_ordereddict, config_get
 from collections import OrderedDict
 from functools import partial as fp, reduce
@@ -6,26 +7,6 @@ import logging
 import fnmatch
 import string
 import yaml
-
-
-class DocumentError(Exception):
-    """ Raised when the target document is missing or has the wrong format """
-    pass
-
-
-class RuleError(Exception):
-    """ Raised when a rule is violated """
-    pass
-
-
-class DependencyError(Exception):
-    """ Raised when an input value is given but its dependencies are not met"""
-    pass
-
-
-class SetDefault(Exception):
-    """ Raised when an input value is not required and not given """
-    pass
 
 
 class MetaData(object):
@@ -520,4 +501,3 @@ class Validator(object):
                                 'installed for benchmarking')
 
         return True
-

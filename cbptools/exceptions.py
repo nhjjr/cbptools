@@ -50,3 +50,33 @@ class AffineError(TypeError):
 
     def __str__(self):
         return self.message
+
+
+class DocumentError(Exception):
+    """ Raised when the target document is missing or has the wrong format """
+    pass
+
+
+class RuleError(Exception):
+    """ Raised when a rule is violated """
+    pass
+
+
+class DependencyError(Exception):
+    """ Raised when an input value is given but its dependencies are not met"""
+    pass
+
+
+class SetDefault(Exception):
+    """ Raised when an input value is not required and not given """
+    pass
+
+
+class MaskError(Exception):
+    """Raised when an input mask fails validation"""
+    pass
+
+
+class SilentError(Exception):
+    """Error without message in case the message has already been logged"""
+    pass

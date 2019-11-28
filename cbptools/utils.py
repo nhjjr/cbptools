@@ -3,11 +3,14 @@
 """Utilities for logging and file processing"""
 
 from typing import Union
+from os.path import join as opj
 import pandas as pd
-import math
-import yaml
 import numpy as np
 import zipfile
+import inspect
+import math
+import yaml
+import sys
 
 
 def config_get(keymap, config, default=None):
@@ -22,6 +25,87 @@ def config_get(keymap, config, default=None):
     mapping = keymap.split('.')
     value = delve(config, *mapping)
     return value if value is not None else default
+
+
+def build_workflow(config, save_at):
+    """Build the Snakefile"""
+    def add_section(name: str, d):
+        def indent(text, offset: int = 1):
+            return '%s%s' % (' ' * 4 * offset, text)
+
+        lines = list()
+        lines.append(indent('%s:' % name, 1))
+
+        if isinstance(d, dict):
+            for k, v in d.items():
+                c = '' if k == list(d.keys())[-1] else ','
+
+                if isinstance(v, str):
+                    v = v[2:] if v.startswith('f:') else '\'%s\'' % v
+
+                lines.append(indent('%s=%s%s' % (k, v, c), 2))
+
+        elif isinstance(d, list):
+            for i, v in enumerate(d):
+                c = '' if i == len(d)-1 else ','
+
+                if isinstance(v, str):
+                    v = v[2:] if v.startswith('f:') else '\'%s\'' % v
+
+                lines.append(indent('%s%s' % (v, c), 2))
+
+        elif name == 'benchmark':
+            lines[0] += ' \'%s\'' % d
+
+        else:
+            lines[0] += ' %s' % d
+
+        return lines
+
+    snakefile = opj(save_at, 'Snakefile')
+
+    # These tuples are in order of placement
+    clsmembers = inspect.getmembers(sys.modules[__name__], inspect.isclass)
+    all_rules = []
+    for clsname, cls in clsmembers:
+        if clsname.startswith('Rule'):
+            all_rules.append(cls)
+
+    rule_parts = ('input', 'output', 'benchmark', 'threads', 'resources',
+                  'params', 'run', 'shell')
+
+    # Snakefile Header
+    workflow = list()
+    workflow.extend([
+        'from cbptools import tasks, taskutils\n',
+        'participants = taskutils.get_participant_ids()'
+    ])
+
+    # Snakefile body (rules)
+    for rule in all_rules:
+        rule = rule(config)
+
+        if rule.is_active():
+            workflow.append('\n')
+            workflow.append('rule %s:' % rule.name)
+
+            for part in rule_parts:
+                if getattr(rule, part):
+                    section = add_section(part, getattr(rule, part))
+                    workflow.extend(section)
+
+    # Snakefile footer
+    workflow.append('\n')
+
+    # Save Snakefile to project directory
+    with open(snakefile, 'w') as sf:
+        for line in workflow:
+            sf.write('%s\n' % line)
+
+    # TODO: make dynamic cluster.json
+    # templates = pkg_resources.resource_filename(__name__, 'templates')
+    # cluster_json = opj(templates, 'cluster.json')
+    # shutil.copy(self.cluster_json, self.workdir)
 
 
 class TColor:
