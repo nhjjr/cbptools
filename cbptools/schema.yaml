@@ -519,3 +519,8 @@ parameters:
       default: false
       dependency: [data.masks.space: standard]
       desc: 'Provide cluster-labeled ROI voxel plots for each individual subjects'
+    benchmark:
+      type: boolean
+      default: false
+      custom: [benchmarking]
+      desc: 'benchmark the execution of each workflow task'

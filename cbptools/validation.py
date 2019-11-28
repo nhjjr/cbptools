@@ -508,3 +508,16 @@ class Validator(object):
                         )
 
         return True
+
+    @staticmethod
+    def _rule_custom_benchmarking(this):
+        """Custom rule for benchmarking"""
+        if this.value is True:
+            try:
+                import psutil
+            except ImportError as exc:
+                raise RuleError('Python 3 package psutil needs to be '
+                                'installed for benchmarking')
+
+        return True
+

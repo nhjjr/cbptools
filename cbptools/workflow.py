@@ -30,6 +30,10 @@ def build_workflow(config, save_at):
                     v = v[2:] if v.startswith('f:') else '\'%s\'' % v
 
                 lines.append(indent('%s%s' % (v, c), 2))
+
+        elif name == 'benchmark':
+            lines[0] += ' \'%s\'' % d
+
         else:
             lines[0] += ' %s' % d
 
@@ -44,8 +48,8 @@ def build_workflow(config, save_at):
         if clsname.startswith('Rule'):
             all_rules.append(cls)
 
-    rule_parts = ('input', 'output', 'threads', 'resources', 'params', 'run',
-                  'shell')
+    rule_parts = ('input', 'output', 'benchmark', 'threads', 'resources',
+                  'params', 'run', 'shell')
 
     # Snakefile Header
     workflow = list()
@@ -133,6 +137,10 @@ class BaseRule(object):
 
     @property
     def resources(self):
+        return None
+
+    @property
+    def benchmark(self):
         return None
 
     @property
@@ -285,6 +293,10 @@ class RuleProcessMasksRSFMRI(BaseRule):
         return 1
 
     @property
+    def benchmark(self):
+        return 'benchmarks/%s.log' % self.name
+
+    @property
     def params(self):
         d = dict()
 
@@ -379,6 +391,10 @@ class RuleProcessMasksDMRI(BaseRule):
     @property
     def threads(self):
         return 1
+
+    @property
+    def benchmark(self):
+        return 'benchmarks/%s.log' % self.name
 
     @property
     def params(self):
@@ -476,6 +492,12 @@ class RuleProbtrackx2(BaseRule):
         d['fdt_matrix2'] = opj(path, 'fdt_matrix2.dot')
 
         return d
+
+    @property
+    def benchmark(self):
+        session = self.get('data.session', None)
+        prfx = '{participant_id}.{session}' if session else '{participant_id}'
+        return 'benchmarks/%s.%s.log' % (prfx, self.name)
 
     @property
     def threads(self):
@@ -602,6 +624,12 @@ class RuleConnectivityDMRI(BaseRule):
         return 1
 
     @property
+    def benchmark(self):
+        session = self.get('data.session', None)
+        prfx = '{participant_id}.{session}' if session else '{participant_id}'
+        return 'benchmarks/%s.%s.log' % (prfx, self.name)
+
+    @property
     def resources(self):
         d = dict()
 
@@ -710,6 +738,12 @@ class RuleConnectivityRSFMRI(BaseRule):
     @property
     def threads(self):
         return 1
+
+    @property
+    def benchmark(self):
+        session = self.get('data.session', None)
+        prfx = '{participant_id}.{session}' if session else '{participant_id}'
+        return 'benchmarks/%s.%s.log' % (prfx, self.name)
 
     @property
     def resources(self):
@@ -831,6 +865,14 @@ class RuleMergeSessions(BaseRule):
         return d
 
     @property
+    def benchmark(self):
+        return 'benchmarks/{participant_id}.%s.log' % self.name
+
+    @property
+    def threads(self):
+        return 1
+
+    @property
     def params(self):
         d = dict()
 
@@ -857,10 +899,6 @@ class RuleMergeSessions(BaseRule):
             d['cubic_transform'] = self.get(cubic, False)
 
         return d
-
-    @property
-    def threads(self):
-        return 1
 
     @property
     def run(self):
@@ -912,6 +950,10 @@ class RuleMergeConnectivityLogs(BaseRule):
         return d
 
     @property
+    def benchmark(self):
+        return 'benchmarks/%s.log' % self.name
+
+    @property
     def threads(self):
         return 1
 
@@ -958,6 +1000,10 @@ class RuleValidateConnectivity(BaseRule):
         d['touchfile'] = touchfile
 
         return d
+
+    @property
+    def benchmark(self):
+        return 'benchmarks/%s.log' % self.name
 
     @property
     def threads(self):
@@ -1018,6 +1064,10 @@ class RuleKMeansClustering(BaseRule):
         d['labels'] = labels
 
         return d
+
+    @property
+    def benchmark(self):
+        return 'benchmarks/{participant_id}.k{n_clusters}.%s.log' % self.name
 
     @property
     def threads(self):
@@ -1094,6 +1144,10 @@ class RuleSpectralClustering(BaseRule):
         d['labels'] = labels
 
         return d
+
+    @property
+    def benchmark(self):
+        return 'benchmarks/{participant_id}.k{n_clusters}.%s.log' % self.name
 
     @property
     def threads(self):
@@ -1192,6 +1246,10 @@ class RuleAgglomerativeClustering(BaseRule):
         return d
 
     @property
+    def benchmark(self):
+        return 'benchmarks/{participant_id}.k{n_clusters}.%s.log' % self.name
+
+    @property
     def threads(self):
         return 1
 
@@ -1279,6 +1337,10 @@ class RuleGroupLevelClustering(BaseRule):
         return d
 
     @property
+    def benchmark(self):
+        return 'benchmarks/k{n_clusters}.%s.log' % self.name
+
+    @property
     def threads(self):
         return 1
 
@@ -1355,6 +1417,10 @@ class RuleInternalValidity(BaseRule):
         return d
 
     @property
+    def benchmark(self):
+        return 'benchmarks/{participant_id}.%s.log' % self.name
+
+    @property
     def threads(self):
         return 1
 
@@ -1425,6 +1491,10 @@ class RuleMergeInternalValidity(BaseRule):
         return d
 
     @property
+    def benchmark(self):
+        return 'benchmarks/%s.log' % self.name
+
+    @property
     def threads(self):
         return 1
 
@@ -1466,6 +1536,10 @@ class RuleIndividualSimilarity(BaseRule):
         d['individual_similarity_matrix'] = similarity
 
         return d
+
+    @property
+    def benchmark(self):
+        return 'benchmarks/k{n_clusters}.%s.log' % self.name
 
     @property
     def threads(self):
@@ -1529,6 +1603,10 @@ class RuleGroupSimilarity(BaseRule):
         return d
 
     @property
+    def benchmark(self):
+        return 'benchmarks/%s.log' % self.name
+
+    @property
     def threads(self):
         return 1
 
@@ -1579,6 +1657,10 @@ class RulePlotInternalValidity(BaseRule):
         d['figure'] = plot
 
         return d
+
+    @property
+    def benchmark(self):
+        return 'benchmarks/{metric}.%s.log' % self.name
 
     @property
     def threads(self):
@@ -1641,6 +1723,10 @@ class RulePlotIndividualSimilarity(BaseRule):
         return d
 
     @property
+    def benchmark(self):
+        return 'benchmarks/k{n_clusters}.%s.log' % self.name
+
+    @property
     def threads(self):
         return 1
 
@@ -1689,6 +1775,10 @@ class RulePlotGroupSimilarity(BaseRule):
         d['cophenetic_correlation'] = cophenet
 
         return d
+
+    @property
+    def benchmark(self):
+        return 'benchmarks/%s.log' % self.name
 
     @property
     def threads(self):
@@ -1755,6 +1845,10 @@ class RulePlotLabeledROI(BaseRule):
         return d
 
     @property
+    def benchmark(self):
+        return 'benchmarks/k{n_clusters}.{view}.%s.log' % self.name
+
+    @property
     def threads(self):
         return 1
 
@@ -1817,6 +1911,10 @@ class RuleMergeIndividualLabels(BaseRule):
         return d
 
     @property
+    def benchmark(self):
+        return 'benchmarks/{participant_id}.%s.log' % self.name
+
+    @property
     def threads(self):
         return 1
 
@@ -1869,6 +1967,10 @@ class RulePlotIndividualLabeledROI(BaseRule):
         d['figure'] = opj(path, figure)
 
         return d
+
+    @property
+    def benchmark(self):
+        return 'benchmarks/k{n_clusters}.{view}.%s.log' % self.name
 
     @property
     def threads(self):
@@ -1944,6 +2046,10 @@ class RuleReferenceSimilarity(BaseRule):
         return d
 
     @property
+    def benchmark(self):
+        return 'benchmarks/%s.log' % self.name
+
+    @property
     def threads(self):
         return 1
 
@@ -2001,6 +2107,10 @@ class RulePlotReferenceSimilarity(BaseRule):
         d['figure'] = plot
 
         return d
+
+    @property
+    def benchmark(self):
+        return 'benchmarks/%s.log' % self.name
 
     @property
     def threads(self):
