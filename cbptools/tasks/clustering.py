@@ -1,4 +1,4 @@
-from ..utils import sort_files
+from ..utils import sort_files, get_logger
 from ..cluster import relabel
 from ..image import map_labels
 from sklearn.cluster import KMeans, SpectralClustering, AgglomerativeClustering
@@ -8,10 +8,12 @@ from scipy.cluster import hierarchy
 from scipy import stats
 import nibabel as nib
 import numpy as np
+import logging
 import os
 
 
-def kmeans_clustering(input: dict, output: dict, params: dict) -> None:
+def kmeans_clustering(input: dict, output: dict, params: dict,
+                      log: list) -> None:
     """ Perform k-means clustering on the input connectivity matrix.
 
     Parameters
@@ -23,16 +25,22 @@ def kmeans_clustering(input: dict, output: dict, params: dict) -> None:
     params : dict
         The dict is equivalent to cluster_options in the CBPtools
         documentation on readthedocs.io under the parameters for 'clustering'.
+    log : list
+        Log files
     """
 
     # Input, output, params
     connectivity_file = input.get('connectivity')
     labels_file = output.get('labels')
+    log_file = log[0]
     algorithm = params.get('algorithm')
     init = params.get('init')
     max_iter = params.get('max_iter')
     n_init = params.get('n_init')
     n_clusters = params.get('n_clusters')
+
+    # Set up logging
+    logger = get_logger('kmeans_clustering', log_file)
 
     _, ext = os.path.splitext(connectivity_file)
     connectivity = np.load(connectivity_file)
@@ -43,11 +51,17 @@ def kmeans_clustering(input: dict, output: dict, params: dict) -> None:
     # If the connectivity file is empty (connectivity could not be computed),
     # create an empty labels file
     if connectivity.size == 0:
+        logger.warning('%s is empty, aborting clustering' % connectivity_file)
         np.save(labels_file, np.array([]))
         return
 
     kwargs = {'algorithm': algorithm, 'init': init, 'max_iter': max_iter,
               'n_init': n_init}
+
+    debug_msg = str(['%s=%s' % (k, v) for k, v in kwargs.items()])
+    debug_msg = debug_msg.strip('[]').replace('\'', '')
+    logging.debug('clustering %s with options: %s'
+                  % (connectivity_file, debug_msg))
 
     clustering = KMeans(n_clusters=n_clusters, **kwargs)
     clustering.fit(connectivity)
@@ -57,7 +71,8 @@ def kmeans_clustering(input: dict, output: dict, params: dict) -> None:
     np.save(labels_file, labels)
 
 
-def spectral_clustering(input: dict, output: dict, params: dict) -> None:
+def spectral_clustering(input: dict, output: dict, params: dict,
+                        log: list) -> None:
     """ Perform spectral clustering on the input connectivity matrix.
 
     Parameters
@@ -69,11 +84,14 @@ def spectral_clustering(input: dict, output: dict, params: dict) -> None:
     params : dict
         The dict is equivalent to cluster_options in the CBPtools
         documentation on readthedocs.io under the parameters for 'clustering'.
+    log : dict
+        Logging files, allowed {log}
     """
 
     # Input, output, params
     connectivity_file = input.get('connectivity')
     labels_file = output.get('labels')
+    log_file = log[0]
     n_init = params.get('n_init')
     kernel = params.get('kernel')
     assign_labels = params.get('assign_labels')
@@ -85,6 +103,9 @@ def spectral_clustering(input: dict, output: dict, params: dict) -> None:
     coef0 = params.get('coef0', None)
     eigen_tol = params.get('eigen_tol', None)
 
+    # Set up logging
+    logger = get_logger('spectral_clustering', log_file)
+
     _, ext = os.path.splitext(connectivity_file)
     connectivity = np.load(connectivity_file)
 
@@ -94,6 +115,7 @@ def spectral_clustering(input: dict, output: dict, params: dict) -> None:
     # If the connectivity file is empty (connectivity could not be computed),
     # create an empty labels file
     if connectivity.size == 0:
+        logger.warning('%s is empty, aborting clustering' % connectivity_file)
         np.save(labels_file, np.array([]))
         return
 
@@ -101,24 +123,45 @@ def spectral_clustering(input: dict, output: dict, params: dict) -> None:
         eigen_tol = float(eigen_tol)
 
     if kernel not in kernel_metrics().keys():
-        raise ValueError('Unknown kernel: %s' % kernel)
+        msg = 'Unknown kernel (affinity): %s' % kernel
+        logger.error(msg)
+        raise ValueError(msg)
 
     kwargs = {'n_clusters': n_clusters, 'n_init': n_init, 'affinity': kernel,
               'assign_labels': assign_labels, 'eigen_solver': eigen_solver,
               'gamma': gamma, 'n_neighbors': n_neighbors, 'degree': degree,
-              'coef0': coef0, 'eigen_tol': eigen_tol}
+              'coef0': coef0}
 
     kwargs = {k: v for k, v in kwargs.items() if v is not None}
 
-    clustering = SpectralClustering(**kwargs)
-    clustering.fit(connectivity)
-    labels = clustering.labels_
+    debug_msg = str(['%s=%s' % (k, v) for k, v in kwargs.items()])
+    debug_msg = debug_msg.strip('[]').replace('\'', '')
+    logging.debug('clustering %s with options: %s'
+                  % (connectivity_file, debug_msg))
 
-    # cluster labels are 0-indexed
-    np.save(labels_file, labels)
+    # Perform spectral clustering on the available tolerances
+    try:
+        kwargs['eigen_tol'] = eigen_tol
+        clustering = SpectralClustering(**kwargs)
+        clustering.fit(connectivity)
+        labels = clustering.labels_
+
+        if np.unique(labels).size != n_clusters:
+            logging.error('%s: %s clusters requested, only %s found'
+                          % (labels_file, n_clusters, np.unique(labels).size))
+            np.save(labels_file, np.array([]))
+
+        # cluster labels are 0-indexed
+        np.save(labels_file, labels)
+
+    except np.linalg.LinAlgError as exc:
+        logging.error('%s: %s (try increasing the eigen_tol)'
+                      % labels_file, exc)
+        np.save(labels_file, np.array([]))
 
 
-def agglomerative_clustering(input: dict, output: dict, params: dict) -> None:
+def agglomerative_clustering(input: dict, output: dict, params: dict,
+                             log: list) -> None:
     """ Perform agglomerative clustering on the input connectivity matrix.
 
     Parameters
@@ -130,14 +173,20 @@ def agglomerative_clustering(input: dict, output: dict, params: dict) -> None:
     params : dict
         The dict is equivalent to cluster_options in the CBPtools
         documentation on readthedocs.io under the parameters for 'clustering'.
+    log : list
+        Log files
     """
 
     # Input, output, params
     connectivity_file = input.get('connectivity')
     labels_file = output.get('labels')
+    log_file = log[0]
     distance_metric = params.get('distance_metric')
     linkage = params.get('linkage')
     n_clusters = params.get('n_clusters')
+
+    # Set up logging
+    logger = get_logger('agglomerative_clustering', log_file)
 
     _, ext = os.path.splitext(connectivity_file)
     connectivity = np.load(connectivity_file)
@@ -148,11 +197,17 @@ def agglomerative_clustering(input: dict, output: dict, params: dict) -> None:
     # If the connectivity file is empty (connectivity could not be computed),
     # create an empty labels file
     if connectivity.size == 0:
+        logger.warning('%s is empty, aborting clustering' % connectivity_file)
         np.save(labels_file, np.array([]))
         return
 
     kwargs = {'n_clusters': n_clusters, 'affinity': distance_metric,
               'linkage': linkage}
+
+    debug_msg = str(['%s=%s' % (k, v) for k, v in kwargs.items()])
+    debug_msg = debug_msg.strip('[]').replace('\'', '')
+    logging.debug('clustering %s with options: %s'
+                  % (connectivity_file, debug_msg))
 
     clustering = AgglomerativeClustering(**kwargs)
     clustering.fit(connectivity)

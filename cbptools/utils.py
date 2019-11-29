@@ -10,6 +10,7 @@ import inspect
 import math
 import yaml
 import json
+import logging
 
 
 def get_participant_ids(file: str = 'participants.tsv', sep: str = '\t',
@@ -18,6 +19,22 @@ def get_participant_ids(file: str = 'participants.tsv', sep: str = '\t',
         file, sep=sep, engine='python'
     ).get(index_col).tolist()
     return participant_ids
+
+
+def get_logger(name: str, log_file: str) -> logging.Logger:
+    formatter = logging.Formatter(
+        fmt='%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s',
+        datefmt='%I:%M:%S%p'
+    )
+    handler = logging.FileHandler(log_file)
+    handler.setLevel(logging.INFO)
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
+
+    return logger
 
 
 def config_get(keymap, config, default=None):
@@ -61,8 +78,8 @@ def build_workflow(config, save_at):
 
                 lines.append(indent('%s%s' % (v, c), 2))
 
-        elif name == 'benchmark':
-            lines[0] += ' \'%s\'' % d
+        elif isinstance(d, str) and d.startswith('s:'):
+            lines[0] += ' \'%s\'' % d[2:]
 
         else:
             lines[0] += ' %s' % d
@@ -82,8 +99,11 @@ def build_workflow(config, save_at):
         if clsname.startswith('Rule'):
             all_rules.append(cls)
 
-    rule_parts = ('input', 'output', 'benchmark', 'threads', 'resources',
-                  'params', 'run', 'shell')
+    rule_parts = ['input', 'output', 'log', 'benchmark', 'threads',
+                  'resources', 'params', 'run', 'shell']
+
+    if not config_get('parameters.report.benchmark', config, False):
+        rule_parts.remove('benchmark')
 
     # Cluster json header
     cluster_json = OrderedDict()

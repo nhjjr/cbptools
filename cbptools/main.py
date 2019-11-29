@@ -59,13 +59,11 @@ def main():
     )
 
     args = parser.parse_args()
-    args.run(args, parsers=[create_command, example_command])
 
-    # try:
-    #     args.run(args, parsers=[create_command, example_command])
-    #
-    # except AttributeError as exc:
-    #     parser.error('too few arguments')
+    if not len(sys.argv) > 1:
+        parser.print_help()
+    else:
+        args.run(args, parsers=[create_command, example_command])
 
 
 def create(params, parsers) -> None:

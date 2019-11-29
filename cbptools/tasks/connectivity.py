@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from ..exceptions import DimensionError
 from ..image import (img_is_4d, get_masked_series, find_low_variance_voxels,
                      get_f2c_order)
 from ..connectivity import seed_based_correlation
 from ..clean import nuisance_signal_regression, fft_filter
+from ..utils import get_logger
 from scipy.signal import detrend
 from scipy.sparse import coo_matrix
 from sklearn.decomposition import PCA
@@ -19,7 +19,8 @@ import gc
 import os
 
 
-def connectivity_rsfmri(input: dict, output: dict, params: dict) -> None:
+def connectivity_rsfmri(input: dict, output: dict, params: dict,
+                        log: list) -> None:
     """ Compute a connectivity matrix from functional data.
 
     Processing steps:
@@ -41,12 +42,14 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict) -> None:
     input : dict
         Input files, allowed: {time_series, seed, target, confounds}
     output : dict
-        Output files, allowed {connectivity, log_file}
+        Output files, allowed {connectivity}
     params : dict
-        Parameters, allowed {participant_id, arctanh_transform, pca_transform,
-        bandpass, low_variance_error, compress, confounds, smoothing_fwhm}
-        For more information, see the CBPtools documentation on readthedocs.io
-        under the parameters section for 'time_series_proc'.
+        Parameters, allowed {arctanh_transform, pca_transform, bandpass,
+        low_variance_error, compress, confounds, smoothing_fwhm}. For more
+        information, see the CBPtools documentation on readthedocs.io under
+        the parameters section for 'time_series_proc'.
+    log : list
+        Log files
     """
 
     # input, output, params
@@ -54,10 +57,8 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict) -> None:
     seed_img_file = input.get('seed_mask')
     target_img_file = input.get('target_mask')
     confounds_file = input.get('confounds', None)
-    log_file = output.get('log_file')
     connectivity_file = output.get('connectivity')
-    participant_id = params.get('participant_id')
-    session_id = params.get('session_id', None)
+    log_file = log[0]
     smoothing = params.get('smoothing', False)
     lv_correction = params.get('low_variance_correction', False)
     lv_in_seed = params.get('low_variance_in_seed', None)
@@ -70,15 +71,24 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict) -> None:
     arctanh_transform = params.get('arctanh_transform', False)
     compress = params.get('compress', False)
 
+    # Set up logging
+    logger = get_logger('connectivity_rsfmri', log_file)
+
     # Load input data
     time_series = nib.load(time_series_file)
     seed_img = nib.load(seed_img_file)
     target_img = nib.load(target_img_file)
 
     if not img_is_4d(time_series):
-        raise DimensionError(4, len(time_series.shape))
+        logger.error('%s has incompatible dimensionality: Expected dimension'
+                     'is %sD but a %sD image was provided'
+                     % (time_series_file, 4, len(time_series.shape)))
+        np.savez(connectivity_file, connectivity=np.array([]))
+        return
 
     if smoothing:
+        logger.info('applying smoothing (fwhm=%s) to %s'
+                    % (smoothing, time_series_file))
         time_series = smooth_image(time_series, fwhm=smoothing)
 
     seed_series = get_masked_series(time_series, seed_img)
@@ -94,24 +104,30 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict) -> None:
     bad_target = in_target.size / np.count_nonzero(target_img.get_data())
     bad_target = bad_target > lv_in_target
 
-    if session_id:
-        # If a session_id is set, then include it in the log file
-        data = [[participant_id, session_id, in_seed, in_target,
-                 bad_seed or bad_target]]
-        columns = ['participant_id', 'session_id', 'low_variance_in_seed',
-                   'low_variance_in_target', 'low_variance_excluded']
-    else:
-        data = [[participant_id, in_seed, in_target, bad_seed or bad_target]]
-        columns = ['participant_id', 'low_variance_in_seed',
-                   'low_variance_in_target', 'low_variance_excluded']
+    if in_seed > 0:
+        logger.warning('%s low variance seed voxels found in %s'
+                       % (in_seed, time_series_file))
 
-    df = pd.DataFrame(data=data, columns=columns)
-    df.to_csv(log_file, sep='\t', index=False)
-    del df
+    if in_target > 0:
+        logger.warning('%s low variance target voxels found in %s'
+                       % (in_seed, time_series_file))
 
-    # If the participant has data exceeding the seed- or target low
-    # variance threshold, output an empty file
+    if in_target > 0 or in_seed > 0:
+        keymap = 'parameters.connectivity.low_variance_error.behavior'
+        logger.warning('low variance voxels will be set to zero '
+                       '(%s=%s)' % (keymap, lv_behavior))
+
     if lv_correction:
+        if bad_seed:
+            logger.error('number of low variance voxels in seed exceeds the'
+                         'threshold (%s) for %s'
+                         % (lv_in_seed, time_series_file))
+
+        if bad_target:
+            logger.error('number of low variance voxels in target exceeds the'
+                         'threshold (%s) for %s'
+                         % (lv_in_target, time_series_file))
+
         if bad_seed or bad_target:
             np.savez(connectivity_file, connectivity=np.array([]))
             return
@@ -144,6 +160,14 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict) -> None:
             confounds_file, sep=confounds_sep, usecols=confounds_cols
         )
 
+        if confounds_cols is None:
+            logger.info('%s nuisance signal regression using all columns'
+                        % time_series_file)
+        else:
+            logger.info('%s nuisance signal regression using: %s'
+                        % (time_series_file,
+                           str(confounds_cols).strip('[]').replace('\'', '')))
+
         confounds = confounds.values
         seed_series = nuisance_signal_regression(
             seed_series, confounds=confounds, demean=False)
@@ -153,6 +177,9 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict) -> None:
     # Apply band-pass filter if high_pass, low_pass, and tr are defined
     if bandpass:
         (high_pass, low_pass), tr = bandpass
+        logger.info('%s band-pass filtering (high-pass=%s, '
+                    'low-pass=%s, tr=%s)'
+                    % (time_series_file, high_pass, low_pass, tr))
         seed_series = fft_filter(seed_series, low_pass, high_pass, tr)
         target_series = fft_filter(target_series, low_pass, high_pass, tr)
 
@@ -164,9 +191,12 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict) -> None:
     r[r <= -1] = np.nextafter(np.float32(-1.), np.float32(1))
 
     if arctanh_transform:
+        logger.info('%s applying arctanh transform' % connectivity_file)
         r = np.arctanh(r)
 
     if pca_transform:
+        logger.info('%s applying PCA transform (n_components=%s)'
+                    % (connectivity_file, pca_transform))
         r = detrend(r, axis=1, type='constant')
         pca = PCA(n_components=pca_transform)
         r = pca.fit_transform(r)
@@ -181,68 +211,60 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict) -> None:
         np.savez(connectivity_file, connectivity=r)
 
 
-def merge_connectivity_logs(input: dict, output: dict) -> None:
-    """Merge all connectivity output logs"""
-    # input, output
-    log_file = input.get('log')
-    merged_log_file = output.get('merged_log')
-
-    df = pd.concat((
-        pd.read_csv(f, sep='\t', index_col=False)
-        for f in log_file), axis=0).reset_index(drop=True)
-
-    df.to_csv(merged_log_file, sep='\t', index=False)
-
-
-def validate_connectivity(input: dict, output: dict, params: dict) -> None:
+def validate_connectivity(input: dict, output: dict, params: dict,
+                          log: list) -> None:
     """Ensure that all connectivity matrices could be computed"""
 
     # input, output, params
-    log_file = input.get('log')
+    labels_files = input.get('labels')
+    log_file = log[0]
     touch_file = output.get('touchfile')
     connectivity_template = params.get('connectivity')
     labels_template = params.get('labels')
     n_clusters = params.get('n_clusters')
 
-    df = pd.read_csv(log_file, sep='\t')
-    bad_participants = df[df['low_variance_excluded']]['participant_id']
-    bad_participants = list(np.unique(bad_participants.tolist()))
+    # Set up logging
+    logger = get_logger('validate_connectivity', log_file)
 
-    # Remove files with erroneous or no data
-    if bad_participants:
-        print('--------------------------------------------------------------')
-        print('%s subject(s) with problematic data.' % len(bad_participants))
-        print('--------------------------------------------------------------')
+    bad_ppids = list()
+    for labels_file in labels_files:
+        ppid = labels_file.split('/')[1]
+        labels = np.load(labels_file)
 
-        for bad_participant in bad_participants:
-            connectivity_file = connectivity_template.format(
-                participant_id=bad_participant
-            )
-            labels_files = [labels_template.format(
-                participant_id=bad_participant,
-                n_clusters=k
-            ) for k in n_clusters]
+        if labels.size == 0 and ppid not in bad_ppids:
+            logger.error('subject-id %s has problematic data '
+                         '(cluster labels could not be created)' % ppid)
+            bad_ppids.append(ppid)
 
-            if os.path.exists(connectivity_file):
-                os.remove(connectivity_file)
-                print('Removing output file %s' % connectivity_file)
+    if bad_ppids:
+        logger.error('%s subject(s) with problematic data' % len(bad_ppids))
 
-            for file in labels_files:
+        for ppid in bad_ppids:
+            conn = connectivity_template.format(participant_id=ppid)
+            labels = [labels_template.format(participant_id=ppid, n_clusters=k)
+                      for k in n_clusters]
+
+            if os.path.exists(conn):
+                logger.warning('removing output file %s' % conn)
+                os.remove(conn)
+
+            for file in labels:
                 if os.path.exists(file):
+                    logger.warning('removing output file %s' % file)
                     os.remove(file)
-                    print('Removing output file %s' % file)
 
-        print('\nOpen %s to find problematic participants in the '
-              'low_variance_excluded column\n' % log_file)
-        raise ValueError('Participants with bad data found. Open '
-                         '%s for more details.' % log_file)
+        raise ValueError(
+            '%s subject(s) with problematic data. Read %s for more details'
+            % (len(bad_ppids), log_file)
+        )
 
-    # Touch an output file that subsequent rules depend on
     else:
+        # Touch an output file that subsequent rules depend on
         Path(touch_file).touch()
 
 
-def connectivity_dmri(input: dict, output: dict, params: dict) -> None:
+def connectivity_dmri(input: dict, output: dict, params: dict,
+                      log: list) -> None:
     """ Compute a connectivity matrix from functional data. This
     method uses FSL's probtrackx2 function which must be accessible
     from the terminal.
@@ -262,15 +284,21 @@ def connectivity_dmri(input: dict, output: dict, params: dict) -> None:
         Parameters, allowed {cubic_transform, pca_transform, compress,
         cleanup_fsl}. For more information, see the CBPtools documentation on
         readthedocs.io under the parameters section for 'probtract_proc'.
+    log : list
+        Log files
     """
 
     fdt_matrix2_file = input.get('fdt_matrix2')
     seed_img_file = input.get('seed_mask')
     connectivity_file = output.get('connectivity')
+    log_file = log[0]
     cubic_transform = params.get('cubic_transform', False)
     pca_transform = params.get('pca_transform', False)
     compress = params.get('compress', False)
     cleanup_fsl = params.get('cleanup_fsl', False)
+
+    # Set up logging
+    logger = get_logger('connectivity_dmri', log_file)
 
     i, j, value = np.loadtxt(fdt_matrix2_file, unpack=True)
     i = i.astype(int) - 1  # convert to int for indexing
@@ -280,9 +308,12 @@ def connectivity_dmri(input: dict, output: dict, params: dict) -> None:
     r = r.todense(order='F')
 
     if cubic_transform:
+        logger.info('%s applying cubic transform' % connectivity_file)
         r = np.power(r, 1 / 3)
 
     if pca_transform:
+        logger.info('%s applying PCA transform (n_components=%s)'
+                    % (connectivity_file, pca_transform))
         r = detrend(r, axis=1, type='constant')
         pca = PCA(n_components=pca_transform)
         r = pca.fit_transform(r)
@@ -301,10 +332,12 @@ def connectivity_dmri(input: dict, output: dict, params: dict) -> None:
         np.savez(connectivity_file, connectivity=r)
 
     if cleanup_fsl:
-        rmtree(os.path.dirname(fdt_matrix2_file))
+        fsl_output = os.path.dirname(fdt_matrix2_file)
+        logger.info('removing FSL\'s probtrackx2 output: %s' % fsl_output)
+        rmtree(fsl_output)
 
 
-def merge_sessions(input: dict, output: dict, params: dict) -> None:
+def merge_sessions(input: dict, output: dict, params: dict, log: list) -> None:
     """ Merge multi-session connectivity matrices.
 
     If CBPtools receives multi-session input data, each session will have
@@ -319,14 +352,20 @@ def merge_sessions(input: dict, output: dict, params: dict) -> None:
         Output file, allowed {connectivity}
     params : dict
         Parameters, allowed {compress}
+    log : list
+        Log files
     """
 
     sessions = input.get('sessions')
     connectivity_file = output.get('connectivity')
+    log_file = log[0]
     compress = params.get('compress')
     arctanh_transform = params.get('arctanh_transform', False)
     pca_transform = params.get('pca_transform', False)
     cubic_transform = params.get('cubic_transform', False)
+
+    # Set up logging
+    logger = get_logger('merge_sessions', log_file)
 
     r = []
     for session in sessions:
@@ -342,6 +381,8 @@ def merge_sessions(input: dict, output: dict, params: dict) -> None:
     for matrix in r:
         if matrix.size == 0:
             # At least one of the sessions has faulty data
+            logger.error('could not create %s, at least one of the sessions'
+                         'contains faulty data' % connectivity_file)
             np.savez(connectivity_file, connectivity=np.array([]))
             return
 
@@ -353,12 +394,16 @@ def merge_sessions(input: dict, output: dict, params: dict) -> None:
     r[r <= -1] = np.nextafter(np.float32(-1.), np.float32(1))
 
     if arctanh_transform:
+        logger.info('%s applying arctanh transform' % connectivity_file)
         r = np.arctanh(r)
 
     if cubic_transform:
+        logger.info('%s applying cubic transform' % connectivity_file)
         r = np.power(r, 1 / 3)
 
     if pca_transform:
+        logger.info('%s applying PCA transform (n_components=%s)'
+                    % (connectivity_file, pca_transform))
         r = detrend(r, axis=1, type='constant')
         pca = PCA(n_components=pca_transform)
         r = pca.fit_transform(r)

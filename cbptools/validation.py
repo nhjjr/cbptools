@@ -131,8 +131,8 @@ class Validator(object):
                     except SetDefault as exc:
                         default = schema[k].get('default', None)
                         if this.value is None and default is not None:
-                            logging.warning(
-                                'using default value for %s' % field)
+                            logging.warning('using default value for %s (%s)'
+                                            % (field, default))
                             document[k] = default
                         break
                     except DependencyError as exc:

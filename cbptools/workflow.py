@@ -42,10 +42,6 @@ class BaseRule(object):
         return 'f:lambda wildcards: %s' % value
 
     @property
-    def cluster_json(self):
-        return None
-
-    @property
     def input(self):
         return None
 
@@ -54,15 +50,23 @@ class BaseRule(object):
         return None
 
     @property
+    def log(self):
+        return None
+
+    @property
+    def benchmark(self):
+        return None
+
+    @property
+    def cluster_json(self):
+        return None
+
+    @property
     def threads(self):
         return None
 
     @property
     def resources(self):
-        return None
-
-    @property
-    def benchmark(self):
         return None
 
     @property
@@ -215,8 +219,12 @@ class RuleProcessMasksRSFMRI(BaseRule):
         return 1
 
     @property
+    def log(self):
+        return 's:log/%s.log' % self.name
+
+    @property
     def benchmark(self):
-        return 'benchmarks/%s.log' % self.name
+        return 's:benchmarks/%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -257,7 +265,7 @@ class RuleProcessMasksRSFMRI(BaseRule):
 
     @property
     def run(self):
-        return 'tasks.%s(input, output, params)' % self.name
+        return 'tasks.%s(input, output, params, log)' % self.name
 
 
 class RuleProcessMasksDMRI(BaseRule):
@@ -317,18 +325,22 @@ class RuleProcessMasksDMRI(BaseRule):
         return d
 
     @property
-    def threads(self):
-        return 1
+    def log(self):
+        return 's:log/%s.log' % self.name
 
     @property
     def benchmark(self):
-        return 'benchmarks/%s.log' % self.name
+        return 's:benchmarks/%s.log' % self.name
 
     @property
     def cluster_json(self):
         d = dict()
         d['out'] = 'log/{rule}-%s.out' % self.jid
         return d
+
+    @property
+    def threads(self):
+        return 1
 
     @property
     def params(self):
@@ -431,7 +443,7 @@ class RuleProbtrackx2(BaseRule):
     def benchmark(self):
         session = self.get('data.session', None)
         prfx = '{participant_id}.{session}' if session else '{participant_id}'
-        return 'benchmarks/%s.%s.log' % (prfx, self.name)
+        return 's:benchmarks/%s.%s.log' % (prfx, self.name)
 
     @property
     def cluster_json(self):
@@ -561,14 +573,18 @@ class RuleConnectivityDMRI(BaseRule):
         return d
 
     @property
-    def threads(self):
-        return 1
+    def log(self):
+        session = self.get('data.session', None)
+        wildcards = '{participant_id}'
+        wildcards += '.{session}' if session else ''
+        return 's:log/%s.%s.log' % (wildcards, self.name)
 
     @property
     def benchmark(self):
         session = self.get('data.session', None)
-        prfx = '{participant_id}.{session}' if session else '{participant_id}'
-        return 'benchmarks/%s.%s.log' % (prfx, self.name)
+        wildcards = '{participant_id}'
+        wildcards += '.{session}' if session else ''
+        return 's:benchmarks/%s.%s.log' % (wildcards, self.name)
 
     @property
     def cluster_json(self):
@@ -582,6 +598,10 @@ class RuleConnectivityDMRI(BaseRule):
 
         d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
         return d
+
+    @property
+    def threads(self):
+        return 1
 
     @property
     def resources(self):
@@ -624,7 +644,7 @@ class RuleConnectivityDMRI(BaseRule):
 
     @property
     def run(self):
-        return 'tasks.%s(input, output, params)' % self.name
+        return 'tasks.%s(input, output, params, log)' % self.name
 
 
 class RuleConnectivityRSFMRI(BaseRule):
@@ -676,28 +696,26 @@ class RuleConnectivityRSFMRI(BaseRule):
         if session:
             connectivity = 'connectivity_{session}.npz'
             connectivity = opj(path, connectivity)
-            log_file = 'connectivity_{session}.log'
-            log_file = opj(path, log_file)
             d['connectivity'] = self.fwrap(connectivity, 'temp')
-            d['log_file'] = self.fwrap(log_file, 'temp')
         else:
             connectivity = 'connectivity.npz'
-            log_file = 'connectivity.log'
-            log_file = opj(path, log_file)
             d['connectivity'] = opj(path, connectivity)
-            d['log_file'] = self.fwrap(log_file, 'temp')
 
         return d
 
     @property
-    def threads(self):
-        return 1
+    def log(self):
+        session = self.get('data.session', None)
+        wildcards = '{participant_id}'
+        wildcards += '.{session}' if session else ''
+        return 's:log/%s.%s.log' % (wildcards, self.name)
 
     @property
     def benchmark(self):
         session = self.get('data.session', None)
-        prfx = '{participant_id}.{session}' if session else '{participant_id}'
-        return 'benchmarks/%s.%s.log' % (prfx, self.name)
+        wildcards = '{participant_id}'
+        wildcards += '.{session}' if session else ''
+        return 's:benchmarks/%s.%s.log' % (wildcards, self.name)
 
     @property
     def cluster_json(self):
@@ -711,6 +729,10 @@ class RuleConnectivityRSFMRI(BaseRule):
 
         d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
         return d
+
+    @property
+    def threads(self):
+        return 1
 
     @property
     def resources(self):
@@ -790,7 +812,7 @@ class RuleConnectivityRSFMRI(BaseRule):
 
     @property
     def run(self):
-        return 'tasks.%s(input, output, params)' % self.name
+        return 'tasks.%s(input, output, params, log)' % self.name
 
 
 class RuleMergeSessions(BaseRule):
@@ -832,8 +854,12 @@ class RuleMergeSessions(BaseRule):
         return d
 
     @property
+    def log(self):
+        return 's:log/{participant_id}.%s.log' % self.name
+
+    @property
     def benchmark(self):
-        return 'benchmarks/{participant_id}.%s.log' % self.name
+        return 's:benchmarks/{participant_id}.%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -876,71 +902,7 @@ class RuleMergeSessions(BaseRule):
 
     @property
     def run(self):
-        return 'tasks.%s(input, output, params)' % self.name
-
-
-class RuleMergeConnectivityLogs(BaseRule):
-    name = 'merge_connectivity_logs'
-
-    def __init__(self, conf):
-        super().__init__(conf)
-
-    def is_active(self):
-        modality = self.get('modality')
-        return True if modality == 'rsfmri' else False
-
-    @property
-    def input(self):
-        d = dict()
-
-        # Parameter keys & files
-        session = self.get('data.session', None)
-        path = 'individual/{participant_id}'
-        ppid = 'participant_id=participants'
-
-        # Define parameters
-        if session:
-            log_file = 'connectivity_{session}.log'
-            log_file = opj(path, log_file)
-            sessid = 'session=%s' % session
-            d['log'] = self.fwrap([log_file, ppid, sessid], 'expand')
-        else:
-            log_file = 'connectivity.log'
-            log_file = opj(path, log_file)
-            d['log'] = self.fwrap([log_file, ppid], 'expand')
-
-        return d
-
-    @property
-    def output(self):
-        d = dict()
-
-        # Parameter keys & files
-        merged_log = 'individual/connectivity_report.tsv'
-
-        # Define parameters
-        d['merged_log'] = merged_log
-
-        return d
-
-    @property
-    def benchmark(self):
-        return 'benchmarks/%s.log' % self.name
-
-
-    @property
-    def cluster_json(self):
-        d = dict()
-        d['out'] = 'log/{rule}-%s.out' % self.jid
-        return d
-
-    @property
-    def threads(self):
-        return 1
-
-    @property
-    def run(self):
-        return 'tasks.%s(input, output)' % self.name
+        return 'tasks.%s(input, output, params, log)' % self.name
 
 
 class RuleValidateConnectivity(BaseRule):
@@ -959,15 +921,12 @@ class RuleValidateConnectivity(BaseRule):
 
         # Parameter keys & files
         labels = 'individual/{participant_id}/{n_clusters}cluster_labels.npy'
-        log_file = 'individual/connectivity_report.tsv'
         ppid = 'participant_id=participants'
         n_clusters = self.get('parameters.clustering.n_clusters')
         n_clusters = 'n_clusters=%s' % n_clusters
 
         # Define parameters
         d['labels'] = self.fwrap([labels, n_clusters, ppid], 'expand')
-        d['log'] = log_file
-
         return d
 
     @property
@@ -983,8 +942,12 @@ class RuleValidateConnectivity(BaseRule):
         return d
 
     @property
+    def log(self):
+        return 's:log/%s.log' % self.name
+
+    @property
     def benchmark(self):
-        return 'benchmarks/%s.log' % self.name
+        return 's:benchmarks/%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -1014,7 +977,7 @@ class RuleValidateConnectivity(BaseRule):
 
     @property
     def run(self):
-        return 'tasks.%s(input, output, params)' % self.name
+        return 'tasks.%s(input, output, params, log)' % self.name
 
 
 class RuleKMeansClustering(BaseRule):
@@ -1053,8 +1016,14 @@ class RuleKMeansClustering(BaseRule):
         return d
 
     @property
+    def log(self):
+        wildcards = '{participant_id}.k{n_clusters}'
+        return 's:log/%s.%s.log' % (wildcards, self.name)
+
+    @property
     def benchmark(self):
-        return 'benchmarks/{participant_id}.k{n_clusters}.%s.log' % self.name
+        wildcards = '{participant_id}.k{n_clusters}'
+        return 's:benchmarks/%s.%s.log' % (wildcards, self.name)
 
     @property
     def cluster_json(self):
@@ -1101,7 +1070,7 @@ class RuleKMeansClustering(BaseRule):
 
     @property
     def run(self):
-        return 'tasks.%s(input, output, params)' % self.name
+        return 'tasks.%s(input, output, params, log)' % self.name
 
 
 class RuleSpectralClustering(BaseRule):
@@ -1140,8 +1109,13 @@ class RuleSpectralClustering(BaseRule):
         return d
 
     @property
+    def log(self):
+        wildcards = '{participant_id}.k{n_clusters}'
+        return 's:log/%s.%s.log' % (wildcards, self.name)
+
+    @property
     def benchmark(self):
-        return 'benchmarks/{participant_id}.k{n_clusters}.%s.log' % self.name
+        return 's:benchmarks/{participant_id}.k{n_clusters}.%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -1182,11 +1156,14 @@ class RuleSpectralClustering(BaseRule):
         eigen_solver = 'parameters.clustering.cluster_options.eigen_solver'
         n_clusters = self.wildcard('int(wildcards.n_clusters)')
 
+        kernel = self.get(kernel)
+        eigen_solver = self.get(eigen_solver)
+
         # Define parameters
         d['n_init'] = self.get(n_init)
-        d['kernel'] = self.get(kernel)
+        d['kernel'] = kernel
         d['assign_labels'] = self.get(assign_labels)
-        d['eigen_solver'] = self.get(eigen_solver)
+        d['eigen_solver'] = eigen_solver
         d['n_clusters'] = n_clusters
 
         if kernel in ('rbf', 'polynomial', 'sigmoid', 'laplacian', 'chi2'):
@@ -1208,7 +1185,7 @@ class RuleSpectralClustering(BaseRule):
 
     @property
     def run(self):
-        return 'tasks.%s(input, output, params)' % self.name
+        return 'tasks.%s(input, output, params, log)' % self.name
 
 
 class RuleAgglomerativeClustering(BaseRule):
@@ -1247,8 +1224,14 @@ class RuleAgglomerativeClustering(BaseRule):
         return d
 
     @property
+    def log(self):
+        wildcards = '{participant_id}.k{n_clusters}'
+        return 's:log/%s.%s.log' % (wildcards, self.name)
+
+    @property
     def benchmark(self):
-        return 'benchmarks/{participant_id}.k{n_clusters}.%s.log' % self.name
+        wildcards = '{participant_id}.k{n_clusters}'
+        return 's:benchmarks/%s.%s.log' % (wildcards, self.name)
 
     @property
     def cluster_json(self):
@@ -1291,7 +1274,7 @@ class RuleAgglomerativeClustering(BaseRule):
 
     @property
     def run(self):
-        return 'tasks.%s(input, output, params)' % self.name
+        return 'tasks.%s(input, output, params, log)' % self.name
 
 
 class RuleGroupLevelClustering(BaseRule):
@@ -1346,7 +1329,7 @@ class RuleGroupLevelClustering(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/k{n_clusters}.%s.log' % self.name
+        return 's:benchmarks/k{n_clusters}.%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -1433,7 +1416,7 @@ class RuleInternalValidity(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/{participant_id}.%s.log' % self.name
+        return 's:benchmarks/{participant_id}.%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -1514,7 +1497,7 @@ class RuleMergeInternalValidity(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/%s.log' % self.name
+        return 's:benchmarks/%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -1567,7 +1550,7 @@ class RuleIndividualSimilarity(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/k{n_clusters}.%s.log' % self.name
+        return 's:benchmarks/k{n_clusters}.%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -1639,7 +1622,7 @@ class RuleGroupSimilarity(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/%s.log' % self.name
+        return 's:benchmarks/%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -1701,7 +1684,7 @@ class RulePlotInternalValidity(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/{metric}.%s.log' % self.name
+        return 's:benchmarks/{metric}.%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -1772,7 +1755,7 @@ class RulePlotIndividualSimilarity(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/k{n_clusters}.%s.log' % self.name
+        return 's:benchmarks/k{n_clusters}.%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -1833,7 +1816,7 @@ class RulePlotGroupSimilarity(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/%s.log' % self.name
+        return 's:benchmarks/%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -1907,7 +1890,7 @@ class RulePlotLabeledROI(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/k{n_clusters}.{view}.%s.log' % self.name
+        return 's:benchmarks/k{n_clusters}.{view}.%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -1980,7 +1963,7 @@ class RuleMergeIndividualLabels(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/{participant_id}.%s.log' % self.name
+        return 's:benchmarks/{participant_id}.%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -2045,7 +2028,8 @@ class RulePlotIndividualLabeledROI(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/k{n_clusters}.{view}.%s.log' % self.name
+        wildcards = '{participant_id}.k{n_clusters}.{view}'
+        return 's:benchmarks/%s.%s.log' % (wildcards, self.name)
 
     @property
     def cluster_json(self):
@@ -2129,7 +2113,7 @@ class RuleReferenceSimilarity(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/%s.log' % self.name
+        return 's:benchmarks/%s.log' % self.name
 
     @property
     def cluster_json(self):
@@ -2198,7 +2182,7 @@ class RulePlotReferenceSimilarity(BaseRule):
 
     @property
     def benchmark(self):
-        return 'benchmarks/%s.log' % self.name
+        return 's:benchmarks/%s.log' % self.name
 
     @property
     def cluster_json(self):

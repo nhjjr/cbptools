@@ -3,8 +3,7 @@
 
 from .masks import (process_masks_dmri, process_masks_rsfmri)
 from .connectivity import (connectivity_dmri, connectivity_rsfmri,
-                           validate_connectivity, merge_connectivity_logs,
-                           merge_sessions)
+                           validate_connectivity, merge_sessions)
 from .clustering import (kmeans_clustering, spectral_clustering,
                          agglomerative_clustering, group_level_clustering,
                          merge_individual_labels)
@@ -21,7 +20,6 @@ __all__ = [
     'connectivity_dmri',
     'connectivity_rsfmri',
     'validate_connectivity',
-    'merge_connectivity_logs',
     'merge_sessions',
     'kmeans_clustering',
     'spectral_clustering',
