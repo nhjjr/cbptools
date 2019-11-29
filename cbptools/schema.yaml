@@ -454,11 +454,11 @@ parameters:
       eigen_tol:
         dependency: [
           parameters.clustering.method: spectral,
-          # parameters.clustering.cluster_options.eigen_solver: arpack
+          parameters.clustering.cluster_options.eigen_solver: arpack
         ]
         type: float
         min: 0.0
-        default: 1.e-5
+        default: 1.e-10
         desc: '(sklearn.cluster.SpectralClustering) Stopping criterion for eigendecomposition of the Laplacian matrix
                when eigen_solver="arpack"'
       eigen_solver:

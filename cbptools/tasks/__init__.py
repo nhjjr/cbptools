@@ -3,10 +3,10 @@
 
 from .masks import (process_masks_dmri, process_masks_rsfmri)
 from .connectivity import (connectivity_dmri, connectivity_rsfmri,
-                           validate_connectivity, merge_sessions)
+                           merge_sessions)
 from .clustering import (kmeans_clustering, spectral_clustering,
-                         agglomerative_clustering, group_level_clustering,
-                         merge_individual_labels)
+                         agglomerative_clustering, validate_cluster_labels,
+                         group_level_clustering, merge_individual_labels)
 from .validity import (internal_validity, merge_internal_validity,
                        individual_similarity, group_similarity,
                        reference_similarity)
@@ -19,11 +19,11 @@ __all__ = [
     'process_masks_rsfmri',
     'connectivity_dmri',
     'connectivity_rsfmri',
-    'validate_connectivity',
     'merge_sessions',
     'kmeans_clustering',
     'spectral_clustering',
     'agglomerative_clustering',
+    'validate_cluster_labels',
     'group_level_clustering',
     'merge_individual_labels',
     'internal_validity',

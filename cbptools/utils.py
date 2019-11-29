@@ -29,7 +29,6 @@ def get_logger(name: str, log_file: str) -> logging.Logger:
     handler = logging.FileHandler(log_file)
     handler.setLevel(logging.INFO)
     handler.setFormatter(formatter)
-
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)

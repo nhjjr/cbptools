@@ -905,81 +905,6 @@ class RuleMergeSessions(BaseRule):
         return 'tasks.%s(input, output, params, log)' % self.name
 
 
-class RuleValidateConnectivity(BaseRule):
-    name = 'validate_connectivity'
-
-    def __init__(self, conf):
-        super().__init__(conf)
-
-    def is_active(self):
-        modality = self.get('modality')
-        return True if modality == 'rsfmri' else False
-
-    @property
-    def input(self):
-        d = dict()
-
-        # Parameter keys & files
-        labels = 'individual/{participant_id}/{n_clusters}cluster_labels.npy'
-        ppid = 'participant_id=participants'
-        n_clusters = self.get('parameters.clustering.n_clusters')
-        n_clusters = 'n_clusters=%s' % n_clusters
-
-        # Define parameters
-        d['labels'] = self.fwrap([labels, n_clusters, ppid], 'expand')
-        return d
-
-    @property
-    def output(self):
-        d = dict()
-
-        # Parameter keys & files
-        touchfile = 'individual/.touchfile'
-
-        # Define parameters
-        d['touchfile'] = touchfile
-
-        return d
-
-    @property
-    def log(self):
-        return 's:log/%s.log' % self.name
-
-    @property
-    def benchmark(self):
-        return 's:benchmarks/%s.log' % self.name
-
-    @property
-    def cluster_json(self):
-        d = dict()
-        d['out'] = 'log/{rule}-%s.out' % self.jid
-        return d
-
-    @property
-    def threads(self):
-        return 1
-
-    @property
-    def params(self):
-        d = dict()
-
-        # Parameter keys & files
-        n_clusters = 'parameters.clustering.n_clusters'
-        connectivity = 'individual/{participant_id}/connectivity.npz'
-        labels = 'individual/{participant_id}/clustering_k{n_clusters}.npy'
-
-        # Define parameters
-        d['connectivity'] = self.wildcard(repr(connectivity))
-        d['labels'] = self.wildcard(repr(labels))
-        d['n_clusters'] = self.get(n_clusters)
-
-        return d
-
-    @property
-    def run(self):
-        return 'tasks.%s(input, output, params, log)' % self.name
-
-
 class RuleKMeansClustering(BaseRule):
     name = 'kmeans_clustering'
 
@@ -1277,6 +1202,77 @@ class RuleAgglomerativeClustering(BaseRule):
         return 'tasks.%s(input, output, params, log)' % self.name
 
 
+class RuleValidateClusterLabels(BaseRule):
+    name = 'validate_cluster_labels'
+
+    def __init__(self, conf):
+        super().__init__(conf)
+
+    @property
+    def input(self):
+        d = dict()
+
+        # Parameter keys & files
+        labels = 'individual/{participant_id}/{n_clusters}cluster_labels.npy'
+        ppid = 'participant_id=participants'
+        n_clusters = self.get('parameters.clustering.n_clusters')
+        n_clusters = 'n_clusters=%s' % n_clusters
+
+        # Define parameters
+        d['labels'] = self.fwrap([labels, n_clusters, ppid], 'expand')
+        return d
+
+    @property
+    def output(self):
+        d = dict()
+
+        # Parameter keys & files
+        touchfile = 'individual/.touchfile'
+
+        # Define parameters
+        d['touchfile'] = touchfile
+
+        return d
+
+    @property
+    def log(self):
+        return 's:log/%s.log' % self.name
+
+    @property
+    def benchmark(self):
+        return 's:benchmarks/%s.log' % self.name
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        d['out'] = 'log/{rule}-%s.out' % self.jid
+        return d
+
+    @property
+    def threads(self):
+        return 1
+
+    @property
+    def params(self):
+        d = dict()
+
+        # Parameter keys & files
+        n_clusters = 'parameters.clustering.n_clusters'
+        connectivity = 'individual/{participant_id}/connectivity.npz'
+        labels = 'individual/{participant_id}/{n_clusters}cluster_labels.npy'
+
+        # Define parameters
+        d['connectivity'] = self.wildcard(repr(connectivity))
+        d['labels'] = self.wildcard(repr(labels))
+        d['n_clusters'] = self.get(n_clusters)
+
+        return d
+
+    @property
+    def run(self):
+        return 'tasks.%s(input, output, params, log)' % self.name
+
+
 class RuleGroupLevelClustering(BaseRule):
     name = 'group_level_clustering'
 
@@ -1307,9 +1303,7 @@ class RuleGroupLevelClustering(BaseRule):
         d['participants'] = participants
         d['seed_coordinates'] = coords if coords else coords_default
         d['labels'] = self.fwrap([labels, ppid, n_clusters], 'expand')
-
-        if modality == 'rsfmri':
-            d['touchfile'] = touchfile
+        d['touchfile'] = touchfile
 
         return d
 
@@ -1396,9 +1390,7 @@ class RuleInternalValidity(BaseRule):
         # Define parameters
         d['connectivity'] = conn if conn else conn_default
         d['labels'] = self.fwrap([labels, n_clusters, ppid], 'expand')
-
-        if modality == 'rsfmri':
-            d['touchfile'] = touchfile
+        d['touchfile'] = touchfile
 
         return d
 
@@ -1943,9 +1935,11 @@ class RuleMergeIndividualLabels(BaseRule):
         labels = 'individual/{{participant_id}}/{n_clusters}cluster_labels.npy'
         n_clusters = self.get('parameters.clustering.n_clusters')
         n_clusters = 'n_clusters=%s' % n_clusters
+        touchfile = 'individual/.touchfile'
 
         # Define parameters
         d['labels'] = self.fwrap([labels, n_clusters], 'expand')
+        d['touchfile'] = touchfile
 
         return d
 
@@ -1999,6 +1993,7 @@ class RulePlotIndividualLabeledROI(BaseRule):
         # Parameter keys & files
         space = self.get('data.masks.space', 'standard')
         labels = 'individual/{participant_id}/cluster_labels.npz'
+        touchfile = 'individual/.touchfile'
 
         if space == 'native':
             path = 'individual/{participant_id}'
@@ -2007,6 +2002,7 @@ class RulePlotIndividualLabeledROI(BaseRule):
             seed_img = 'seed_mask.%s' % self.nifti_ext
 
         # Define parameters
+        d['touchfile'] = touchfile
         d['labels'] = labels
         d['seed_img'] = seed_img
 

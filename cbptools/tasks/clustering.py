@@ -5,6 +5,7 @@ from sklearn.cluster import KMeans, SpectralClustering, AgglomerativeClustering
 from sklearn.metrics.pairwise import kernel_metrics
 from scipy.spatial.distance import pdist
 from scipy.cluster import hierarchy
+from pathlib import Path
 from scipy import stats
 import nibabel as nib
 import numpy as np
@@ -136,8 +137,8 @@ def spectral_clustering(input: dict, output: dict, params: dict,
 
     debug_msg = str(['%s=%s' % (k, v) for k, v in kwargs.items()])
     debug_msg = debug_msg.strip('[]').replace('\'', '')
-    logging.debug('clustering %s with options: %s'
-                  % (connectivity_file, debug_msg))
+    logger.debug('clustering %s with options: %s'
+                 % (connectivity_file, debug_msg))
 
     # Perform spectral clustering on the available tolerances
     try:
@@ -155,8 +156,8 @@ def spectral_clustering(input: dict, output: dict, params: dict,
         np.save(labels_file, labels)
 
     except np.linalg.LinAlgError as exc:
-        logging.error('%s: %s (try increasing the eigen_tol)'
-                      % labels_file, exc)
+        logger.error('%s: %s (try increasing the eigen_tol with arpack '
+                     'as eigen_solver)' % (labels_file, exc))
         np.save(labels_file, np.array([]))
 
 
@@ -215,6 +216,87 @@ def agglomerative_clustering(input: dict, output: dict, params: dict,
 
     # cluster labels are 0-indexed
     np.save(labels_file, labels)
+
+
+def validate_cluster_labels(input: dict, output: dict, params: dict,
+                            log: list) -> None:
+    """Ensure that all connectivity matrices could be computed"""
+
+    # input, output, params
+    labels_files = input.get('labels')
+    log_file = log[0]
+    touch_file = output.get('touchfile')
+    connectivity_template = params.get('connectivity')
+    labels_template = params.get('labels')
+    n_clusters = params.get('n_clusters')
+
+    # Set up logging
+    logger = get_logger('validate_cluster_labels', log_file)
+
+    bad_ppids = list()
+    logged_ppids = list()
+
+    for labels_file in labels_files:
+        ppid = labels_file.split('/')[1]
+        labels = np.load(labels_file)
+
+        if labels.size == 0 and ppid not in bad_ppids:
+            logger.error('subject-id %s has problematic data '
+                         '(check the connectivity and cluster logs)' % ppid)
+            bad_ppids.append(ppid)
+
+    if bad_ppids:
+        logger.error('%s subject(s) with problematic data' % len(bad_ppids))
+
+        for ppid in bad_ppids:
+            c_file = connectivity_template.format(participant_id=ppid)
+            l_files = [
+                labels_template.format(participant_id=ppid, n_clusters=k)
+                for k in n_clusters
+            ]
+
+            if os.path.exists(c_file):
+                _, ext = os.path.splitext(c_file)
+                r = np.load(c_file)
+
+                if ext == '.npz':
+                    r = r.get('connectivity')
+
+                if r.size == 0:
+                    logger.warning('connectivity matrix for subject-id %s '
+                                   'could not be generated (check the '
+                                   'connectivity log(s) for this subject)'
+                                   % ppid)
+                    logger.warning('removing output file %s' % c_file)
+                    os.remove(c_file)
+
+            for file in l_files:
+                if os.path.exists(file):
+                    labels = np.load(file)
+
+                    if labels.size == 0 and ppid not in logged_ppids:
+                        logged_ppids.append(ppid)
+
+            if ppid in logged_ppids:
+                logger.warning('cluster labels for subject-id %s '
+                               'could not be generated (check the '
+                               'clustering log(s) for this subject'
+                               % ppid)
+
+            for file in l_files:
+                if os.path.exists(file):
+                    logger.warning('removing output file %s' % file)
+                    os.remove(file)
+
+        raise ValueError(
+            '%s subject(s) with problematic data. Read %s for more details'
+            % (len(bad_ppids), log_file)
+        )
+
+    else:
+        # Touch an output file that subsequent rules depend on
+        logger.info('no problems found with the cluster labels')
+        Path(touch_file).touch()
 
 
 def group_level_clustering(input: dict, output: dict, params: dict) -> None:

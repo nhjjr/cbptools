@@ -10,7 +10,6 @@ from scipy.sparse import coo_matrix
 from sklearn.decomposition import PCA
 from nibabel.processing import smooth_image
 from fnmatch import fnmatch
-from pathlib import Path
 from shutil import rmtree
 import pandas as pd
 import nibabel as nib
@@ -209,58 +208,6 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict,
         np.savez_compressed(connectivity_file, connectivity=r)
     else:
         np.savez(connectivity_file, connectivity=r)
-
-
-def validate_connectivity(input: dict, output: dict, params: dict,
-                          log: list) -> None:
-    """Ensure that all connectivity matrices could be computed"""
-
-    # input, output, params
-    labels_files = input.get('labels')
-    log_file = log[0]
-    touch_file = output.get('touchfile')
-    connectivity_template = params.get('connectivity')
-    labels_template = params.get('labels')
-    n_clusters = params.get('n_clusters')
-
-    # Set up logging
-    logger = get_logger('validate_connectivity', log_file)
-
-    bad_ppids = list()
-    for labels_file in labels_files:
-        ppid = labels_file.split('/')[1]
-        labels = np.load(labels_file)
-
-        if labels.size == 0 and ppid not in bad_ppids:
-            logger.error('subject-id %s has problematic data '
-                         '(cluster labels could not be created)' % ppid)
-            bad_ppids.append(ppid)
-
-    if bad_ppids:
-        logger.error('%s subject(s) with problematic data' % len(bad_ppids))
-
-        for ppid in bad_ppids:
-            conn = connectivity_template.format(participant_id=ppid)
-            labels = [labels_template.format(participant_id=ppid, n_clusters=k)
-                      for k in n_clusters]
-
-            if os.path.exists(conn):
-                logger.warning('removing output file %s' % conn)
-                os.remove(conn)
-
-            for file in labels:
-                if os.path.exists(file):
-                    logger.warning('removing output file %s' % file)
-                    os.remove(file)
-
-        raise ValueError(
-            '%s subject(s) with problematic data. Read %s for more details'
-            % (len(bad_ppids), log_file)
-        )
-
-    else:
-        # Touch an output file that subsequent rules depend on
-        Path(touch_file).touch()
 
 
 def connectivity_dmri(input: dict, output: dict, params: dict,
