@@ -1213,12 +1213,14 @@ class RuleValidateClusterLabels(BaseRule):
         d = dict()
 
         # Parameter keys & files
+        participants = 'participants.tsv'
         labels = 'individual/{participant_id}/{n_clusters}cluster_labels.npy'
         ppid = 'participant_id=participants'
         n_clusters = self.get('parameters.clustering.n_clusters')
         n_clusters = 'n_clusters=%s' % n_clusters
 
         # Define parameters
+        d['participants'] = participants
         d['labels'] = self.fwrap([labels, n_clusters, ppid], 'expand')
         return d
 
@@ -1257,6 +1259,7 @@ class RuleValidateClusterLabels(BaseRule):
         d = dict()
 
         # Parameter keys & files
+        space = self.get('data.masks.space', 'standard')
         n_clusters = 'parameters.clustering.n_clusters'
         connectivity = 'individual/{participant_id}/connectivity.npz'
         labels = 'individual/{participant_id}/{n_clusters}cluster_labels.npy'
@@ -1265,6 +1268,7 @@ class RuleValidateClusterLabels(BaseRule):
         d['connectivity'] = self.wildcard(repr(connectivity))
         d['labels'] = self.wildcard(repr(labels))
         d['n_clusters'] = self.get(n_clusters)
+        d['is_native'] = True if space == 'native' else False
 
         return d
 

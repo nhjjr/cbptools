@@ -8,6 +8,7 @@ from scipy.cluster import hierarchy
 from pathlib import Path
 from scipy import stats
 import nibabel as nib
+import pandas as pd
 import numpy as np
 import logging
 import os
@@ -224,17 +225,19 @@ def validate_cluster_labels(input: dict, output: dict, params: dict,
 
     # input, output, params
     labels_files = input.get('labels')
+    participants_file = input.get('participants')
     log_file = log[0]
     touch_file = output.get('touchfile')
     connectivity_template = params.get('connectivity')
     labels_template = params.get('labels')
     n_clusters = params.get('n_clusters')
+    is_native = params.get('is_native')
 
     # Set up logging
     logger = get_logger('validate_cluster_labels', log_file)
 
     bad_ppids = list()
-    logged_ppids = list()
+    d_bad_ppids = dict()
 
     for labels_file in labels_files:
         ppid = labels_file.split('/')[1]
@@ -263,30 +266,62 @@ def validate_cluster_labels(input: dict, output: dict, params: dict,
                     r = r.get('connectivity')
 
                 if r.size == 0:
-                    logger.warning('connectivity matrix for subject-id %s '
-                                   'could not be generated (check the '
-                                   'connectivity log(s) for this subject)'
-                                   % ppid)
+                    reason = 'connectivity matrix for subject-id %s could ' \
+                             'not be generated (check the connectivity ' \
+                             'log(s) for this subject)' % ppid
+                    logger.warning(reason)
                     logger.warning('removing output file %s' % c_file)
                     os.remove(c_file)
+            else:
+                d_bad_ppids[ppid] = 'connectivity matrix for subject-id %s ' \
+                                    'is missing' % ppid
+                logger.warning(d_bad_ppids[ppid])
 
             for file in l_files:
                 if os.path.exists(file):
                     labels = np.load(file)
 
-                    if labels.size == 0 and ppid not in logged_ppids:
-                        logged_ppids.append(ppid)
-
-            if ppid in logged_ppids:
-                logger.warning('cluster labels for subject-id %s '
-                               'could not be generated (check the '
-                               'clustering log(s) for this subject'
-                               % ppid)
+                    if labels.size == 0 and ppid not in d_bad_ppids.keys():
+                        d_bad_ppids[ppid] = 'cluster labels for subject-id ' \
+                                            '%s could not be generated ' \
+                                            '(check the clustering log(s)' \
+                                            'for this subject)' % ppid
+                        logger.warning(d_bad_ppids[ppid])
 
             for file in l_files:
                 if os.path.exists(file):
                     logger.warning('removing output file %s' % file)
                     os.remove(file)
+
+        # Create a suggested participants file to proceed with the processing
+        participants = pd.read_csv(participants_file, sep='\t')
+        ppids = participants['participant_id']
+        bad_ppids = list(set(bad_ppids))
+        ppids = list(set(ppids) - set(bad_ppids))
+
+        if (len(ppids) > 0 and is_native) or (len(ppids) > 1):
+            suggested_file = 'participants_suggested.tsv'
+            excluded_file = 'participants_excluded.tsv'
+            df = pd.DataFrame(ppids, columns=['participant_id'])
+            df.sort_values(by='participant_id', inplace=True)
+            df.to_csv(suggested_file, sep='\t', index=False)
+
+            data = [{'participant_id': k, 'reason': v}
+                    for k, v in d_bad_ppids.items()]
+            df = pd.DataFrame(data)
+            df.sort_values(by='participant_id', inplace=True)
+            df.to_csv(excluded_file, sep='\t', index=False)
+
+            logger.info('created %s. To proceed without the problematic '
+                        'subjects, replace %s with this file and run '
+                        'snakemake again'
+                        % (suggested_file, participants_file))
+
+            logger.info('created %s as a reference for subjects with '
+                        'problematic data and the reason why they are '
+                        'excluded' % excluded_file)
+        else:
+            logger.info('not enough participants left to continue processing')
 
         raise ValueError(
             '%s subject(s) with problematic data. Read %s for more details'
