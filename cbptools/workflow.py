@@ -779,14 +779,13 @@ class RuleConnectivityRSFMRI(BaseRule):
         d['low_variance_in_seed'] = self.get(lve_seed)
         d['low_variance_in_target'] = self.get(lve_target)
         d['low_variance_behavior'] = self.get(lve_behavior)
+        d['arctanh_transform'] = self.get(arctanh, False)
 
         if session:
             d['session_id'] = self.wildcard('str(wildcards.session)')
 
         else:
-            # For multisession data, transforms are applied in merge_sessions
-            d['arctanh_transform'] = self.get(arctanh, False)
-
+            # For multisession, some transforms are applied in merge_sessions
             if self.get(b_pca, False):
                 d['pca_transform'] = self.get(pca)
             else:
@@ -882,7 +881,6 @@ class RuleMergeSessions(BaseRule):
         cubic = 'parameters.connectivity.cubic_transform.apply'
         b_pca = 'parameters.connectivity.pca_transform.apply'
         pca = 'parameters.connectivity.pca_transform.components'
-        arctanh = 'parameters.connectivity.arctanh_transform.apply'
 
         # Define parameters
         d['compress'] = self.get(compress, False)
@@ -892,10 +890,7 @@ class RuleMergeSessions(BaseRule):
         else:
             d['pca_transform'] = False
 
-        if modality == 'rsfmri':
-            d['arctanh_transform'] = self.get(arctanh, False)
-
-        elif modality == 'dmri':
+        if modality == 'dmri':
             d['cubic_transform'] = self.get(cubic, False)
 
         return d

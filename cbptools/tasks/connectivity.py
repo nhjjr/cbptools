@@ -307,7 +307,6 @@ def merge_sessions(input: dict, output: dict, params: dict, log: list) -> None:
     connectivity_file = output.get('connectivity')
     log_file = log[0]
     compress = params.get('compress')
-    arctanh_transform = params.get('arctanh_transform', False)
     pca_transform = params.get('pca_transform', False)
     cubic_transform = params.get('cubic_transform', False)
 
@@ -337,13 +336,6 @@ def merge_sessions(input: dict, output: dict, params: dict, log: list) -> None:
     r = np.mean(r, axis=0)
 
     # Transforms
-    r[r >= 1] = np.nextafter(np.float32(1.), np.float32(-1))
-    r[r <= -1] = np.nextafter(np.float32(-1.), np.float32(1))
-
-    if arctanh_transform:
-        logger.info('%s applying arctanh transform' % connectivity_file)
-        r = np.arctanh(r)
-
     if cubic_transform:
         logger.info('%s applying cubic transform' % connectivity_file)
         r = np.power(r, 1 / 3)
