@@ -383,7 +383,7 @@ class RuleProcessMasksDMRI(BaseRule):
 
     @property
     def run(self):
-        return 'tasks.%s(input, output, params)' % self.name
+        return 'tasks.%s(input, output, params, log)' % self.name
 
 
 class RuleProbtrackx2(BaseRule):
