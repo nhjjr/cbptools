@@ -406,6 +406,7 @@ parameters:
         type: string
         allowed: [additive_chi2, chi2, linear, polynomial, rbf, laplacian, sigmoid, cosine, nearest_neighbors]
         default: rbf
+        custom: [spectral_kernel]
         desc: '(sklearn.cluster.SpectralClustering; affinity) Kernel to be used.'
       gamma:
         dependency: [

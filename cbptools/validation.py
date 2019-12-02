@@ -501,3 +501,14 @@ class Validator(object):
                                 'installed for benchmarking')
 
         return True
+
+    def _rule_custom_spectral_kernel(self, this):
+        """Custom rule for kernel selection for spectral clustering"""
+        modality = self.get('modality')
+
+        if this.value == 'precomputed' and modality != 'connectivity':
+            raise RuleError('%s can only be \'precomputed\' if connectivity is'
+                            'set as the modality and an adjacency matrix is'
+                            'given instead of a connectivity matrix')
+
+        return True
