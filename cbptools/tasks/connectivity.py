@@ -308,7 +308,6 @@ def merge_sessions(input: dict, output: dict, params: dict, log: list) -> None:
     log_file = log[0]
     compress = params.get('compress')
     pca_transform = params.get('pca_transform', False)
-    cubic_transform = params.get('cubic_transform', False)
 
     # Set up logging
     logger = get_logger('merge_sessions', log_file)
@@ -336,10 +335,6 @@ def merge_sessions(input: dict, output: dict, params: dict, log: list) -> None:
     r = np.mean(r, axis=0)
 
     # Transforms
-    if cubic_transform:
-        logger.info('%s applying cubic transform' % connectivity_file)
-        r = np.power(r, 1 / 3)
-
     if pca_transform:
         logger.info('%s applying PCA transform (n_components=%s)'
                     % (connectivity_file, pca_transform))

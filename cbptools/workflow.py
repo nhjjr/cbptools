@@ -630,11 +630,10 @@ class RuleConnectivityDMRI(BaseRule):
         # Define parameters
         d['compress'] = self.get(compress, False)
         d['cleanup_fsl'] = self.get(cleanup_fsl, False)
+        d['cubic_transform'] = self.get(cubic, False)
 
         if not session:
-            # For multisession data, transforms are applied in merge_sessions
-            d['cubic_transform'] = self.get(cubic, False)
-
+            # For multisession data, PCA transform is applied in merge_sessions
             if self.get(b_pca, False):
                 d['pca_transform'] = self.get(pca)
             else:
@@ -785,7 +784,7 @@ class RuleConnectivityRSFMRI(BaseRule):
             d['session_id'] = self.wildcard('str(wildcards.session)')
 
         else:
-            # For multisession, some transforms are applied in merge_sessions
+            # For multisession, PCA transform is applied in merge_sessions
             if self.get(b_pca, False):
                 d['pca_transform'] = self.get(pca)
             else:
@@ -876,9 +875,7 @@ class RuleMergeSessions(BaseRule):
         d = dict()
 
         # Parameter keys & files
-        modality = self.get('modality')
         compress = 'parameters.connectivity.compress'
-        cubic = 'parameters.connectivity.cubic_transform.apply'
         b_pca = 'parameters.connectivity.pca_transform.apply'
         pca = 'parameters.connectivity.pca_transform.components'
 
@@ -889,9 +886,6 @@ class RuleMergeSessions(BaseRule):
             d['pca_transform'] = self.get(pca)
         else:
             d['pca_transform'] = False
-
-        if modality == 'dmri':
-            d['cubic_transform'] = self.get(cubic, False)
 
         return d
 
