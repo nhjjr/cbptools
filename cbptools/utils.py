@@ -98,6 +98,16 @@ def build_workflow(config, save_at):
         if clsname.startswith('Rule'):
             all_rules.append(cls)
 
+    # Ensure RuleAll is always first
+    rule_all_index = None
+    for i, rule in enumerate(all_rules):
+        if rule.__name__ == 'RuleAll':
+            rule_all_index = i
+
+    if rule_all_index:
+        all_rules.insert(0, all_rules.pop(rule_all_index))
+
+    # Set rule parts in proper order and remove unused rule parts
     rule_parts = ['input', 'output', 'log', 'benchmark', 'threads',
                   'resources', 'params', 'run', 'shell']
 
@@ -124,6 +134,8 @@ def build_workflow(config, save_at):
         'from cbptools import tasks, utils\n',
         'participants = utils.get_participant_ids()'
     ])
+
+    # TODO: ensure rule all is always at the top
 
     # Snakefile & cluster.json body (rules)
     for rule in all_rules:
