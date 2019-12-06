@@ -3,13 +3,15 @@ from os.path import join as opj, basename as opb
 
 
 class BaseRule(object):
-    nifti_ext = 'nii.gz'
     jid = '%j'
     dependencies = None
     name = None
 
     def __init__(self, doc):
         self._doc = doc
+
+        compress = self.get('parameters:report:compress_output', False)
+        self.nifti_ext = 'nii.gz' if compress else 'nii'
 
     def is_active(self):
         return True
@@ -624,7 +626,7 @@ class RuleConnectivityDMRI(BaseRule):
         cubic = 'parameters.connectivity.cubic_transform.apply'
         b_pca = 'parameters.connectivity.pca_transform.apply'
         pca = 'parameters.connectivity.pca_transform.components'
-        compress = 'parameters.connectivity.compress'
+        compress = 'parameters:report:compress_output'
         cleanup_fsl = 'parameters.connectivity.cleanup_fsl'
 
         # Define parameters
@@ -759,7 +761,7 @@ class RuleConnectivityRSFMRI(BaseRule):
         lve_seed = 'parameters.connectivity.low_variance_error.in_seed'
         lve_target = 'parameters.connectivity.low_variance_error.in_target'
         lve_behavior = 'parameters.connectivity.low_variance_error.behavior'
-        compress = 'parameters.connectivity.compress'
+        compress = 'parameters:report:compress_output'
         confounds_file = 'data.confounds.file'
         confounds_sep = 'data.confounds.delimiter'
         confounds_cols = 'data.confounds.columns'
@@ -875,7 +877,7 @@ class RuleMergeSessions(BaseRule):
         d = dict()
 
         # Parameter keys & files
-        compress = 'parameters.connectivity.compress'
+        compress = 'parameters:report:compress_output'
         b_pca = 'parameters.connectivity.pca_transform.apply'
         pca = 'parameters.connectivity.pca_transform.components'
 

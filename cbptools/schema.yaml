@@ -300,12 +300,6 @@ parameters:
         desc: 'Number of components to keep (if integer) or amount of explained variance (if float). This value is
                  equivalent to n_components in sklearn.decomposition.PCA'
         dependency: [modality: [rsfmri, dmri], parameters.connectivity.pca_transform.apply: true]
-    compress:
-      type: boolean
-      default: true
-      desc: 'Compress the connectivity matrix output to compressed .npz files instead of uncompressed .npy files.
-               This will save disk space but processing will be slightly slower.'
-      dependency: [modality: [rsfmri, dmri]]
     dist_thresh:
       type: float
       min: 0.0
@@ -525,3 +519,8 @@ parameters:
       default: false
       custom: [benchmarking]
       desc: 'benchmark the execution of each workflow task'
+    compress_output:
+      type: boolean
+      default: true
+      desc: 'Compress interim output (i.e., NIfTI images and NumPy arrays) to reduce the file size. This comes at the
+             cost of slower processing speed.'
