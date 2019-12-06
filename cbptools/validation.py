@@ -203,6 +203,7 @@ class Validator(object):
 
         # Remove invalid keys
         document = self._del_invalid(document, schema)
+        document = self._strip_document(document)
 
         if self.errors == 0:
             self.document = document
@@ -211,19 +212,32 @@ class Validator(object):
         else:
             return False
 
-    def _set_defaults(self, d):
+    def _set_defaults(self, data):
         """Return a document with all default values"""
-        d_copy = d.copy()
+        data_copy = data.copy()
 
-        for k, v in d.items():
+        for k, v in data.items():
             if isinstance(v, dict) and self.depth(v) <= 1:
                 default = v.get('default', None)
-                d_copy[k] = default
+                data_copy[k] = default
 
             elif isinstance(v, dict):
-                d_copy[k] = self._set_defaults(v)
+                data_copy[k] = self._set_defaults(v)
 
-        return d_copy
+        return data_copy
+
+    def _strip_document(self, data):
+        """Strip a document of empty fields"""
+        data_copy = OrderedDict()
+
+        for k, v in data.items():
+            if isinstance(v, dict):
+                v = self._strip_document(v)
+
+            if v not in (u'', None, {}):
+                data_copy[k] = v
+
+        return data_copy
 
     def example(self, modality: str, out: str = None):
         """Create an example configuration file for the requested modality"""
@@ -235,6 +249,7 @@ class Validator(object):
         document = self._set_defaults(schema)
         document['modality'] = modality
         self.validate(document)
+        document = self._strip_document(document)
 
         if out:
             with open(out, 'w') as f:
