@@ -413,7 +413,6 @@ parameters:
         desc: '(sklearn.cluster.SpectralClustering) Kernel coefficient for rbf, poly, sigmoid, laplacian and chi2
                kernels. Ignored for affinity=nearest_neighbors.'
       n_neighbors:
-        required: true
         dependency: [
           parameters.clustering.method: spectral,
           parameters.clustering.cluster_options.kernel: nearest_neighbors
