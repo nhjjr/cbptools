@@ -478,10 +478,6 @@ class DataSet:
         References should also at least have 2 clusters.
         """
 
-        # TODO: references can still be different after mask processing
-        # basically: median filtering cannot be used if references are given
-        #   unless references are also median filtered
-
         seed = self.data['masks']['seed']
         seed = self.load_img(seed, level=None)
         if seed is None:
