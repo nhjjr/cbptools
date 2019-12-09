@@ -399,7 +399,8 @@ parameters:
       kernel:
         dependency: [parameters.clustering.method: spectral]
         type: string
-        allowed: [additive_chi2, chi2, linear, polynomial, rbf, laplacian, sigmoid, cosine, nearest_neighbors]
+        allowed: [additive_chi2, chi2, linear, polynomial, rbf, laplacian, sigmoid, cosine, nearest_neighbors,
+                  precomputed, precomputed_nearest_neighbors]
         default: nearest_neighbors
         custom: [spectral_kernel]
         desc: '(sklearn.cluster.SpectralClustering; affinity) Kernel to be used.'

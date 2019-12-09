@@ -124,7 +124,10 @@ def spectral_clustering(input: dict, output: dict, params: dict,
     if isinstance(eigen_tol, str):
         eigen_tol = float(eigen_tol)
 
-    if kernel not in kernel_metrics().keys():
+    kernels = list(kernel_metrics().keys())
+    kernels.extend(['nearest_neighbors', 'precomputed',
+                    'precomputed_nearest_neighbors'])
+    if kernel not in kernels:
         msg = 'Unknown kernel (affinity): %s' % kernel
         logger.error(msg)
         raise ValueError(msg)
