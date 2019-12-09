@@ -135,8 +135,6 @@ def build_workflow(config, save_at):
         'participants = utils.get_participant_ids()'
     ])
 
-    # TODO: ensure rule all is always at the top
-
     # Snakefile & cluster.json body (rules)
     for rule in all_rules:
         rule = rule(config)

@@ -524,6 +524,23 @@ class Validator(object):
         if this.value == 'precomputed' and modality != 'connectivity':
             raise RuleError('%s can only be \'precomputed\' if connectivity is'
                             'set as the modality and an adjacency matrix is'
-                            'given instead of a connectivity matrix')
+                            'given instead of a connectivity matrix'
+                            % this.field)
 
         return True
+
+    def _rule_custom_references(self, this):
+        """Custom rule to check if median filtering is false when using
+        reference images"""
+        mf_keymap = 'parameters.masking.seed.median_filtering.apply'
+        median_filter = self.get(mf_keymap, False)
+
+        if median_filter:
+            raise RuleError('%s cannot be used when %s is set to True, '
+                            'because this option will make the seed mask '
+                            'different from the reference images'
+                            % (this.field, mf_keymap))
+
+        return True
+
+

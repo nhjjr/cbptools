@@ -123,6 +123,7 @@ data:
     allowed: ['*.nii', '*.nii.gz']
     required: false
     dependency: [data.masks.space: standard]
+    custom: [references]
 
 
 # PROCESSING PARAMETERS
@@ -399,7 +400,7 @@ parameters:
         dependency: [parameters.clustering.method: spectral]
         type: string
         allowed: [additive_chi2, chi2, linear, polynomial, rbf, laplacian, sigmoid, cosine, nearest_neighbors]
-        default: rbf
+        default: nearest_neighbors
         custom: [spectral_kernel]
         desc: '(sklearn.cluster.SpectralClustering; affinity) Kernel to be used.'
       gamma:
@@ -409,7 +410,6 @@ parameters:
         ]
         type: float
         min: 0.0
-        default: 1.0
         desc: '(sklearn.cluster.SpectralClustering) Kernel coefficient for rbf, poly, sigmoid, laplacian and chi2
                kernels. Ignored for affinity=nearest_neighbors.'
       n_neighbors:
@@ -418,6 +418,7 @@ parameters:
           parameters.clustering.method: spectral,
           parameters.clustering.cluster_options.kernel: nearest_neighbors
         ]
+        default: 10
         type: integer
         min: 1
         desc: '(sklearn.cluster.SpectralClustering) Number of neighbors to use when constructing the affinity matrix

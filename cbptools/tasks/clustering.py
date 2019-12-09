@@ -129,6 +129,12 @@ def spectral_clustering(input: dict, output: dict, params: dict,
         logger.error(msg)
         raise ValueError(msg)
 
+    gamma_kernels = ('rbf', 'polynomial', 'sigmoid', 'laplacian', 'chi2')
+    if gamma is None and kernel in gamma_kernels:
+        msg = 'Setting gamma to 1./%s (1./n_features)' % connectivity.shape[1]
+        logger.warning(msg)
+        gamma = 1./connectivity.shape[1]
+
     kwargs = {'n_clusters': n_clusters, 'n_init': n_init, 'affinity': kernel,
               'assign_labels': assign_labels, 'eigen_solver': eigen_solver,
               'gamma': gamma, 'n_neighbors': n_neighbors, 'degree': degree,
