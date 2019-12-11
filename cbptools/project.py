@@ -148,6 +148,16 @@ class DataSet:
         confounds = self.data.get('confounds', {})
         sessions = self.data.get('session', [None])
 
+        # Convert relative to absolute paths if necessary
+        if not os.path.isabs(ts_file):
+            ts_file = os.path.abspath(ts_file)
+            self.data['time_series'] = ts_file
+
+        if confounds.get('file', None):
+            if not os.path.isabs(confounds['file']):
+                confounds['file'] = os.path.abspath(confounds['file'])
+                self.data['confounds']['file'] = confounds['file']
+
         # Prepare confounds
         if confounds.get('file', None):
             if confounds.get('delimiter', None) is None:
@@ -264,6 +274,23 @@ class DataSet:
         samples = self.data['samples']
         sessions = self.data.get('session', [None])
 
+        # Convert relative to absolute paths if necessary
+        if not os.path.isabs(bet_binary_mask_file):
+            bet_binary_mask_file = os.path.abspath(bet_binary_mask_file)
+            self.data['bet_binary_mask'] = bet_binary_mask_file
+
+        if not os.path.isabs(xfm_file):
+            xfm_file = os.path.abspath(xfm_file)
+            self.data['xfm'] = xfm_file
+
+        if not os.path.isabs(inv_xfm_file):
+            inv_xfm_file = os.path.abspath(inv_xfm_file)
+            self.data['inv_xfm'] = inv_xfm_file
+
+        if not os.path.isabs(samples):
+            samples = os.path.abspath(samples)
+            self.data['samples'] = samples
+
         # Prepare seed and target if standard space is used
         if space == 'standard':
             try:
@@ -350,6 +377,11 @@ class DataSet:
         # validate connectivity matrices
         template_conn = self.data['connectivity']
         sessions = self.data.get('session', [None])
+
+        # Convert relative to absolute paths if necessary
+        if not os.path.isabs(template_conn):
+            template_conn = os.path.abspath(template_conn)
+            self.data['connectivity'] = template_conn
 
         for ppid, session in itertools.product(self.ppids, sessions):
             if session:

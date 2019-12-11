@@ -13,6 +13,7 @@ data:
       allowed: ['*.tsv', '*.csv', '*.xls', '*.xlsx']
       default: /path/to/file.tsv
       required: true
+      abspath: true
     delimiter:
       type: string
       default: '\t'
@@ -30,6 +31,7 @@ data:
     contains: '{participant_id}'
     default: '/path/to/{participant_id}/file.nii'
     required: true
+    abspath: true
     custom: [has_sessions]
     dependency: [modality: rsfmri]
   confounds:
@@ -38,6 +40,7 @@ data:
       allowed: ['*.tsv', '*.csv']
       contains: '{participant_id}'
       default: '/path/to/{participant_id}/file.tsv'
+      abspath: true
       custom: [has_sessions]
       dependency: [modality: rsfmri]
     delimiter:
@@ -54,6 +57,7 @@ data:
     allowed: ['*.nii', '*.nii.gz']
     contains: '{participant_id}'
     default: '/path/to/{participant_id}/file.nii'
+    abspath: true
     custom: [has_sessions]
     dependency: [modality: dmri]
   xfm:
@@ -62,6 +66,7 @@ data:
     allowed: ['*.nii', '*.nii.gz']
     contains: '{participant_id}'
     default: '/path/to/{participant_id}/file.nii'
+    abspath: true
     custom: [has_sessions]
     dependency: [modality: dmri]
   inv_xfm:
@@ -70,6 +75,7 @@ data:
     allowed: ['*.nii', '*.nii.gz']
     contains: '{participant_id}'
     default: '/path/to/{participant_id}/file.nii'
+    abspath: true
     custom: [has_sessions]
     dependency: [modality: dmri]
   samples:
@@ -77,6 +83,7 @@ data:
     required: true
     contains: '{participant_id}'
     default: '/path/to/{participant_id}/dir/'
+    abspath: true
     custom: [has_sessions]
     dependency: [modality: dmri]
   connectivity:
@@ -85,6 +92,7 @@ data:
     allowed: ['*.npy', '*.npz']
     contains: '{participant_id}'
     default: '/path/to/{participant_id}/file.npz'
+    abspath: true
     custom: [has_sessions]
     dependency: [modality: connectivity]
   seed_coordinates:
@@ -92,6 +100,7 @@ data:
     required: true
     allowed: ['*.npy', '*.npz']
     default: '/path/to/seed_coordinates.npy'
+    abspath: true
     dependency: [modality: connectivity]
   masks:
     seed:
