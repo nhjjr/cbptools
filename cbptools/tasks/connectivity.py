@@ -62,7 +62,6 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict,
     lv_correction = params.get('low_variance_correction', False)
     lv_in_seed = params.get('low_variance_in_seed', None)
     lv_in_target = params.get('low_variance_in_target', None)
-    lv_behavior = params.get('low_variance_behavior', None)
     confounds_sep = params.get('confounds_delimiter', None)
     confounds_cols = params.get('confounds_columns', None)
     bandpass = params.get('bandpass', False)
@@ -111,11 +110,6 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict,
         logger.warning('%s low variance target voxels found in %s'
                        % (in_seed, time_series_file))
 
-    if in_target > 0 or in_seed > 0:
-        keymap = 'parameters.connectivity.low_variance_error.behavior'
-        logger.warning('low variance voxels will be set to zero '
-                       '(%s=%s)' % (keymap, lv_behavior))
-
     if lv_correction:
         if bad_seed:
             logger.error('number of low variance voxels in seed exceeds the'
@@ -130,6 +124,10 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict,
         if bad_seed or bad_target:
             np.savez(connectivity_file, connectivity=np.array([]))
             return
+
+    if in_target > 0 or in_seed > 0:
+        # setting to 0 is done in the seed_based_correlation() method
+        logger.warning('low variance voxels will be set to zero')
 
     # Nuisance Signal Regression
     if confounds_file:

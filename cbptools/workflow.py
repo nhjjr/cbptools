@@ -760,7 +760,6 @@ class RuleConnectivityRSFMRI(BaseRule):
         b_lve = 'parameters.connectivity.low_variance_error.apply'
         lve_seed = 'parameters.connectivity.low_variance_error.in_seed'
         lve_target = 'parameters.connectivity.low_variance_error.in_target'
-        lve_behavior = 'parameters.connectivity.low_variance_error.behavior'
         compress = 'parameters.report.compress_output'
         confounds_file = 'data.confounds.file'
         confounds_sep = 'data.confounds.delimiter'
@@ -779,7 +778,6 @@ class RuleConnectivityRSFMRI(BaseRule):
         d['low_variance_correction'] = self.get(b_lve, False)
         d['low_variance_in_seed'] = self.get(lve_seed)
         d['low_variance_in_target'] = self.get(lve_target)
-        d['low_variance_behavior'] = self.get(lve_behavior)
         d['arctanh_transform'] = self.get(arctanh, False)
 
         if session:

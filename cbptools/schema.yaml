@@ -233,13 +233,6 @@ parameters:
         default: 0.1
         desc: 'Percentage of allowed low-variance voxels occurring within the target region.'
         dependency: [modality: rsfmri]
-      behavior:
-        type: string
-        allowed: [remove, zero]
-        default: zero
-        desc: 'The behavior for dealing with allowed low-variance voxels. Either the entire voxel will be removed
-                 (only applicable to target voxels) or they will be set to 0.'
-        dependency: [modality: rsfmri]
     band_pass_filtering:
       apply:
         type: boolean
