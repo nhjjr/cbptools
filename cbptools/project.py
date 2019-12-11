@@ -654,7 +654,6 @@ class Setup:
 
         if isinstance(self.data_set.seed_coordinates, np.ndarray):
             fpath = os.path.join(workdir, 'seed_coordinates.npy')
-            # np.save(fpath, self.data_set.seed_coordinates)
             np.save(fpath, self.data_set.data['seed_coordinates'])
             logging.info('created file %s' % fpath)
 
@@ -679,6 +678,7 @@ class Setup:
                 'clustering': self.data_set.mem_mb.get('clustering')
             }
         }
+        print(document)
         build_workflow(document, save_at=workdir)
 
         # Save the final configuration file
