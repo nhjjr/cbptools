@@ -149,6 +149,15 @@ class DataSet:
         sessions = self.data.get('session', [None])
 
         # Convert relative to absolute paths if necessary
+        if not os.path.isabs(seed_file):
+            seed_file = os.path.abspath(seed_file)
+            self.data['masks']['seed'] = seed_file
+
+        if target_file is not None:
+            if not os.path.isabs(target_file):
+                target_file = os.path.abspath(target_file)
+                self.data['masks']['target'] = target_file
+
         if not os.path.isabs(ts_file):
             ts_file = os.path.abspath(ts_file)
             self.data['time_series'] = ts_file
@@ -275,6 +284,15 @@ class DataSet:
         sessions = self.data.get('session', [None])
 
         # Convert relative to absolute paths if necessary
+        if not os.path.isabs(seed_file):
+            seed_file = os.path.abspath(seed_file)
+            self.data['masks']['seed'] = seed_file
+
+        if target_file is not None:
+            if not os.path.isabs(target_file):
+                target_file = os.path.abspath(target_file)
+                self.data['masks']['target'] = target_file
+
         if not os.path.isabs(bet_binary_mask_file):
             bet_binary_mask_file = os.path.abspath(bet_binary_mask_file)
             self.data['bet_binary_mask'] = bet_binary_mask_file
@@ -349,6 +367,21 @@ class DataSet:
         seed_data = seed.get_data()
         seed_coords_file = self.data['seed_coordinates']
         n_voxels = np.count_nonzero(seed_data)
+        template_conn = self.data['connectivity']
+        sessions = self.data.get('session', [None])
+
+        # Convert relative to absolute paths if necessary
+        if not os.path.isabs(seed_file):
+            seed_file = os.path.abspath(seed_file)
+            self.data['masks']['seed'] = seed_file
+
+        if not os.path.isabs(seed_coords_file):
+            seed_coords_file = os.path.abspath(seed_coords_file)
+            self.data['seed_coordinates'] = seed_coords_file
+
+        if not os.path.isabs(template_conn):
+            template_conn = os.path.abspath(template_conn)
+            self.data['connectivity'] = template_conn
 
         # Check if seed mask was loaded
         if seed is None:
@@ -375,14 +408,6 @@ class DataSet:
             return False
 
         # validate connectivity matrices
-        template_conn = self.data['connectivity']
-        sessions = self.data.get('session', [None])
-
-        # Convert relative to absolute paths if necessary
-        if not os.path.isabs(template_conn):
-            template_conn = os.path.abspath(template_conn)
-            self.data['connectivity'] = template_conn
-
         for ppid, session in itertools.product(self.ppids, sessions):
             if session:
                 name = 'subject-id %s, session %s' % (ppid, session)
@@ -511,9 +536,9 @@ class DataSet:
 
         References should also at least have 2 clusters.
         """
-
         seed = self.data['masks']['seed']
         seed = self.load_img(seed, level=None)
+
         if seed is None:
             logging.error('cannot validate references because the seed mask '
                           'could not be loaded')
@@ -565,6 +590,10 @@ class DataSet:
     def validate(self) -> bool:
         """Validate input data set"""
         # Retrieve and validate participant-ids
+        if not os.path.isabs(self.data['participants']['file']):
+            self.data['participants']['file'] = os.path.abspath(
+                self.data['participants']['file'])
+
         self.ppids = self.get_ppids(**self.data['participants'])
         if len(self.ppids) == 0:
             return False
@@ -678,7 +707,6 @@ class Setup:
                 'clustering': self.data_set.mem_mb.get('clustering')
             }
         }
-        print(document)
         build_workflow(document, save_at=workdir)
 
         # Save the final configuration file
