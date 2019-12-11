@@ -272,6 +272,8 @@ class DataSet:
                 if exc is not None:
                     logging.error(exc)
                 return False
+            except SilentError:
+                return False
 
         for ppid, session in itertools.product(self.ppids, sessions):
             if session:
