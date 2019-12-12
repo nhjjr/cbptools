@@ -34,7 +34,6 @@ For a more detailed overview of the procedure, we recommend reading :cite:`eickh
 
     overview/workflow
     overview/quickstart
-    overview/examples
 
 .. toctree::
     :caption: Getting Started
@@ -42,12 +41,45 @@ For a more detailed overview of the procedure, we recommend reading :cite:`eickh
     :hidden:
     :maxdepth: 1
 
-    instructions/installation
-    instructions/configuration
-    instructions/input_data
-    instructions/parameters
-    instructions/validation_and_setup
-    instructions/execution
+    getting_started/installation
+    getting_started/setup
+    getting_started/validation
+    getting_started/execution
+
+.. toctree::
+    :caption: Configuration
+    :name: configuration
+    :hidden:
+    :maxdepth: 1
+
+    configuration/input_data
+    configuration/parameters
+
+.. toctree::
+    :caption: Processing
+    :name: processing
+    :hidden:
+    :maxdepth: 1
+
+    processing/masking
+    processing/connectivity
+    processing/clustering
+    processing/grouping
+    processing/validity
+    processing/similarity
+    processing/report
+
+.. toctree::
+    :caption: Examples
+    :name: examples
+    :hidden:
+    :maxdepth: 1
+
+    examples/example_data
+    examples/cluster_methods
+    examples/multi_session_data
+    examples/single_subject_parcellation
+
 
 .. toctree::
     :caption: Project Info

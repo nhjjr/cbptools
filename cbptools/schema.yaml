@@ -14,17 +14,22 @@ data:
       default: /path/to/file.tsv
       required: true
       abspath: true
+      desc: "Path to a tabular file containing a column with participant IDs. When a `{participant_id}` template is
+             requested, then the file path must contain this template at the place where otherwise the participant ID
+             would go. This template will be replaced by the actual participant IDs during execution of the pipeline"
     delimiter:
       type: string
       default: '\t'
+      desc: "Delimiter to use (e.g., '\t' for tab-, or ',' for comma-delimited files)"
     index_column:
       type: string
       default: 'participant_id'
+      desc: 'Name of the column containing the participant IDs'
   session:
     type: 'list[string]'
     desc: 'If multiple sessions are to be used for each subject, enter the sessions as partial paths here. For
            example, [sess1, sess2] will replace the {session} wildcard used in time_series and confounds with both
-           sess1 and sess2, similar to how {participant_id} is replaced with the subject-id.'
+           sess1 and sess2, similar to how {participant_id} is replaced with the subject-id'
   time_series:
     type: string
     allowed: ['*.nii', '*.nii.gz']
@@ -34,6 +39,9 @@ data:
     abspath: true
     custom: [has_sessions]
     dependency: [modality: rsfmri]
+    desc: 'Path to a 4D NIfTI image containing the resting-state time-series (x, y, z, timepoints). The time-series
+           shape and affine must match that of the seed and target masks. This field must contain the {participant_id}
+           template, as there should be one time-series image per subject'
   confounds:
     file:
       type: string
@@ -43,14 +51,21 @@ data:
       abspath: true
       custom: [has_sessions]
       dependency: [modality: rsfmri]
+      desc: 'Path to a delimited (e.g., .tsv for tab-delimited) file with a confound signal per columns and a 1-line
+             header. Columns can be selected using the columns parameter. The column length must match the length of the
+             timepoints in the signal time-series'
     delimiter:
       type: string
       default: '\t'
       dependency: [modality: rsfmri]
+      desc: "Delimiter to use (e.g., '\t' for tab-, or ',' for comma-delimited files)"
     columns:
       type: 'list[string]'
       default: []
       dependency: [modality: rsfmri]
+      desc: "List of columns that should be used. If left empty, all columns are used. Otherwise only the selected
+             columns will be used in nuisance signal regression. A glob pattern (*) can be used to select multiple
+             columns that match the expression (e.g., 'motion-*' includes 'motion-x', 'motion-y', 'motion-z', etc.)"
   bet_binary_mask:
     type: string
     required: true
@@ -60,6 +75,7 @@ data:
     abspath: true
     custom: [has_sessions]
     dependency: [modality: dmri]
+    desc: 'File path to a BET binary mask file. This field must contain the {participant_id} template'
   xfm:
     type: string
     required: true
@@ -69,6 +85,8 @@ data:
     abspath: true
     custom: [has_sessions]
     dependency: [modality: dmri]
+    desc: 'Transform taking seed space to DTI space (either FLIRT matrix or FNIRT warpfield). This field must contain
+           the {participant_id} template'
   inv_xfm:
     type: string
     required: true
@@ -78,6 +96,7 @@ data:
     abspath: true
     custom: [has_sessions]
     dependency: [modality: dmri]
+    desc: 'Transform taking DTI space to seed space. This field must contain the {participant_id} template'
   samples:
     type: string
     required: true
@@ -86,6 +105,9 @@ data:
     abspath: true
     custom: [has_sessions]
     dependency: [modality: dmri]
+    desc: 'Merged samples derived from bedpostX output. This field must contain the {participant_id} template. Note
+           that this is the same file path that would otherwise be entered in FSL. This it selects all files that start
+           with the entered file path (e.g., /path/to/samples/merged will take all files starting with merged)'
   connectivity:
     type: string
     required: true
@@ -95,27 +117,43 @@ data:
     abspath: true
     custom: [has_sessions]
     dependency: [modality: connectivity]
+    desc: 'The path to a seed by target connectivity matrix. The number of seed voxels on the first dimension must
+           match the number of seed voxels in the seed mask image. The order in which the seed voxels are listed along
+           the first axis depends on the order that was used to extract the voxels from the mask (i.e., F- or
+           C-contiguous order). CBPtools connectivity matrices have the seed voxels in C-order. This field must contain
+           the {participant_id} template. The extension must be either .npy or .npz. If the compressed .npz format is
+           used, the array in the archive must be named connectivity.npy'
   seed_coordinates:
     type: string
     required: true
-    allowed: ['*.npy', '*.npz']
+    allowed: ['*.npy']
     default: '/path/to/seed_coordinates.npy'
     abspath: true
     dependency: [modality: connectivity]
+    desc: 'The path to a 2-dimensional NumPy array file with shape seed voxels by 3. The file contains the 3D
+           coordinates of each seed voxel in the order that the seed voxels appear in the connectivity matrix.
+           The extension must be .npy'
   masks:
     seed:
       type: string
       allowed: ['*.nii', '*.nii.gz']
       default: /path/to/file.nii
       required: true
+      desc: 'Path to a binary region-of-interest NIfTI image in the same space as the time-series and target mask'
     region_id:
       type: 'list[integer]'
       required: false
       dependency: [modality: [rsfmri, dmri], data.masks.space: standard]
+      desc: 'If an atlas is used as the seed, specify a list of integers containing the IDs of the regions that should
+             be merged into the seed mask. If only one ID is given, the voxels carrying that ID in the atlas will
+             become the seed mask. If multiple IDs are given, a composite mask will be generated of all selected
+             regions in the atlas'
     target:
       type: string
       allowed: ['*.nii', '*.nii.gz']
       dependency: [modality: [rsfmri, dmri]]
+      desc: 'Path to a binary NIfTI image covering a target region (e.g., the whole brain). If left empty, the MNI152
+             2mm gray-matter mask will be used by default'
     space:
       type: string
       allowed: ['standard', 'native']
@@ -133,6 +171,9 @@ data:
     required: false
     dependency: [data.masks.space: standard]
     custom: [references]
+    desc: 'Paths to one or more reference images. These images must be in the same space as the seed mask, cover the
+           exact same voxels, and have at least 2 clusters. The reference images will be compared to the
+           group clustering results'
 
 
 # PROCESSING PARAMETERS

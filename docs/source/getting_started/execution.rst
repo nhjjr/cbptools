@@ -1,3 +1,5 @@
+.. _execution:
+
 =========
 Execution
 =========
@@ -19,24 +21,26 @@ For a simple local run snakemake can be called directly without arguments. The b
 Cluster execution
 -----------------
 More commonly, the *CBPtools* workflow will be executed on a cluster. Upon creation of the project, a cluster.json file
-is copied to the `workdir`. This file must be edited so that all SLURM parameters are set properly. Commonly only the
+is created in the `workdir`. This file must be edited so that all parameters are set properly. Commonly only the
 `"__default__"` field needs to be edited to have the correct `account` name and `partition`, outlined below. The
 default settings are inherited for each task and only overwritten if defined for the task.
 
 .. code-block:: json
 
-      "__default__" :
-      {
-        "account" : "my account",
-        "time" : "01:00:00",
-        "n" : 1,
-        "N" : 1,
-        "c" : 1,
-        "partition" : "core",
-        "out" : "log/{rule}-%j.out",
-        "name" : "unknown",
-        "mem" : "1000M"
-      },
+    {
+        "__default__" :
+        {
+            "account" : "my account",
+            "time" : "01:00:00",
+            "n" : 1,
+            "N" : 1,
+            "c" : 1,
+            "partition" : "core",
+            "out" : "log/{rule}-%j.out",
+            "name" : "unknown",
+            "mem" : "1000M"
+        }
+    }
 
 If you notice that jobs of certain tasks do not have enough time to finish or exceed the alotted memory (i.e., when the
 memory estimation during the project setup is incorrect), they can be modified in the cluster.json file to be given

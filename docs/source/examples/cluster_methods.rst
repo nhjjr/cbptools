@@ -1,0 +1,5 @@
+.. _ExampleClusterMethods:
+
+===============
+Cluster Methods
+===============

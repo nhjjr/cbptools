@@ -83,16 +83,35 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="overview/workflow.html">Workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="overview/quickstart.html">Quick Start Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="overview/examples.html">Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Getting Started</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="instructions/installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="instructions/configuration.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="instructions/input_data.html">Input Data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="instructions/parameters.html">Parameters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="instructions/validation_and_setup.html">Validation &amp; Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="instructions/execution.html">Execution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/validation.html">Validation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/execution.html">Execution</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Configuration</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configuration/input_data.html">Input Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration/parameters.html">Parameters</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Processing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="processing/masking.html">Masking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="processing/connectivity.html">Connectivity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="processing/clustering.html">Clustering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="processing/grouping.html">Grouping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="processing/validity.html">Validity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="processing/similarity.html">Similarity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="processing/report.html">Report</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/example_data.html">Example Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/cluster_methods.html">Cluster Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/multi_session_data.html">Muilti-session Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/single_subject_parcellation.html">Single-subject Parcellation</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Project Info</span></p>
 <ul>
@@ -169,7 +188,7 @@
 <h2>Connectivity-Based Parcellation Tools<a class="headerlink" href="#connectivity-based-parcellation-tools" title="Permalink to this headline">¶</a></h2>
 <p>Regional <strong>connectivity-based parcellation</strong> (rCBP) is a procedure for revealing the differentiation within a
 region of interest (ROI) based on its long-range connectivity profiles. <em>CBPtools</em>
-<a class="reference internal" href="zbibliography.html#reuter-submitted" id="id1">[1]</a> is an open-source distributed workflow for applying this procedure using the
+<a class="bibtex reference internal" href="zbibliography.html#reuter-submitted" id="id1">[1]</a> is an open-source distributed workflow for applying this procedure using the
 Python programming language.</p>
 <p>The rCBP procedure groups ROI voxels based on similarity in their connection strengths to a set of target voxels,
 i.e., their connectivity profile. The grouping is done using the
@@ -180,12 +199,18 @@ that best describes the input data at hand. The rCBP procedure can map functiona
 particular ROI. Individual subject results are grouped by applying a
 <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/cluster.hierarchy.html">hierarchical clustering</a>
 algorithm on the individual clustering results.</p>
-<p>For a more detailed overview of the procedure, we recommend reading <a class="reference internal" href="zbibliography.html#eickhoff-2015" id="id2">[2]</a> and <a class="reference internal" href="zbibliography.html#eickhoff-2018" id="id3">[3]</a>.</p>
+<p>For a more detailed overview of the procedure, we recommend reading <a class="bibtex reference internal" href="zbibliography.html#eickhoff-2015" id="id2">[2]</a> and <a class="bibtex reference internal" href="zbibliography.html#eickhoff-2018" id="id3">[3]</a>.</p>
 <div class="toctree-wrapper compound">
 </div>
 <div class="toctree-wrapper compound" id="overview">
 </div>
 <div class="toctree-wrapper compound" id="getting-started">
+</div>
+<div class="toctree-wrapper compound" id="configuration">
+</div>
+<div class="toctree-wrapper compound" id="processing">
+</div>
+<div class="toctree-wrapper compound" id="examples">
 </div>
 <div class="toctree-wrapper compound" id="info">
 </div>

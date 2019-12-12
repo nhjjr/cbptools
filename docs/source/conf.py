@@ -60,4 +60,6 @@ master_doc = 'index'
 
 # -- Jinja Contexts for Dynamic Parameters -----------------------------------
 with open('../../cbptools/schema.yaml', 'r') as stream:
-    jinja_contexts = yaml.safe_load(stream)
+    jinja_contexts = {
+        'schema': yaml.safe_load(stream)
+    }
