@@ -406,16 +406,19 @@ class RuleProbtrackx2(BaseRule):
         upsample = self.get('parameters.masking.seed.upsample_to.apply', False)
         space = self.get('data.masks.space', 'standard')
         bet_binary_mask = self.get('data.bet_binary_mask')
-        xfm = self.get('data.xfm')
-        inv_xfm = self.get('data.inv_xfm')
+        xfm = self.get('data.xfm', None)
+        inv_xfm = self.get('data.inv_xfm', None)
         target_mask = 'target_mask.%s' % self.nifti_ext
         seed_mask = 'highres_seed_mask' if upsample else 'seed_mask'
         seed_mask = '%s.%s' % (seed_mask, self.nifti_ext)
 
         # Define parameters
         d['bet_binary_mask'] = bet_binary_mask
-        d['xfm'] = xfm
-        d['inv_xfm'] = inv_xfm
+
+        if xfm is not None and inv_xfm is not None:
+            # note: if one is set, the other must be set too
+            d['xfm'] = xfm
+            d['inv_xfm'] = inv_xfm
 
         if space == 'native':
             path = 'individual/{participant_id}'
@@ -508,16 +511,30 @@ class RuleProbtrackx2(BaseRule):
 
     @property
     def shell(self):
-        return repr(
-            "probtrackx2 --seed={input.seed} --target2={input.target} "
-            "--samples={params.samples} --mask={input.bet_binary_mask} "
-            "--xfm={input.xfm} --invxfm={input.inv_xfm} --dir={params.outdir} "
-            "--nsamples={params.n_samples} --nsteps={params.n_steps} "
-            "--steplength={params.step_length} "
-            "--distthresh={params.dist_thresh} --cthr={params.c_thresh} "
-            "--omatrix2 --forcedir {params.loop_check} "
-            "{params.correct_path_distribution} > /dev/null"
-        )
+        xfm = self.get('data.xfm', None)
+        inv_xfm = self.get('data.inv_xfm', None)
+
+        if xfm is None and inv_xfm is None:
+            return repr(
+                "probtrackx2 --seed={input.seed} --target2={input.target} "
+                "--samples={params.samples} --mask={input.bet_binary_mask} "
+                "--dir={params.outdir} --nsamples={params.n_samples} "
+                "--nsteps={params.n_steps} --steplength={params.step_length} "
+                "--distthresh={params.dist_thresh} --cthr={params.c_thresh} "
+                "--omatrix2 --forcedir {params.loop_check} "
+                "{params.correct_path_distribution} > /dev/null"
+            )
+        else:
+            return repr(
+                "probtrackx2 --seed={input.seed} --target2={input.target} "
+                "--samples={params.samples} --mask={input.bet_binary_mask} "
+                "--xfm={input.xfm} --invxfm={input.inv_xfm} "
+                "--dir={params.outdir} --nsamples={params.n_samples} "
+                "--nsteps={params.n_steps} --steplength={params.step_length} "
+                "--distthresh={params.dist_thresh} --cthr={params.c_thresh} "
+                "--omatrix2 --forcedir {params.loop_check} "
+                "{params.correct_path_distribution} > /dev/null"
+            )
 
 
 class RuleConnectivityDMRI(BaseRule):

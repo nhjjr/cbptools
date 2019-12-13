@@ -278,8 +278,8 @@ class DataSet:
         target_file = self.data['masks'].get('target', None)
         space = self.data['masks']['space']
         bet_binary_mask_file = self.data['bet_binary_mask']
-        xfm_file = self.data['xfm']
-        inv_xfm_file = self.data['inv_xfm']
+        xfm_file = self.data.get('xfm', None)
+        inv_xfm_file = self.data.get('inv_xfm', None)
         samples = self.data['samples']
         sessions = self.data.get('session', [None])
 
@@ -297,13 +297,15 @@ class DataSet:
             bet_binary_mask_file = os.path.abspath(bet_binary_mask_file)
             self.data['bet_binary_mask'] = bet_binary_mask_file
 
-        if not os.path.isabs(xfm_file):
-            xfm_file = os.path.abspath(xfm_file)
-            self.data['xfm'] = xfm_file
+        if xfm_file is not None:
+            if not os.path.isabs(xfm_file):
+                xfm_file = os.path.abspath(xfm_file)
+                self.data['xfm'] = xfm_file
 
-        if not os.path.isabs(inv_xfm_file):
-            inv_xfm_file = os.path.abspath(inv_xfm_file)
-            self.data['inv_xfm'] = inv_xfm_file
+        if inv_xfm_file is not None:
+            if not os.path.isabs(inv_xfm_file):
+                inv_xfm_file = os.path.abspath(inv_xfm_file)
+                self.data['inv_xfm'] = inv_xfm_file
 
         if not os.path.isabs(samples):
             samples = os.path.abspath(samples)
@@ -351,6 +353,9 @@ class DataSet:
 
             # Validate bet_binary_mask
             for file in [bet_binary_mask_file, xfm_file, inv_xfm_file]:
+                if file is None:
+                    continue
+
                 img = file.format(participant_id=ppid, session=session)
                 if not self.load_img(img, level='warning'):
                     self.ppids_bad.append(ppid)

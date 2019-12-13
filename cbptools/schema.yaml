@@ -78,7 +78,7 @@ data:
     desc: 'File path to a BET binary mask file. This field must contain the {participant_id} template'
   xfm:
     type: string
-    required: true
+    required: false
     allowed: ['*.nii', '*.nii.gz']
     contains: '{participant_id}'
     default: '/path/to/{participant_id}/file.nii'
@@ -89,12 +89,12 @@ data:
            the {participant_id} template'
   inv_xfm:
     type: string
-    required: true
+    required: false
     allowed: ['*.nii', '*.nii.gz']
     contains: '{participant_id}'
     default: '/path/to/{participant_id}/file.nii'
     abspath: true
-    custom: [has_sessions]
+    custom: [has_sessions, has_xfm]
     dependency: [modality: dmri]
     desc: 'Transform taking DTI space to seed space. This field must contain the {participant_id} template'
   samples:
