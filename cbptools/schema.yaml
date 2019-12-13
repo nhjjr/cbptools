@@ -83,7 +83,7 @@ data:
     contains: '{participant_id}'
     default: '/path/to/{participant_id}/file.nii'
     abspath: true
-    custom: [has_sessions]
+    custom: [has_sessions, has_inv_xfm]
     dependency: [modality: dmri]
     desc: 'Transform taking seed space to DTI space (either FLIRT matrix or FNIRT warpfield). This field must contain
            the {participant_id} template'
@@ -94,7 +94,7 @@ data:
     contains: '{participant_id}'
     default: '/path/to/{participant_id}/file.nii'
     abspath: true
-    custom: [has_sessions, has_xfm]
+    custom: [has_sessions]
     dependency: [modality: dmri]
     desc: 'Transform taking DTI space to seed space. This field must contain the {participant_id} template'
   samples:

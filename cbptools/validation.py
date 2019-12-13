@@ -543,13 +543,13 @@ class Validator(object):
 
         return True
 
-    def _rule_custom_has_xfm(self, this):
+    def _rule_custom_has_inv_xfm(self, this):
         """Custom rule to check if an XFM is defined when using the dMRI
         modality"""
-        xfm = self.get('data.xfm', None)
+        inv_xfm = self.get('data.inv_xfm', None)
 
-        if xfm is not None and this.value is None:
-            raise RuleError('%s must be defined if data.xfm is defined'
+        if inv_xfm is not None and this.value is None:
+            raise RuleError('data.inv_xfm must be defined if %s is defined'
                             % this.field)
 
         return True
