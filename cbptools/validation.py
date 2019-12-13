@@ -548,7 +548,7 @@ class Validator(object):
         modality"""
         inv_xfm = self.get('data.inv_xfm', None)
 
-        if inv_xfm is not None and this.value is None:
+        if this.value is not None and inv_xfm is None:
             raise RuleError('data.inv_xfm must be defined if %s is defined'
                             % this.field)
 
