@@ -81,7 +81,6 @@ data:
     required: false
     allowed: ['*.nii', '*.nii.gz']
     contains: '{participant_id}'
-    default: '/path/to/{participant_id}/file.nii'
     abspath: true
     custom: [has_sessions, has_inv_xfm]
     dependency: [modality: dmri]
@@ -92,7 +91,6 @@ data:
     required: false
     allowed: ['*.nii', '*.nii.gz']
     contains: '{participant_id}'
-    default: '/path/to/{participant_id}/file.nii'
     abspath: true
     custom: [has_sessions]
     dependency: [modality: dmri]
