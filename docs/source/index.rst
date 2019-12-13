@@ -62,7 +62,8 @@ For a more detailed overview of the procedure, we recommend reading :cite:`eickh
     :maxdepth: 1
 
     processing/masking
-    processing/connectivity
+    processing/connectivity_rsfmri
+    processing/connectivity_dmri
     processing/clustering
     processing/grouping
     processing/validity

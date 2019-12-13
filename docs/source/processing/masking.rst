@@ -7,8 +7,10 @@
 =======
 Masking
 =======
-This step will create the `seed_mask.nii.gz`, `target_mask.nii.gz` and `highres_seed_mask.nii.gz` (if the modality is
-'dmri'). It is strongly recommended to manually ensure that these masks turn out as you expect them to be!
+This task will preprocess the seed and target masks.
+
+.. note::
+    We strongly recommend to manually verify the masks, to ensure that they turn out as expected.
 
 .. glossary::
     Configuration fields
@@ -22,6 +24,20 @@ This step will create the `seed_mask.nii.gz`, `target_mask.nii.gz` and `highres_
         parameters.masking.target.remove_seed (optional) |br|
         parameters.masking.target.subsampling (optional, rsfMRI only) |br|
         parameters.masking.target.downsample_to (optional, dMRI only)
+
+    Output
+        `seed_mask.nii.gz` |br|
+        `target_mask.nii.gz` |br|
+        `seed_coordinates.npy` |br|
+        `highres_seed_mask.nii.gz` (dMRI only)
+
+    Logging
+        `log/process_masks_rsfmri.log` (rsfMRI only) |br|
+        `log/process_masks_dmri.log` (dMRI only)
+
+    Benchmarking
+        `benchmarks/process_masks_rsfmri.log` (rsfMRI only) |br|
+        `benchmarks/process_masks_dmri.log` (dMRI only)
 
 Extracting the seed mask from an atlas
 --------------------------------------

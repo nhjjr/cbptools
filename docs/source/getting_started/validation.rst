@@ -11,7 +11,8 @@ flaws. This validation step takes a bit longer, as each external file is checked
 to be processed by CBPtools. At this point subjects may be excluded from the project if their data does not pass
 validation. CBPtools will provide warnings when this happens in the log file.
 
-It is always recommended to read the log file after the setup completes (or fails)!
+.. note::
+    It is strongly recommended to read the log file after the setup completes (or fails)
 
 Configuration File
 ==================

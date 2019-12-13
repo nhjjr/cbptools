@@ -19,5 +19,6 @@ of the processing the input data is used. For more information on what kind of i
 
 Each step is addressed in more detail in the processing section. Specifically:
 (A) :ref:`Input Data <validationInputData>`, (B) :ref:`Masks <TaskMasking>`,
-(C) :ref:`Connectivity <TaskConnectivity>`, (D) :ref:`Clustering <TaskClustering>`, (E) :ref:`Validity <TaskValidity>`,
-(F) :ref:`Grouping <TaskGrouping>`, (G) :ref:`Similarity <TaskSimilarity>`, (H) :ref:`Reports <TaskReport>`
+(C) :ref:`rsfMRI Connectivity <TaskConnectivityrsfMRI>` or :ref:`dMRI Connectivity <TaskConnectivitydMRI>`,
+(D) :ref:`Clustering <TaskClustering>`, (E) :ref:`Validity <TaskValidity>`, (F) :ref:`Grouping <TaskGrouping>`,
+(G) :ref:`Similarity <TaskSimilarity>`, (H) :ref:`Reports <TaskReport>`
