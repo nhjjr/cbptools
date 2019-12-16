@@ -455,6 +455,7 @@ class RuleProbtrackx2(BaseRule):
         d = dict()
         wildcards = '{wildcards.participant_id}'
         d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        d['time'] = '24:00:00'
         return d
 
     @property
@@ -746,6 +747,7 @@ class RuleConnectivityRSFMRI(BaseRule):
             wildcards = '{wildcards.participant_id}'
 
         d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        d['time'] = '24:00:00'
         return d
 
     @property
