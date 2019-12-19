@@ -45,5 +45,5 @@ dependency of *CBPtools*. Once this is done, the rCBP procedure will start.
     snakemake
 
 Snakemake has a range of parameters it can be executed with. Common uses with *CBPtools* are outlined in the
-:ref:`execution` section. For more customizability on snakemake :cite:`koster:2012`, visit the
+:ref:`execution` section. For more customizability on snakemake, visit the
 `snakemake documentation <https://snakemake.readthedocs.io/en/stable/>`_.
