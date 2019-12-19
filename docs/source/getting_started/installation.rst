@@ -6,7 +6,7 @@ Installation
 
 Requirements
 ============
-CBPtools requires a Python3 (>=3.5) installation. All of its dependencies will be installed except for FSL's
+*CBPtools* requires a Python3 (>=3.5) installation. All of its dependencies will be installed except for FSL's
 `probtrackx2 <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/UserGuide#PROBTRACKX_-_probabilistic_tracking_with_crossing_fibres>`_.
 This tool is necessary to perform probabilistic tractography on diffusion-weighted imaging data. If you are only
 interested in using the :term:`rsfMRI` or connectivity input modalities, `probtrackx2` is not necessary.

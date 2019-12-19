@@ -2,13 +2,21 @@
 
     <br/>
 
+.. raw:: html
+
+    <style>
+        .green { color: green; font-weight: bold }
+    </style>
+
+.. role:: green
+
 .. _TaskConnectivitydMRI:
 
 =================
 dMRI Connectivity
 =================
 The wildcards `{participant_id}` and `{session}` are placeholders for the ID of the participant in the data set, and
-the session string defined in hte `data:session` field, respectively. This applies to the output, as well as the
+the session string defined in the :green:`data:session` field, respectively. This applies to the output, as well as the
 logging and benchmark output files.
 
 This task can be I/O heavy if bedpostX output images are large and have to be accessed from a remote source. To
@@ -82,8 +90,8 @@ Since the `fdt_matrix2.dot` is in F-contiguous order, the connectivity matrix wi
 This keeps all the CBPtools output files consistent in terms of their ordering. This is done using the
 `cbptools.image.get_f2c_order` method, which provides reordering indices using the seed mask such that an F extraction
 order is turned into a C extraction order. This new order is applied to the x-axis (seed voxels) of the connectivity
-matrix, but not the y-axis (as the target value ordering is not important for the remaining procedures in the CBPtools
-workflow).
+matrix, but not the y-axis (as the target value ordering is not important for the remaining procedures in the
+*CBPtools* workflow).
 
 Merge Sessions
 ==============

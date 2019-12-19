@@ -2,17 +2,25 @@
 
     <br/>
 
+.. raw:: html
+
+    <style>
+        .green { color: green; font-weight: bold }
+    </style>
+
+.. role:: green
+
 .. _TaskConnectivityrsfMRI:
 
 ===================
 rsfMRI Connectivity
 ===================
 The wildcards `{participant_id}` and `{session}` are placeholders for the ID of the participant in the data set, and
-the session string defined in hte `data:session` field, respectively. This applies to the output, as well as the
+the session string defined in the :green:`data:session` field, respectively. This applies to the output, as well as the
 logging and benchmark output files.
 
 This task can be I/O heavy if time-series images are large and have to be accessed from a remote source. To mitigate
-the effects on computation time, it is possible to define the `io` parameter in the `--resources` directive of
+the effects on computation time, it is possible to define the `io` parameter in the `--resources` parameter of
 snakemake. This task is given 1 `io` token, so if `snakemake --resources io=10` is used, then at most 10 connectivity
 tasks can be run in parallel.
 
@@ -62,7 +70,7 @@ the connectivity matrix includes a division by the standard deviation, low-varia
 values. These values will be set to 0. The low-variance error thresholds defined in the configuration file are used to
 check whether there are too many low-variance voxels in the seed- or target-masked time-series. If this is the case,
 the connectivity computation is aborted and an empty connectivity matrix is returned. The log file will make mention of
-this. At a later stage in the CBPtools workflow, processing will halt and provide a more detailed error log.
+this. At a later stage in the *CBPtools* workflow, processing will halt and provide a more detailed error log.
 
 Nuisance Signal Regression (optional)
 =====================================

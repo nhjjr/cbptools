@@ -2,6 +2,14 @@
 
     <br/>
 
+.. raw:: html
+
+    <style>
+        .green { color: green; font-weight: bold }
+    </style>
+
+.. role:: green
+
 .. _TaskClustering:
 
 ==========
@@ -18,7 +26,8 @@ the cluster labels contained within the file.
 
 KMeans Clustering
 =================
-This task is active only if the `kmeans` clustering algorithm is defined in the configuration file.
+This task is active only if the `kmeans` clustering algorithm is defined in the configuration file
+(:green:`parameteres:clustering:method`).
 
 .. glossary::
     Configuration fields
@@ -42,7 +51,8 @@ This task will apply the k-means clustering algorithm on a connectivity matrix u
 
 Spectral Clustering
 ===================
-This task is active only if the `spectral` clustering algorithm is defined in the configuration file.
+This task is active only if the `spectral` clustering algorithm is defined in the configuration file
+(:green:`parameteres:clustering:method`).
 
 .. glossary::
     Configuration fields
@@ -81,12 +91,13 @@ nearest_neighbors; `degree` is only used with a polynomial `kernel`; `coef0` is 
     Clustering may fail if the `eigen_tol` is set too low
 
 If the clustering fails due to a `numpy.linalg.LinAlgError` or because the requested number of clusters was not
-returned, CBPtools will store an empty output file and create a warning in the log file. At a later stage in the
-CBPtools workflow, processing will halt and provide a more detailed error log.
+returned, *CBPtools* will store an empty output file and create a warning in the log file. At a later stage in the
+*CBPtools* workflow, processing will halt and provide a more detailed error log.
 
 Hierarchical Clustering
 =======================
-This task is active only if the `agglomerative` clustering algorithm is defined in the configuration file.
+This task is active only if the `agglomerative` clustering algorithm is defined in the configuration file
+(:green:`parameteres:clustering:method`).
 
 .. glossary::
     Configuration fields
@@ -110,7 +121,7 @@ Validating Cluster Labels
 =========================
 At this point in the workflow the connectivity matrices and cluster labels are computed for all participants. If any of
 the participants contains problematic results (i.e., the connectivity or cluster labels file is empty due to an error
-during processing), CBPtools will provide a log file at `log/validate_cluster_labels.log` with information about the
+during processing), *CBPtools* will provide a log file at `log/validate_cluster_labels.log` with information about the
 participant IDs and reason of the problematic results. Processing will halt at this point, as manual actions are
 required (e.g., addressing the issue(s) by removing the participant IDs from `participants.tsv`, or any other action
 that can create proper connectivity and cluster label output).

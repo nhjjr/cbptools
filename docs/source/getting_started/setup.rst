@@ -3,27 +3,29 @@
 =====
 Setup
 =====
-The first step to creating a CBPtools project is to write a configuration file. This file contains the links to the
+The first step to creating a *CBPtools* project is to write a configuration file. This file contains the links to the
 :ref:`data set <ConfigurationInputData>` you intend to use, as well as the :ref:`parameters <ConfigurationParameters>`
 for the tasks that will process the data.
 
 Example Configuration
 =====================
 An example configuration file can be obtained using the `example` directive. This file will have a set of parameters
-in the proper format to use as a configuration file. Note that before use, the the values have to be changed to point
-to the input data.
+in the proper format to use as a configuration file. Note that before use, the values under the data key have to be
+changed to point to the input data and the number of clusters (n_clusters in the parameters) has to be defined.
 
 .. code-block:: bash
 
     cbptools example --get modality
 
 The `modality` argument should be replaced by the type of data you intend to give as input. Currently supported are
-`rsfmri` (:term:`rsfMRI`), `dmri` (:term:`dMRI`), or `connectivity`. A configuration file with default and placeholder
+`rsfmri` (:term:`rsfMRI`), `dmri` (:term:`dMRI`), and `connectivity`. A configuration file with default and placeholder
 settings will be created in the current working directory.
 
 Note that not all parameter fields are represented in this example configuration file. All available parameters fields
 are listed :ref:`here <ConfigurationParameters>`, and all available input data fields are listed
 :ref:`here <ConfigurationInputData>`.
+
+Alternatively, an example data set including configuration files is made available :ref:`here <ExampleData>`.
 
 Editing the Configuration File
 ==============================
@@ -40,7 +42,7 @@ top-level keys in the file: `modality`, `data`, and `parameters`.
 Running the setup
 =================
 With a properly defined configuration file and the input data in place and quality controlled, the setup procedure can
-be started to create a CBPtools project folder.
+be started to create a *CBPtools* project folder.
 
 .. code-block:: bash
 
@@ -50,3 +52,6 @@ The `--config` (alternative `-c`) parameter is used to define the path to the co
 (alternative `-w`) parameter is the directory in which the project files will be placed. This command will immediately
 trigger the :ref:`validation <validation>` of the configuration file and input data. If this succeeds, a project folder
 will be created at the `--workdir` location (i.e., /path/to/workdir in this case).
+
+Note that if the `--workdir` already exists and contains files, the `--force` argument must be used to force the setup
+procedure into using that folder. This is to prevent overwriting existing files.

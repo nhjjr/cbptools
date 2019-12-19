@@ -23,7 +23,8 @@ Cluster execution
 More commonly, the *CBPtools* workflow will be executed on a cluster. Upon creation of the project, a cluster.json file
 is created in the `workdir`. This file must be edited so that all parameters are set properly. Commonly only the
 `"__default__"` field needs to be edited to have the correct `account` name and `partition`, outlined below. The
-default settings are inherited for each task and only overwritten if defined for the task.
+default settings are inherited for each task and only overwritten if defined for the task. Note that any parameter used
+is defined in the snakemake command (under the -c argument).
 
 .. code-block:: json
 

@@ -2,6 +2,14 @@
 
     <br/>
 
+.. raw:: html
+
+    <style>
+        .green { color: green; font-weight: bold }
+    </style>
+
+.. role:: green
+
 .. _TaskGrouping:
 
 ========
@@ -37,7 +45,7 @@ hierarchical clustering results are used as a group clustering result.
 
 .. figure:: ../_static/relabeling.png
 
-   **Figure 1**. Relabeling strategy to obtain group cluster labels. **a** Four example label sets obtained from
+   **Fig. 1**. Relabeling strategy to obtain group cluster labels. **a** Four example label sets obtained from
    clustering, where each color/number represents a cluster-id that is assigned randomly. Each of the subjects has an
    identical clustering, yet the cluster-ids differ. **b** Reference cluster labels obtained through hierarchical
    clustering of the subject labels in a. **c** Illustration of hierarchical clustering performed on 5 voxels. **d**

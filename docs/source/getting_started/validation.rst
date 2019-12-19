@@ -1,3 +1,11 @@
+.. raw:: html
+
+    <style>
+        .green { color: green; font-weight: bold }
+    </style>
+
+.. role:: green
+
 .. _validation:
 
 ==========
@@ -7,9 +15,9 @@ Validation consists of two steps: (1) validation of the configuration file, and 
 configuration file is not properly formatted in the YAML structure or contains values that do not meet the necessary
 requirements, the setup procedure will fail and create a log file containing the reasons why the setup failed. The
 data set is only marginally validated, so it is not recommended to rely on it to ensure that the input data has no
-flaws. This validation step takes a bit longer, as each external file is checked if it meets the necessary criteria
-to be processed by CBPtools. At this point subjects may be excluded from the project if their data does not pass
-validation. CBPtools will provide warnings when this happens in the log file.
+flaws. This validation step takes a bit longer, as each external file is checked to see if it meets the necessary
+criteria to be processed by *CBPtools*. At this point subjects may be excluded from the project if their data does not
+pass validation. *CBPtools* will provide warnings when this happens in the log file.
 
 .. note::
     It is strongly recommended to read the log file after the setup completes (or fails)
@@ -33,12 +41,12 @@ contains all available data and parameter fields and their validation rules. The
 :contains: Checks if a value (i.e., list or string) contains a required part. For example, data set files that are
     subject specific must contain the `{participant_id}` wildcard.
 
-:allowed: Checks if the field consists only out of allowed values, which are represented as a list. For
-    example, when selecting a clustering algorithm, the field's allowed values are [kmeans, spectral, hierarchical].
+:allowed: Checks if the field consists only of allowed values, which are represented as a list. For example, when
+    selecting a clustering algorithm, the field's allowed values are [kmeans, spectral, agglomerative].
 
 :min: Checks if the field is above the minimum allowed value. This only works with integer and float type values.
 
-:max: Checks if the field is above the maximum allowed value. This only works with integer and float type values.
+:max: Checks if the field is below the maximum allowed value. This only works with integer and float type values.
 
 :minlength: Checks if the field is above a minimum required length. For strings, this means the number of characters
     must be above this value. For lists and other iterables, this means the number of items must be above this value.
@@ -47,24 +55,24 @@ contains all available data and parameter fields and their validation rules. The
 
 Some fields have custom rules that only apply to that particular field. As of the current version, these rules are:
 
-:(custom) bandpass: This applies to the `parameters:connectivity:bandpass.band` field and checks whether the high-pass
-    value is smaller than the low-pass value.
-
 :(custom) voxel dimensions: This applies to the voxel_dimensions field for up- and downsampling and checks whether
     the field has exactly 1 or 3 values. In the case of 1 value, it will be used for all 3 dimensions.
 
-:(custom) repetition-time: This applies to the `parameters:connectivity:bandpass.tr` field and warns if the value is
-    larger than 100. Since repetition time is specified in seconds, a value larger than 100 is likely to be a mistake.
-    This triggers only a warning, however, and may be ignored if the value is not a mistake.
+:(custom) bandpass: This applies to the :green:`parameters:connectivity:bandpass:band` field and checks whether the
+    high-pass value is smaller than the low-pass value.
+
+:(custom) repetition-time: This applies to the :green:`parameters:connectivity:bandpass:tr` field and warns if the
+    value is larger than 100. Since repetition time is specified in seconds, a value larger than 100 is likely to be a
+    mistake. This triggers only a warning, however, and may safely be ignored if the value is not a mistake.
 
 :(custom) agglomerative linkage: When using agglomerative clustering, if linkage is set to 'ward' then this rule checks
     whether distance is set to 'euclidean', as ward linkage requires euclidean distance.
 
-:(custom) has sessions: Checks whether the input data fields contain the '{session}' wildcard if sessions are defined.
+:(custom) has sessions: Checks whether the input data fields contain the `{session}` wildcard if sessions are defined.
     If no sessions are used, then the wildcard should not be present.
 
-:(custom) space match: When `data:masks:space` is set to 'native', then this rule checks if all masks used are
-    subject specific (i.e., contain the '{participant_id}' wildcard). It furthermore checks if the target mask field
+:(custom) space match: When :green:`data:masks:space` is set to 'native', then this rule checks if all masks used are
+    subject specific (i.e., contain the `{participant_id}` wildcard). It furthermore checks if the target mask field
     is defined, because that mask also has to be subject specific.
 
 :(custom) benchmarking: If benchmarking is to be performed, the `psutil` package must be installed. This rule checks if
@@ -143,22 +151,24 @@ Creating the project
 Once the input data validation procedure has completed, a memory and disk space estimate is made using the input data.
 This is a very liberal estimate. When executing the workflow on a cluster system that requires each job to specify the
 memory that it will need, these values are used. If the modality is set to `dmri`, the availability of FSL and
-`probtrackx2` is checked. If the tool is not available, a warning will be given.
+`probtrackx2` is checked. If the tool is not available, a warning will be given. Note that it is always wise to
+benchmark an example run. That way, the time and memory required for each job can be defined manually in the
+`cluster.json` file.
 
 Next, the workflow is built using only the necessary tasks (i.e., the task for spectral clustering is not used when
 another clustering algorithm is chosen, and additional tasks are necessary to deal with multi-session data). This
 workflow is stored as `Snakefile` in the project directory.
 
 A `cluster.json` file is added to the project directory, which can be used when submitting jobs to a scheduler. This
-file is used by snakemake to define cluster parameters for each rule. When using a scheduler (e.g., SLURM or qsub) this
-file defines timing, account name, cluster name, etc. For more information, read the
+file is used by snakemake to define cluster parameters for each rule. When using a scheduler (e.g., SLURM, qsub,
+HTCondor, etc.) this file defines timing, account name, cluster name, etc. For more information, read the
 `snakemake guidelines <https://snakemake.readthedocs.io/en/stable/snakefiles/configuration.html#cluster-configuration>`_
 
 The participants that are included in the study are stored in `participants.tsv`, whereas participants that were excluded
 are stored in `participants_bad.tsv`. The `participants.tsv` can be edited after the setup by removing or adding
 participants. The index column in this file should always be named 'participant_id'.
 
-The seed and target masks are stored as `seed_mask.nii.gz` and `target_mask.nii.gz` respectively. For the 'dmri'
+The seed and target masks are stored as `seed_mask.nii.gz` and `target_mask.nii.gz`, respectively. For the 'dmri'
 modality, an additional `highres_seed_mask.nii.gz` is included, which is the seed mask stretched (not upsampled!) to a
 higher resolution. A `seed_coordinates.npy` file is created (or copied, if the modality is 'connectivity') containing
 the x, y, and z coordinates of each seed voxel in C-order.

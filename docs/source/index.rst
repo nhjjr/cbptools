@@ -4,10 +4,10 @@ Quick Start Guide
 
 Connectivity-Based Parcellation Tools
 =====================================
-Regional **connectivity-based parcellation** (rCBP) is a procedure for revealing the differentiation within a
-region of interest (ROI) based on its long-range connectivity profiles. *CBPtools* :cite:`reuter:submitted` is an open
-source software that parcellates a region-of-interest (ROI) and provides the output as NIfTI images along with
-commonly used cluster-validity metrics.
+Regional **connectivity-based parcellation** (:term:`rCBP`) is a procedure for revealing the differentiation within a
+:term:`ROI` based on its long-range connectivity profiles. *CBPtools* :cite:`reuter:submitted` is an open
+source software that performs this procedure with a range of customisable options, and provides the output as NIfTI
+images along with commonly used cluster-validity metrics.
 
 For a more detailed overview of the rCBP procedure, we recommend reading :cite:`eickhoff:2015` and
 :cite:`eickhoff:2018`.
