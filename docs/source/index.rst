@@ -1,7 +1,4 @@
-=================
-Quick Start Guide
-=================
-
+=====================================
 Connectivity-Based Parcellation Tools
 =====================================
 Regional **connectivity-based parcellation** (:term:`rCBP`) is a procedure for revealing the differentiation within a
