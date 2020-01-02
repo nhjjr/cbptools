@@ -165,3 +165,19 @@ def process_masks_dmri(input: dict, output: dict, params: dict,
     nib.save(seed_img, out_seed)
     nib.save(target_img, out_target)
     np.save(out_coordinates, seed_coordinates)
+
+
+def resample_masks(input: dict, output: dict) -> None:
+    seed = input.get('seed')
+    target = input.get('target')
+    reference = input.get('reference')
+    out_seed = output.get('seed')
+    out_target = output.get('target')
+
+    # Resample
+    seed = resample_from_to(seed, reference, mode='nearest', order=0)
+    target = resample_from_to(target, reference, mode='nearest', order=0)
+
+    # save output
+    nib.save(seed, out_seed)
+    nib.save(target, out_target)

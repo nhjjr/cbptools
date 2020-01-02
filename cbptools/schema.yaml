@@ -163,6 +163,17 @@ data:
              target masks. Note that group results cannot be computed in native space and are therefore skipped.
              If standard is used, then the seed and target masks are assumed to be in the same group template
              space (e.g., MNI152 2mm space).'
+    resample:
+      type: bool
+      default: false
+      required: false
+      dependency: [data.masks.space: native]
+      custom: [no_xfm]
+      desc: 'Resample the seed and target masks to the space of the input data. This option will use the NiBabel
+             function "nibabel.processing.resample_to_from" with mode="nearest" and order="0". It is only used for
+             single-subject parcellations (data.masks.space = native) when one seed and target mask are given rather
+             than one seed and target mask per subject. For dMRI data it is only used on the seed image if the xfm and
+             inv_xfm are not given.'
   references:
     type: 'list[string]'
     allowed: ['*.nii', '*.nii.gz']

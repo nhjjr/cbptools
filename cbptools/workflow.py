@@ -176,8 +176,12 @@ class RuleProcessMasksRSFMRI(BaseRule):
         super().__init__(conf)
 
     def is_active(self):
-        modality = self.get('modality')
-        return True if modality == 'rsfmri' else False
+        """Only active for rsfMRI data when masks are not subject specific"""
+        is_rsfmri = self.get('modality') == 'rsfmri'
+        is_standard = self.get('data.masks.space') == 'standard'
+        has_resampling = self.get('data.masks.resample') is True
+
+        return is_rsfmri and (is_standard or has_resampling)
 
     @property
     def input(self):
@@ -277,8 +281,12 @@ class RuleProcessMasksDMRI(BaseRule):
         super().__init__(conf)
 
     def is_active(self):
-        modality = self.get('modality')
-        return True if modality == 'dmri' else False
+        """Only active for dMRI data when masks are not subject specific"""
+        is_rsfmri = self.get('modality') == 'rsfmri'
+        is_standard = self.get('data.masks.space') == 'standard'
+        has_resampling = self.get('data.masks.resample') is True
+
+        return is_rsfmri and (is_standard or has_resampling)
 
     @property
     def input(self):
@@ -388,6 +396,83 @@ class RuleProcessMasksDMRI(BaseRule):
         return 'tasks.%s(input, output, params, log)' % self.name
 
 
+class RuleResampleMasks(BaseRule):
+    name = 'resample_masks'
+
+    def __init__(self, conf):
+        super().__init__(conf)
+
+    def is_active(self):
+        has_resampling = self.get('data.masks.resample') is True
+        return has_resampling
+
+    @property
+    def input(self):
+        d = dict()
+
+        # Parameter keys & files
+        modality = self.get('modality')
+        target_mask = 'target_mask.%s' % self.nifti_ext
+
+        if modality == 'rsfmri':
+            seed_mask = 'seed_mask.%s' % self.nifti_ext
+            reference = self.get('data.time_series')
+
+        elif modality == 'dmri':
+            upsample = self.get('parameters.masking.seed.upsample_to.apply',
+                                False)
+            seed_mask = 'highres_seed_mask' if upsample else 'seed_mask'
+            seed_mask = '%s.%s' % (seed_mask, self.nifti_ext)
+            reference = self.get('data.bet_binary_mask')
+
+        else:
+            raise ValueError('unknown modality: %s' % modality)
+
+        # Define parameters
+        d['reference'] = reference
+        d['seed'] = seed_mask
+        d['target'] = target_mask
+
+        return d
+
+    @property
+    def output(self):
+        d = dict()
+
+        # Parameter keys & files
+        session = self.get('data.session')
+        path = 'individual/{participant_id}/masks'
+        path += '_{session}' if session else ''
+
+        # Define parameters
+        d['seed'] = opj(path, 'seed_mask.%s' % self.nifti_ext)
+        d['target'] = opj(path, 'target_mask.%s' % self.nifti_ext)
+
+        return d
+
+    @property
+    def benchmark(self):
+        session = self.get('data.session', None)
+        prfx = '{participant_id}.{session}' if session else '{participant_id}'
+        return 's:benchmarks/%s.%s.log' % (prfx, self.name)
+
+    @property
+    def cluster_json(self):
+        d = dict()
+        wildcards = '{wildcards.participant_id}'
+        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
+        d['time'] = '1:00:00'
+        return d
+
+    @property
+    def threads(self):
+        return 1
+
+    @property
+    def run(self):
+        return 'tasks.%s(input, output)' % self.name
+
+
 class RuleProbtrackx2(BaseRule):
     name = 'probtrackx2'
 
@@ -403,14 +488,29 @@ class RuleProbtrackx2(BaseRule):
         d = dict()
 
         # Parameter keys & files
+        resample = self.get('data.masks.resample', False)
         upsample = self.get('parameters.masking.seed.upsample_to.apply', False)
         space = self.get('data.masks.space', 'standard')
         bet_binary_mask = self.get('data.bet_binary_mask')
         xfm = self.get('data.xfm', None)
         inv_xfm = self.get('data.inv_xfm', None)
-        target_mask = 'target_mask.%s' % self.nifti_ext
-        seed_mask = 'highres_seed_mask' if upsample else 'seed_mask'
-        seed_mask = '%s.%s' % (seed_mask, self.nifti_ext)
+
+        if resample:
+            # space = native and resample = true
+            session = self.get('data.session')
+            path = 'individual/{participant_id}/masks'
+            path += '_{session}' if session else ''
+            seed_mask = opj(path, 'seed_mask.%s' % self.nifti_ext)
+            target_mask = opj(path, 'target_mask.%s' % self.nifti_ext)
+        else:
+            target_mask = 'target_mask.%s' % self.nifti_ext
+            seed_mask = 'highres_seed_mask' if upsample else 'seed_mask'
+            seed_mask = '%s.%s' % (seed_mask, self.nifti_ext)
+
+            if space == 'native':
+                path = 'individual/{participant_id}'
+                target_mask = opj(path, target_mask)
+                seed_mask = opj(path, seed_mask)
 
         # Define parameters
         d['bet_binary_mask'] = bet_binary_mask
@@ -420,13 +520,8 @@ class RuleProbtrackx2(BaseRule):
             d['xfm'] = xfm
             d['inv_xfm'] = inv_xfm
 
-        if space == 'native':
-            path = 'individual/{participant_id}'
-            d['seed'] = opj(path, seed_mask)
-            d['target'] = opj(path, target_mask)
-        else:  # if space == 'standard'
-            d['seed'] = seed_mask
-            d['target'] = target_mask
+        d['seed'] = seed_mask
+        d['target'] = target_mask
 
         return d
 
@@ -560,16 +655,24 @@ class RuleConnectivityDMRI(BaseRule):
         ptx_path += '_{session}' if session else ''
         fdt_matrix2 = 'fdt_matrix2.dot'
         upsample = self.get('parameters.masking.seed.upsample_to.apply', False)
-        seed_mask = 'highres_seed_mask' if upsample else 'seed_mask'
-        seed_mask = '%s.%s' % (seed_mask, self.nifti_ext)
+        resample = self.get('data.masks.resample', False)
+
+        if resample:
+            # space = native and resample = true
+            session = self.get('data.session')
+            mask_path = 'individual/{participant_id}/masks'
+            mask_path += '_{session}' if session else ''
+            seed_mask = opj(mask_path, 'seed_mask.%s' % self.nifti_ext)
+        else:
+            seed_mask = 'highres_seed_mask' if upsample else 'seed_mask'
+            seed_mask = '%s.%s' % (seed_mask, self.nifti_ext)
+
+            if space == 'native':
+                seed_mask = opj(path, seed_mask)
 
         # Define parameters
         d['fdt_matrix2'] = opj(path, ptx_path, fdt_matrix2)
-
-        if space == 'native':
-            d['seed_mask'] = opj(path, seed_mask)
-        else:  # if space == 'standard'
-            d['seed_mask'] = seed_mask
+        d['seed_mask'] = seed_mask
 
         return d
 
@@ -682,21 +785,30 @@ class RuleConnectivityRSFMRI(BaseRule):
 
         # Parameter keys & files
         space = self.get('data.masks.space', 'standard')
-        seed_mask = 'seed_mask.%s' % self.nifti_ext
-        target_mask = 'target_mask.%s' % self.nifti_ext
+        resample = self.get('data.masks.resample', False)
         time_series = self.get('data.time_series')
         confounds_file = self.get('data.confounds.file', None)
 
+        if resample:
+            # space = native and resample = true
+            session = self.get('data.session')
+            path = 'individual/{participant_id}/masks'
+            path += '_{session}' if session else ''
+            seed_mask = opj(path, 'seed_mask.%s' % self.nifti_ext)
+            target_mask = opj(path, 'target_mask.%s' % self.nifti_ext)
+        else:
+            seed_mask = 'seed_mask.%s' % self.nifti_ext
+            target_mask = 'target_mask.%s' % self.nifti_ext
+
+            if space == 'native':
+                path = 'individual/{participant_id}'
+                seed_mask = opj(path, seed_mask)
+                target_mask = opj(path, target_mask)
+
         # Define parameters
         d['time_series'] = time_series
-
-        if space == 'native':
-            path = 'individual/{participant_id}'
-            d['seed_mask'] = opj(path, seed_mask)
-            d['target_mask'] = opj(path, target_mask)
-        else:  # if space == 'standard'
-            d['seed_mask'] = seed_mask
-            d['target_mask'] = target_mask
+        d['seed_mask'] = seed_mask
+        d['target_mask'] = target_mask
 
         if confounds_file:
             d['confounds'] = confounds_file
@@ -1300,7 +1412,6 @@ class RuleGroupLevelClustering(BaseRule):
         d = dict()
 
         # Parameter keys & files
-        modality = self.get('modality')
         coords = self.get('data.seed_coordinates', None)
         coords_default = 'seed_coordinates.npy'
         labels = 'individual/{participant_id}/{n_clusters}cluster_labels.npy'
@@ -1390,7 +1501,6 @@ class RuleInternalValidity(BaseRule):
         d = dict()
 
         # Parameter keys & files
-        modality = self.get('modality')
         conn = self.get('data.connectivity', None)
         conn_default = 'individual/{participant_id}/connectivity.npz'
         labels = 'individual/{participant_id}/{n_clusters}cluster_labels.npy'
@@ -2004,14 +2114,21 @@ class RulePlotIndividualLabeledROI(BaseRule):
 
         # Parameter keys & files
         space = self.get('data.masks.space', 'standard')
+        resample = self.get('data.masks.resample', False)
         labels = 'individual/{participant_id}/cluster_labels.npz'
         touchfile = 'individual/.touchfile'
 
-        if space == 'native':
-            path = 'individual/{participant_id}'
+        if resample:
+            session = self.get('data.session')
+            path = 'individual/{participant_id}/masks'
+            path += '_{session}' if session else ''
             seed_img = opj(path, 'seed_mask.%s' % self.nifti_ext)
-        else:  # if space == 'standard'
+        else:
             seed_img = 'seed_mask.%s' % self.nifti_ext
+
+            if space == 'native':
+                path = 'individual/{participant_id}'
+                seed_img = opj(path, seed_img)
 
         # Define parameters
         d['touchfile'] = touchfile

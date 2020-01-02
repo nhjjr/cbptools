@@ -478,6 +478,12 @@ class Validator(object):
     def _rule_custom_space_match(self, this) -> bool:
         """Custom rule for the mask space field"""
         if this.value == 'native':
+            resample = self.get('data.masks.resample', False)
+
+            if resample:
+                # When resampling is used, masks can't be subject specific
+                return True
+
             seed_keymap = 'data.masks.seed'
             target_keymap = 'data.masks.target'
             seed_mask = self.get(seed_keymap, None)
@@ -540,6 +546,21 @@ class Validator(object):
                             'because this option will make the seed mask '
                             'different from the reference images'
                             % (this.field, mf_keymap))
+
+        return True
+
+    def _rule_custom_no_xfm(self, this):
+        """Custom rule to check if the XFM has not been defined. This returns
+        True for the rsfMRI modality"""
+        xfm = self.get('data.xfm', None)
+        modality = self.get('modality', None)
+
+        if modality != 'dmri':
+            return True
+
+        if this.value and xfm is not None:
+            raise RuleError('When data.xfm is defined, %s will not be'
+                            'used' % this.field)
 
         return True
 

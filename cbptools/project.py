@@ -144,6 +144,7 @@ class DataSet:
         seed_file = self.data['masks']['seed']
         target_file = self.data['masks'].get('target', None)
         space = self.data['masks']['space']
+        resample = self.data['masks'].get('resample', False)
         ts_file = self.data['time_series']
         confounds = self.data.get('confounds', {})
         sessions = self.data.get('session', [None])
@@ -178,10 +179,10 @@ class DataSet:
                                 'columns')
 
         # Prepare seed and target if standard space is used
-        if space == 'standard':
+        if space == 'standard' or resample is True:
             try:
                 seed_img, target_img = self._masks(
-                    seed_file, target_file, space)
+                    seed_file, target_file, 'standard')
             except MaskError as exc:
                 logging.error(exc)
                 return False
@@ -204,7 +205,7 @@ class DataSet:
                 continue
 
             # Validate native masks
-            if space == 'native':
+            if space == 'native' and resample is False:
                 ppid_seed = seed_file.format(participant_id=ppid)
                 ppid_target = target_file.format(participant_id=ppid)
 
@@ -220,11 +221,12 @@ class DataSet:
                     continue
 
             # Check if time-series and masks are in the same space
-            if not imgs_equal_3d([ts_img, seed_img, target_img]):
-                logging.warning('time_series and masks are not in the '
-                                'same space for %s' % name)
-                self.ppids_bad.append(ppid)
-                continue
+            if resample is False:
+                if not imgs_equal_3d([ts_img, seed_img, target_img]):
+                    logging.warning('time_series and masks are not in the '
+                                    'same space for %s' % name)
+                    self.ppids_bad.append(ppid)
+                    continue
 
             # Check if confounds are valid
             if confounds.get('file', None):
@@ -277,6 +279,7 @@ class DataSet:
         seed_file = self.data['masks']['seed']
         target_file = self.data['masks'].get('target', None)
         space = self.data['masks']['space']
+        resample = self.data['masks'].get('resample', False)
         bet_binary_mask_file = self.data['bet_binary_mask']
         xfm_file = self.data.get('xfm', None)
         inv_xfm_file = self.data.get('inv_xfm', None)
@@ -312,9 +315,9 @@ class DataSet:
             self.data['samples'] = samples
 
         # Prepare seed and target if standard space is used
-        if space == 'standard':
+        if space == 'standard' or resample is True:
             try:
-                _, _ = self._masks(seed_file, target_file, space)
+                _, _ = self._masks(seed_file, target_file, 'standard')
             except MaskError as exc:
                 if exc is not None:
                     logging.error(exc)
@@ -329,7 +332,7 @@ class DataSet:
                 name = 'subject-id %s' % ppid
 
             # Validate native masks
-            if space == 'native':
+            if space == 'native' and resample is False:
                 ppid_seed = seed_file.format(participant_id=ppid)
                 ppid_target = target_file.format(participant_id=ppid)
 
@@ -400,7 +403,7 @@ class DataSet:
         try:
             self.seed_coordinates = np.load(seed_coords_file)
 
-        except Exception as exc:
+        except:
             # TODO: More specific exception
             logging.error('unable to read contents of file: %s'
                           % seed_coords_file)
