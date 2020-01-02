@@ -549,18 +549,24 @@ class Validator(object):
 
         return True
 
-    def _rule_custom_no_xfm(self, this):
-        """Custom rule to check if the XFM has not been defined. This returns
-        True for the rsfMRI modality"""
-        xfm = self.get('data.xfm', None)
+    def _rule_custom_resample(self, this):
+        """Custom rule to check if input masks are not subject-based and if,
+        for dMRI data, the XFM has not been defined."""
         modality = self.get('modality', None)
 
-        if modality != 'dmri':
-            return True
+        if this.value:
+            kw = '{participant_id}'
+            seed_mask = self.get('data.masks.seed', None)
+            target_mask = self.get('data.masks.target', None)
 
-        if this.value and xfm is not None:
-            raise RuleError('When data.xfm is defined, %s will not be'
-                            'used' % this.field)
+            if kw in seed_mask or kw in target_mask:
+                raise RuleError('Cannot use subject-specific masks if '
+                                '%s is set to true' % this.field)
+
+            if modality == 'dmri':
+                if self.get('data.xfm', None) is not None:
+                    raise RuleError('When data.xfm is defined, %s will not be'
+                                    'used' % this.field)
 
         return True
 

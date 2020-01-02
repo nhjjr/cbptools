@@ -55,10 +55,12 @@ def process_masks_rsfmri(input: dict, output: dict, params: dict,
                     'nibabel.processing.resample_from_to with '
                     'mode=\'nearest\' and order=0' % reference)
         reference = nib.load(reference)
+        vox_map = (reference.shape[0:3], reference.affine)
+
         seed_img = resample_from_to(
-            seed_img, reference, mode='nearest', order=0)
+            seed_img, vox_map, mode='nearest', order=0)
         target_img = resample_from_to(
-            target_img, reference, mode='nearest', order=0)
+            target_img, vox_map, mode='nearest', order=0)
 
     # Median filter the seed
     if median_filter:
@@ -135,10 +137,12 @@ def process_masks_dmri(input: dict, output: dict, params: dict,
                     'nibabel.processing.resample_from_to with '
                     'mode=\'nearest\' and order=0' % reference)
         reference = nib.load(reference)
+        vox_map = (reference.shape[0:3], reference.affine)
+
         seed_img = resample_from_to(
-            seed_img, reference, mode='nearest', order=0)
+            seed_img, vox_map, mode='nearest', order=0)
         target_img = resample_from_to(
-            target_img, reference, mode='nearest', order=0)
+            target_img, vox_map, mode='nearest', order=0)
 
     # Median filter the seed
     if median_filter:
