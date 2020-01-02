@@ -12,11 +12,13 @@ def process_masks_rsfmri(input: dict, output: dict, params: dict,
                          log: list) -> None:
     seed_mask = input.get('seed_mask')
     target_mask = input.get('target_mask', None)
+    reference = input.get('reference', None)
     out_seed = output.get('seed_img')
     out_target = output.get('target_img')
     out_coordinates = output.get('seed_coordinates')
     log_file = log[0]
     region_id = params.get('region_id', None)
+    resample = params.get('resample', False)
     binarize_seed = params.get('bin_seed', None)
     binarize_target = params.get('bin_target', None)
     median_filter = params.get('median_filter', False)
@@ -46,6 +48,17 @@ def process_masks_rsfmri(input: dict, output: dict, params: dict,
 
     if binarize_target:
         target_img = binarize_3d(target_img, threshold=binarize_target)
+
+    # Resample to reference
+    if resample:
+        logger.info('resampling to reference (%s) using '
+                    'nibabel.processing.resample_from_to with '
+                    'mode=\'nearest\' and order=0' % reference)
+        reference = nib.load(reference)
+        seed_img = resample_from_to(
+            seed_img, reference, mode='nearest', order=0)
+        target_img = resample_from_to(
+            target_img, reference, mode='nearest', order=0)
 
     # Median filter the seed
     if median_filter:
@@ -77,12 +90,14 @@ def process_masks_dmri(input: dict, output: dict, params: dict,
                        log: list) -> None:
     seed_mask = input.get('seed_mask')
     target_mask = input.get('target_mask', None)
+    reference = input.get('reference', None)
     out_seed = output.get('seed_img')
     out_target = output.get('target_img')
     out_coordinates = output.get('seed_coordinates')
     out_highres_seed = output.get('highres_seed_img', None)
     log_file = log[0]
     region_id = params.get('region_id', None)
+    resample = params.get('resample', False)
     binarize_seed = params.get('bin_seed', None)
     binarize_target = params.get('bin_target', None)
     median_filter = params.get('median_filter', False)
@@ -113,6 +128,17 @@ def process_masks_dmri(input: dict, output: dict, params: dict,
 
     if binarize_target:
         target_img = binarize_3d(target_img, threshold=binarize_target)
+
+    # Resample to reference
+    if resample:
+        logger.info('resampling to reference (%s) using '
+                    'nibabel.processing.resample_from_to with '
+                    'mode=\'nearest\' and order=0' % reference)
+        reference = nib.load(reference)
+        seed_img = resample_from_to(
+            seed_img, reference, mode='nearest', order=0)
+        target_img = resample_from_to(
+            target_img, reference, mode='nearest', order=0)
 
     # Median filter the seed
     if median_filter:
@@ -148,7 +174,7 @@ def process_masks_dmri(input: dict, output: dict, params: dict,
             downsample_to *= 3
 
         logger.info('downsampling target_mask to %s'
-                    % 'x'.join(map(str, upsample_to)))
+                    % 'x'.join(map(str, downsample_to)))
 
         mapping = list(vox2out_vox((
             target_img.shape, target_img.affine), downsample_to))
@@ -165,19 +191,3 @@ def process_masks_dmri(input: dict, output: dict, params: dict,
     nib.save(seed_img, out_seed)
     nib.save(target_img, out_target)
     np.save(out_coordinates, seed_coordinates)
-
-
-def resample_masks(input: dict, output: dict) -> None:
-    seed = input.get('seed')
-    target = input.get('target')
-    reference = input.get('reference')
-    out_seed = output.get('seed')
-    out_target = output.get('target')
-
-    # Resample
-    seed = resample_from_to(seed, reference, mode='nearest', order=0)
-    target = resample_from_to(target, reference, mode='nearest', order=0)
-
-    # save output
-    nib.save(seed, out_seed)
-    nib.save(target, out_target)

@@ -176,20 +176,26 @@ class RuleProcessMasksRSFMRI(BaseRule):
         super().__init__(conf)
 
     def is_active(self):
-        """Only active for rsfMRI data when masks are not subject specific"""
         is_rsfmri = self.get('modality') == 'rsfmri'
-        is_standard = self.get('data.masks.space') == 'standard'
-        has_resampling = self.get('data.masks.resample') is True
-
-        return is_rsfmri and (is_standard or has_resampling)
+        return is_rsfmri
 
     @property
     def input(self):
         d = dict()
 
         # Parameter keys
+        sessions = self.get('data.session', None)
         seed_mask = self.get('data.masks.seed')
         target_mask = self.get('data.masks.target', None)
+        resample = self.get('data.masks.resample', False)
+        reference = self.get('data.time_series')
+
+        if resample:
+            if sessions:
+                reference = reference.format(
+                    participant_id='{participant_id}', session=sessions[0])
+
+            d['reference'] = reference
 
         d['seed_mask'] = seed_mask
         if target_mask:
@@ -226,16 +232,38 @@ class RuleProcessMasksRSFMRI(BaseRule):
 
     @property
     def log(self):
-        return 's:log/%s.log' % self.name
+        is_native = self.get('data.masks.space', 'standard') == 'native'
+
+        if is_native:
+            fpath = 'log/{participant_id}.%s.log' % self.name
+        else:
+            fpath = 'log/%s.log' % self.name
+
+        return 's:%s' % fpath
 
     @property
     def benchmark(self):
-        return 's:benchmarks/%s.log' % self.name
+        is_native = self.get('data.masks.space', 'standard') == 'native'
+
+        if is_native:
+            fpath = 'benchmarks/{participant_id}.%s.log' % self.name
+        else:
+            fpath = 'benchmarks/%s.log' % self.name
+
+        return 's:%s' % fpath
 
     @property
     def cluster_json(self):
         d = dict()
-        d['out'] = 'log/{rule}-%s.out' % self.jid
+        is_native = self.get('data.masks.space', 'standard') == 'native'
+
+        if is_native:
+            fpath = 'log/{rule}.{wildcards.participant_id}-%s.out' % self.jid
+        else:
+            fpath = 'log/{rule}-%s.out' % self.jid
+
+        d['out'] = fpath
+
         return d
 
     @property
@@ -244,6 +272,7 @@ class RuleProcessMasksRSFMRI(BaseRule):
 
         # Parameter keys
         region_id = 'data.masks.region_id'
+        resample = 'data.masks.resample'
         bin_seed = 'parameters.masking.seed.binarization'
         b_medfilt = 'parameters.masking.seed.median_filtering.apply'
         medfilt = 'parameters.masking.seed.median_filtering.distance'
@@ -253,6 +282,7 @@ class RuleProcessMasksRSFMRI(BaseRule):
         subsample = 'parameters.masking.target.subsampling'
 
         # Define parameters
+        d['resample'] = self.get(resample, False)
         d['bin_seed'] = self.get(bin_seed)
         d['bin_target'] = self.get(bin_target)
         d['subsample'] = self.get(subsample, False)
@@ -282,23 +312,31 @@ class RuleProcessMasksDMRI(BaseRule):
 
     def is_active(self):
         """Only active for dMRI data when masks are not subject specific"""
-        is_rsfmri = self.get('modality') == 'rsfmri'
-        is_standard = self.get('data.masks.space') == 'standard'
-        has_resampling = self.get('data.masks.resample') is True
-
-        return is_rsfmri and (is_standard or has_resampling)
+        is_dmri = self.get('modality') == 'dmri'
+        return is_dmri
 
     @property
     def input(self):
         d = dict()
 
         # Parameter keys
+        sessions = self.get('data.session', None)
         seed_mask = self.get('data.masks.seed')
         target_mask = self.get('data.masks.target', None)
+        resample = self.get('data.masks.resample', False)
+        reference = self.get('data.bet_binary_mask')
 
         d['seed_mask'] = seed_mask
+
         if target_mask:
             d['target_mask'] = target_mask
+
+        if resample:
+            if sessions:
+                reference = reference.format(
+                    participant_id='{participant_id}', session=sessions[0])
+
+            d['reference'] = reference
 
         return d
 
@@ -336,16 +374,38 @@ class RuleProcessMasksDMRI(BaseRule):
 
     @property
     def log(self):
-        return 's:log/%s.log' % self.name
+        is_native = self.get('data.masks.space', 'standard') == 'native'
+
+        if is_native:
+            fpath = 'log/{participant_id}.%s.log' % self.name
+        else:
+            fpath = 'log/%s.log' % self.name
+
+        return 's:%s' % fpath
 
     @property
     def benchmark(self):
-        return 's:benchmarks/%s.log' % self.name
+        is_native = self.get('data.masks.space', 'standard') == 'native'
+
+        if is_native:
+            fpath = 'benchmarks/{participant_id}.%s.log' % self.name
+        else:
+            fpath = 'benchmarks/%s.log' % self.name
+
+        return 's:%s' % fpath
 
     @property
     def cluster_json(self):
         d = dict()
-        d['out'] = 'log/{rule}-%s.out' % self.jid
+        is_native = self.get('data.masks.space', 'standard') == 'native'
+
+        if is_native:
+            fpath = 'log/{rule}.{wildcards.participant_id}-%s.out' % self.jid
+        else:
+            fpath = 'log/{rule}-%s.out' % self.jid
+
+        d['out'] = fpath
+
         return d
 
     @property
@@ -358,6 +418,7 @@ class RuleProcessMasksDMRI(BaseRule):
 
         # Parameter keys
         region_id = 'data.masks.region_id'
+        resample = 'data.masks.resample'
         bin_seed = 'parameters.masking.seed.binarization'
         b_medfilt = 'parameters.masking.seed.median_filtering.apply'
         medfilt = 'parameters.masking.seed.median_filtering.distance'
@@ -370,6 +431,7 @@ class RuleProcessMasksDMRI(BaseRule):
         downsample = 'parameters.masking.target.downsample_to.voxel_dimensions'
 
         # Define parameters
+        d['resample'] = self.get(resample, False)
         d['bin_seed'] = self.get(bin_seed)
         d['bin_target'] = self.get(bin_target)
 
@@ -396,83 +458,6 @@ class RuleProcessMasksDMRI(BaseRule):
         return 'tasks.%s(input, output, params, log)' % self.name
 
 
-class RuleResampleMasks(BaseRule):
-    name = 'resample_masks'
-
-    def __init__(self, conf):
-        super().__init__(conf)
-
-    def is_active(self):
-        has_resampling = self.get('data.masks.resample') is True
-        return has_resampling
-
-    @property
-    def input(self):
-        d = dict()
-
-        # Parameter keys & files
-        modality = self.get('modality')
-        target_mask = 'target_mask.%s' % self.nifti_ext
-
-        if modality == 'rsfmri':
-            seed_mask = 'seed_mask.%s' % self.nifti_ext
-            reference = self.get('data.time_series')
-
-        elif modality == 'dmri':
-            upsample = self.get('parameters.masking.seed.upsample_to.apply',
-                                False)
-            seed_mask = 'highres_seed_mask' if upsample else 'seed_mask'
-            seed_mask = '%s.%s' % (seed_mask, self.nifti_ext)
-            reference = self.get('data.bet_binary_mask')
-
-        else:
-            raise ValueError('unknown modality: %s' % modality)
-
-        # Define parameters
-        d['reference'] = reference
-        d['seed'] = seed_mask
-        d['target'] = target_mask
-
-        return d
-
-    @property
-    def output(self):
-        d = dict()
-
-        # Parameter keys & files
-        session = self.get('data.session')
-        path = 'individual/{participant_id}/masks'
-        path += '_{session}' if session else ''
-
-        # Define parameters
-        d['seed'] = opj(path, 'seed_mask.%s' % self.nifti_ext)
-        d['target'] = opj(path, 'target_mask.%s' % self.nifti_ext)
-
-        return d
-
-    @property
-    def benchmark(self):
-        session = self.get('data.session', None)
-        prfx = '{participant_id}.{session}' if session else '{participant_id}'
-        return 's:benchmarks/%s.%s.log' % (prfx, self.name)
-
-    @property
-    def cluster_json(self):
-        d = dict()
-        wildcards = '{wildcards.participant_id}'
-        d['out'] = 'log/{rule}.%s-%s.out' % (wildcards, self.jid)
-        d['time'] = '1:00:00'
-        return d
-
-    @property
-    def threads(self):
-        return 1
-
-    @property
-    def run(self):
-        return 'tasks.%s(input, output)' % self.name
-
-
 class RuleProbtrackx2(BaseRule):
     name = 'probtrackx2'
 
@@ -488,29 +473,20 @@ class RuleProbtrackx2(BaseRule):
         d = dict()
 
         # Parameter keys & files
-        resample = self.get('data.masks.resample', False)
         upsample = self.get('parameters.masking.seed.upsample_to.apply', False)
         space = self.get('data.masks.space', 'standard')
         bet_binary_mask = self.get('data.bet_binary_mask')
         xfm = self.get('data.xfm', None)
         inv_xfm = self.get('data.inv_xfm', None)
 
-        if resample:
-            # space = native and resample = true
-            session = self.get('data.session')
-            path = 'individual/{participant_id}/masks'
-            path += '_{session}' if session else ''
-            seed_mask = opj(path, 'seed_mask.%s' % self.nifti_ext)
-            target_mask = opj(path, 'target_mask.%s' % self.nifti_ext)
-        else:
-            target_mask = 'target_mask.%s' % self.nifti_ext
-            seed_mask = 'highres_seed_mask' if upsample else 'seed_mask'
-            seed_mask = '%s.%s' % (seed_mask, self.nifti_ext)
+        seed_mask = 'highres_seed_mask' if upsample else 'seed_mask'
+        seed_mask = '%s.%s' % (seed_mask, self.nifti_ext)
+        target_mask = 'target_mask.%s' % self.nifti_ext
 
-            if space == 'native':
-                path = 'individual/{participant_id}'
-                target_mask = opj(path, target_mask)
-                seed_mask = opj(path, seed_mask)
+        if space == 'native':
+            path = 'individual/{participant_id}'
+            seed_mask = opj(path, seed_mask)
+            target_mask = opj(path, target_mask)
 
         # Define parameters
         d['bet_binary_mask'] = bet_binary_mask
@@ -655,20 +631,11 @@ class RuleConnectivityDMRI(BaseRule):
         ptx_path += '_{session}' if session else ''
         fdt_matrix2 = 'fdt_matrix2.dot'
         upsample = self.get('parameters.masking.seed.upsample_to.apply', False)
-        resample = self.get('data.masks.resample', False)
+        seed_mask = 'highres_seed_mask' if upsample else 'seed_mask'
+        seed_mask = '%s.%s' % (seed_mask, self.nifti_ext)
 
-        if resample:
-            # space = native and resample = true
-            session = self.get('data.session')
-            mask_path = 'individual/{participant_id}/masks'
-            mask_path += '_{session}' if session else ''
-            seed_mask = opj(mask_path, 'seed_mask.%s' % self.nifti_ext)
-        else:
-            seed_mask = 'highres_seed_mask' if upsample else 'seed_mask'
-            seed_mask = '%s.%s' % (seed_mask, self.nifti_ext)
-
-            if space == 'native':
-                seed_mask = opj(path, seed_mask)
+        if space == 'native':
+            seed_mask = opj(path, seed_mask)
 
         # Define parameters
         d['fdt_matrix2'] = opj(path, ptx_path, fdt_matrix2)
@@ -785,25 +752,15 @@ class RuleConnectivityRSFMRI(BaseRule):
 
         # Parameter keys & files
         space = self.get('data.masks.space', 'standard')
-        resample = self.get('data.masks.resample', False)
         time_series = self.get('data.time_series')
         confounds_file = self.get('data.confounds.file', None)
+        seed_mask = 'seed_mask.%s' % self.nifti_ext
+        target_mask = 'target_mask.%s' % self.nifti_ext
 
-        if resample:
-            # space = native and resample = true
-            session = self.get('data.session')
-            path = 'individual/{participant_id}/masks'
-            path += '_{session}' if session else ''
-            seed_mask = opj(path, 'seed_mask.%s' % self.nifti_ext)
-            target_mask = opj(path, 'target_mask.%s' % self.nifti_ext)
-        else:
-            seed_mask = 'seed_mask.%s' % self.nifti_ext
-            target_mask = 'target_mask.%s' % self.nifti_ext
-
-            if space == 'native':
-                path = 'individual/{participant_id}'
-                seed_mask = opj(path, seed_mask)
-                target_mask = opj(path, target_mask)
+        if space == 'native':
+            path = 'individual/{participant_id}'
+            seed_mask = opj(path, seed_mask)
+            target_mask = opj(path, target_mask)
 
         # Define parameters
         d['time_series'] = time_series
@@ -1635,8 +1592,8 @@ class RuleIndividualSimilarity(BaseRule):
         super().__init__(conf)
 
     def is_active(self):
-        space = self.get('data.masks.space', 'standard')
-        return True if space == 'standard' else False
+        is_standard = self.get('data.masks.space', 'standard') == 'standard'
+        return is_standard
 
     @property
     def input(self):
@@ -1701,8 +1658,8 @@ class RuleGroupSimilarity(BaseRule):
         super().__init__(conf)
 
     def is_active(self):
-        space = self.get('data.masks.space', 'standard')
-        return True if space == 'standard' else False
+        is_standard = self.get('data.masks.space', 'standard') == 'standard'
+        return is_standard
 
     @property
     def input(self):
@@ -1837,8 +1794,8 @@ class RulePlotIndividualSimilarity(BaseRule):
         super().__init__(conf)
 
     def is_active(self):
-        space = self.get('data.masks.space', 'standard')
-        return True if space == 'standard' else False
+        is_standard = self.get('data.masks.space', 'standard') == 'standard'
+        return is_standard
 
     @property
     def input(self):
@@ -1894,8 +1851,8 @@ class RulePlotGroupSimilarity(BaseRule):
         super().__init__(conf)
 
     def is_active(self):
-        space = self.get('data.masks.space', 'standard')
-        return True if space == 'standard' else False
+        is_standard = self.get('data.masks.space', 'standard') == 'standard'
+        return is_standard
 
     @property
     def input(self):
@@ -1966,8 +1923,8 @@ class RulePlotLabeledROI(BaseRule):
         super().__init__(conf)
 
     def is_active(self):
-        space = self.get('data.masks.space', 'standard')
-        return True if space == 'standard' else False
+        is_standard = self.get('data.masks.space', 'standard') == 'standard'
+        return is_standard
 
     @property
     def input(self):
@@ -2114,21 +2071,13 @@ class RulePlotIndividualLabeledROI(BaseRule):
 
         # Parameter keys & files
         space = self.get('data.masks.space', 'standard')
-        resample = self.get('data.masks.resample', False)
         labels = 'individual/{participant_id}/cluster_labels.npz'
         touchfile = 'individual/.touchfile'
+        seed_img = 'seed_mask.%s' % self.nifti_ext
 
-        if resample:
-            session = self.get('data.session')
-            path = 'individual/{participant_id}/masks'
-            path += '_{session}' if session else ''
-            seed_img = opj(path, 'seed_mask.%s' % self.nifti_ext)
-        else:
-            seed_img = 'seed_mask.%s' % self.nifti_ext
-
-            if space == 'native':
-                path = 'individual/{participant_id}'
-                seed_img = opj(path, seed_img)
+        if space == 'native':
+            path = 'individual/{participant_id}'
+            seed_img = opj(path, seed_img)
 
         # Define parameters
         d['touchfile'] = touchfile

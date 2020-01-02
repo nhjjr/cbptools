@@ -164,7 +164,7 @@ data:
              If standard is used, then the seed and target masks are assumed to be in the same group template
              space (e.g., MNI152 2mm space).'
     resample:
-      type: bool
+      type: boolean
       default: false
       required: false
       dependency: [data.masks.space: native]
