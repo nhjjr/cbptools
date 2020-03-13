@@ -139,7 +139,7 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict,
                 confounds_sep = separators[ext]
 
         # Check if usecols contains wildcards to extend upon the header
-        if confounds_cols is not None:
+        if confounds_cols:
             confounds_cols = set(confounds_cols)
             header = pd.read_csv(
                 confounds_file,
@@ -152,6 +152,8 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict,
                 x for x in header
                 if any(fnmatch(x, p) for p in confounds_cols)
             ]
+        else:
+            confounds_cols = None  # enforce none (e.g. if confound_cols = [])
 
         confounds = pd.read_csv(
             confounds_file, sep=confounds_sep, usecols=confounds_cols

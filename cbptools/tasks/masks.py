@@ -1,10 +1,8 @@
 from ..image import (subsample_img, binarize_3d, median_filter_img,
                      subtract_img, get_mask_indices, stretch_img,
-                     extract_regions)
+                     extract_regions, get_default_target_mask)
 from ..utils import get_logger
 from nibabel.processing import resample_from_to, vox2out_vox
-from pathlib import Path
-import os
 import nibabel as nib
 import numpy as np
 
@@ -31,7 +29,7 @@ def process_masks_rsfmri(input: dict, output: dict, params: dict,
 
     if target_mask is None:
         logger.info('loading template 2mm^3 MNI152 gray matter mask as target')
-        target_mask = os.path.join(str(Path(__file__).parent.parent), 'templates/MNI152GM.nii.gz')
+        target_mask = get_default_target_mask()
 
     seed_img = nib.load(seed_mask)
     target_img = nib.load(target_mask)
@@ -112,7 +110,7 @@ def process_masks_dmri(input: dict, output: dict, params: dict,
 
     if target_mask is None:
         logger.info('loading template 2mm^3 MNI152 gray matter mask as target')
-        target_mask = os.path.join(str(Path(__file__).parent.parent), 'templates/MNI152GM.nii.gz')
+        target_mask = get_default_target_mask()
 
     seed_img = nib.load(seed_mask)
     target_img = nib.load(target_mask)

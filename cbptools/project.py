@@ -1,7 +1,7 @@
 from .utils import (readable_bytesize, CallCountDecorator, TColor, bytes_to,
                     npy_header, npz_headers, build_workflow)
 from .exceptions import MaskError, SilentError
-from .image import imgs_equal_3d, extract_regions
+from .image import imgs_equal_3d, extract_regions, get_default_target_mask
 from nibabel.filebasedimages import ImageFileError
 from nibabel.spatialimages import SpatialImage
 from pandas.io.common import EmptyDataError
@@ -26,8 +26,7 @@ class DataSet:
     def __init__(self, document: dict):
         self.modality = document.get('modality', None)
         self.data = document.get('data', {})
-        self.template = pkg_resources.resource_filename(
-            __name__, 'templates/MNI152GM.nii.gz')
+        self.template = get_default_target_mask()
         self.seed_coordinates = None
         self.references = None
         self.mem_mb = {'connectivity': 0, 'clustering': 0}

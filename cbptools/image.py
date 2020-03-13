@@ -13,6 +13,7 @@ from typing import Union, List
 from sys import float_info
 import nibabel as nib
 import numpy as np
+import pkg_resources
 
 
 def imgs_equal_3d(imgs: List[SpatialImage]) -> bool:
@@ -376,3 +377,8 @@ def extract_regions(atlas: SpatialImage,
         raise ValueError('mask is empty after extracting region from atlas')
 
     return nib.Nifti1Image(data.astype(int), atlas.affine, atlas.header)
+
+
+def get_default_target_mask():
+    return pkg_resources.resource_filename(__name__,
+                                           'templates/MNI152GM.nii.gz')
