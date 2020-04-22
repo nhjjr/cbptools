@@ -753,7 +753,7 @@ class RuleConnectivityRSFMRI(BaseRule):
         # Parameter keys & files
         space = self.get('data.masks.space', 'standard')
         time_series = self.get('data.time_series')
-        confounds_file = self.get('data.confounds.file', None)
+        confounds = self.get('data.confounds.apply', False)
         seed_mask = 'seed_mask.%s' % self.nifti_ext
         target_mask = 'target_mask.%s' % self.nifti_ext
 
@@ -767,8 +767,8 @@ class RuleConnectivityRSFMRI(BaseRule):
         d['seed_mask'] = seed_mask
         d['target_mask'] = target_mask
 
-        if confounds_file:
-            d['confounds'] = confounds_file
+        if confounds:
+            d['confounds'] = self.get('data.confounds.file', None)
 
         return d
 
@@ -849,7 +849,7 @@ class RuleConnectivityRSFMRI(BaseRule):
         lve_seed = 'parameters.connectivity.low_variance_error.in_seed'
         lve_target = 'parameters.connectivity.low_variance_error.in_target'
         compress = 'parameters.report.compress_output'
-        confounds_file = 'data.confounds.file'
+        confounds = 'data.confounds.apply'
         confounds_sep = 'data.confounds.delimiter'
         confounds_cols = 'data.confounds.columns'
         b_smoothing = 'parameters.connectivity.smoothing.apply'
@@ -878,7 +878,7 @@ class RuleConnectivityRSFMRI(BaseRule):
             else:
                 d['pca_transform'] = False
 
-        if self.get(confounds_file, None):
+        if self.get(confounds, False):
             delimiter = repr(self.get(confounds_sep))
             delimiter = delimiter.replace('\'', '')
             d['confounds_delimiter'] = delimiter

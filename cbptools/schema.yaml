@@ -43,26 +43,32 @@ data:
            shape and affine must match that of the seed and target masks. This field must contain the {participant_id}
            template, as there should be one time-series image per subject'
   confounds:
+    apply:
+      type: boolean
+      default: false
+      desc: 'Apply nuisance signal regression using data.confounds.file'
+      dependency: [modality: rsfmri]
     file:
       type: string
       allowed: ['*.tsv', '*.csv']
       contains: '{participant_id}'
       default: '/path/to/{participant_id}/file.tsv'
       abspath: true
+      optional: true
       custom: [has_sessions]
-      dependency: [modality: rsfmri]
+      dependency: [modality: rsfmri, data.confounds.apply: true]
       desc: 'Path to a delimited (e.g., .tsv for tab-delimited) file with a confound signal per columns and a 1-line
              header. Columns can be selected using the columns parameter. The column length must match the length of the
              timepoints in the signal time-series'
     delimiter:
       type: string
       default: '\t'
-      dependency: [modality: rsfmri]
+      dependency: [modality: rsfmri, data.confounds.apply: true]
       desc: "Delimiter to use (e.g., '\t' for tab-, or ',' for comma-delimited files)"
     columns:
       type: 'list[string]'
       default: []
-      dependency: [modality: rsfmri]
+      dependency: [modality: rsfmri, data.confounds.apply: true]
       desc: "List of columns that should be used. If left empty, all columns are used. Otherwise only the selected
              columns will be used in nuisance signal regression. A glob pattern (*) can be used to select multiple
              columns that match the expression (e.g., 'motion-*' includes 'motion-x', 'motion-y', 'motion-z', etc.)"
