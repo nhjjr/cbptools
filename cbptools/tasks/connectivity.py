@@ -102,11 +102,11 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict,
     bad_target = in_target.size / np.count_nonzero(target_img.get_data())
     bad_target = bad_target > lv_in_target
 
-    if in_seed > 0:
+    if in_seed.size > 0:
         logger.warning('%s low variance seed voxels found in %s'
                        % (in_seed, time_series_file))
 
-    if in_target > 0:
+    if in_target.size > 0:
         logger.warning('%s low variance target voxels found in %s'
                        % (in_seed, time_series_file))
 
@@ -125,7 +125,7 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict,
             np.savez(connectivity_file, connectivity=np.array([]))
             return
 
-    if in_target > 0 or in_seed > 0:
+    if in_target.size > 0 or in_seed.size > 0:
         # setting to 0 is done in the seed_based_correlation() method
         logger.warning('low variance voxels will be set to zero')
 
