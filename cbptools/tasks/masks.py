@@ -41,10 +41,10 @@ def process_masks_rsfmri(input: dict, output: dict, params: dict,
         seed_img = extract_regions(seed_img, region_id)
 
     # Perform binarization
-    if binarize_seed:
+    if binarize_seed is not None:
         seed_img = binarize_3d(seed_img, threshold=binarize_seed)
 
-    if binarize_target:
+    if binarize_target is not None:
         target_img = binarize_3d(target_img, threshold=binarize_target)
 
     # Resample to reference
