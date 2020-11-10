@@ -4,7 +4,7 @@ from .exceptions import MaskError, SilentError
 from .image import imgs_equal_3d, extract_regions, get_default_target_mask
 from nibabel.filebasedimages import ImageFileError
 from nibabel.spatialimages import SpatialImage
-from pandas.io.common import EmptyDataError
+from pandas.errors import EmptyDataError
 from typing import Union, Tuple
 import nibabel as nib
 import pandas as pd
