@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from .masks import (process_masks_dmri, process_masks_rsfmri)
 from .connectivity import (connectivity_dmri, connectivity_rsfmri,
                            merge_sessions)

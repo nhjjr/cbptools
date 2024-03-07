@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 from typing import Union
 from os.path import join as opj
 from collections import OrderedDict

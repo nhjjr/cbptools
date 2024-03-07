@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from setuptools import setup, find_packages
 from os.path import join as opj, dirname
 import re
@@ -30,7 +28,7 @@ except (ImportError, OSError) as exc:
 setup(
     name='cbptools',
     version=version,
-    python_requires='>=3.5.0',
+    python_requires='>=3.11.0',
     description='Regional Connectivity-Based Parcellation tool for Python',
     long_description=long_description,
     url='https://github.com/inm7/cbptools',
@@ -45,16 +43,15 @@ setup(
         ],
     },
     install_requires=[
-        # 'datrie@git+https://github.com/pytries/datrie.git',
-        'matplotlib==3.0.3',  # >=3.1.1
-        'nibabel>=2.5.0',
-        'numpy>=1.17.0',
-        'pandas>=0.25.0',
-        'pyyaml>=5.1.1',
-        'scikit-learn>=0.21.3',
-        'scipy>=1.3.0',
-        'seaborn>=0.9.0',
-        'snakemake>=5.5.4'
+        'matplotlib',  # current: 3.8.3
+        'nibabel',  # current: 5.2.1
+        'numpy',  # current: 1.26.4
+        'pandas',  # current: 2.2.1
+        'pyyaml',  # current: 6.0.1
+        'scikit-learn',  # current: 1.4.1
+        'scipy',  # current: 1.12.0
+        'seaborn',  # current: 0.13.2
+        'snakemake'  # current: 8.5.3
     ],
     extras_require={
         'devel-docs': [

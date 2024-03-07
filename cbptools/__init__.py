@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """CBPtools is a NeuroImaging tool for Connectivity-Based Parcellation"""
 from . import (clean, cluster, connectivity, exceptions, image, utils,
                plotting, workflow)

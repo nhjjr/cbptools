@@ -95,8 +95,11 @@ class Validator(object):
 
         return partials
 
-    def _validate_against(self, document, schema, path: list = []):
+    def _validate_against(self, document, schema, path: list = None):
         """Execute validation rules per field"""
+        if path is None:
+            path = []
+
         for k, v in schema.items():
             path.append(k)
             field = '.'.join(path)
@@ -128,14 +131,14 @@ class Validator(object):
                         self.errors += 1
                         logging.error(exc)
                         break
-                    except SetDefault as exc:
+                    except SetDefault:
                         default = schema[k].get('default', None)
                         if this.value is None and default is not None:
                             logging.warning('using default value for %s (%s)'
                                             % (field, default))
                             document[k] = default
                         break
-                    except DependencyError as exc:
+                    except DependencyError:
                         # Dependencies are not met, parameter will not be used
                         if this.value is not None:
                             logging.warning(
@@ -165,8 +168,11 @@ class Validator(object):
 
         return document
 
-    def _del_invalid(self, document: dict, schema: dict, path: list = []):
+    def _del_invalid(self, document: dict, schema: dict, path: list = None):
         """Delete invalid fields"""
+        if path is None:
+            path = []
+
         for k, v in list(document.items()):
             path.append(k)
             if k not in schema.keys():
@@ -263,14 +269,14 @@ class Validator(object):
                 try:
                     dep_value = reduce(operator.getitem, mapping,
                                        self._document)
-                except (KeyError, TypeError) as exc:
+                except (KeyError, TypeError):
                     # Dependency is not provided, try default value
                     mapping = mapping.append('default')
 
                     try:
                         dep_value = reduce(operator.getitem, mapping,
                                            self.schema)
-                    except (KeyError, TypeError) as exc:
+                    except (KeyError, TypeError):
                         # No default value, assuming dependency not met
                         raise DependencyError()
 
@@ -517,7 +523,7 @@ class Validator(object):
         if this.value is True:
             try:
                 import psutil
-            except ImportError as exc:
+            except ImportError:
                 raise RuleError('Python 3 package psutil needs to be '
                                 'installed for benchmarking')
 

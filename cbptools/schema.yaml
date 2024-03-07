@@ -430,8 +430,8 @@ parameters:
       algorithm:
         dependency: [parameters.clustering.method: kmeans]
         type: string
-        allowed: [auto, full, elkan]
-        default: auto
+        allowed: [lloyd, elkan]
+        default: lloyd
         desc: '(sklearn.cluster.KMeans) K-means algorithm to use'
       init:
         dependency: [parameters.clustering.method: kmeans]

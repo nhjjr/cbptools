@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 from ..image import (img_is_4d, get_masked_series, find_low_variance_voxels,
                      get_f2c_order)
 from ..connectivity import seed_based_correlation
@@ -97,9 +95,9 @@ def connectivity_rsfmri(input: dict, output: dict, params: dict,
     # Identify low-variance voxels and log them
     in_seed = find_low_variance_voxels(data=seed_series)
     in_target = find_low_variance_voxels(data=target_series)
-    bad_seed = in_seed.size / np.count_nonzero(seed_img.get_data())
+    bad_seed = in_seed.size / np.count_nonzero(seed_img.get_fdata())
     bad_seed = bad_seed > lv_in_seed
-    bad_target = in_target.size / np.count_nonzero(target_img.get_data())
+    bad_target = in_target.size / np.count_nonzero(target_img.get_fdata())
     bad_target = bad_target > lv_in_target
 
     if in_seed.size > 0:

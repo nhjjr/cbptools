@@ -1,13 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""Utilities for working with clustering results"""
-
 from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
 from sklearn import metrics
 from scipy.spatial.distance import euclidean
 import itertools
 import numpy as np
+
+"""Utilities for working with clustering results"""
 
 
 def relabel(reference: np.ndarray, x: np.ndarray) -> (np.ndarray, list):
@@ -180,16 +178,16 @@ def gap_score(x: np.ndarray, kmeans: KMeans, n_refs: int) -> float:
       statistic. J. R. Statist. Soc. B, 63(2), 411-423
     """
 
-    def _dispersion(x: np.ndarray, labels: np.ndarray,
+    def _dispersion(z: np.ndarray, labels: np.ndarray,
                     centroids: np.ndarray) -> np.ndarray:
         """Calculate the dispersion between actual points and their
         assigned centroids"""
         return np.sum(np.sum([np.abs(inst - centroids[label]) ** 2
-                              for inst, label in zip(x, labels)]))
+                              for inst, label in zip(z, labels)]))
 
     # Holder for reference dispersion results
     dispersion = _dispersion(
-        x=x, labels=kmeans.labels_, centroids=kmeans.cluster_centers_
+        z=x, labels=kmeans.labels_, centroids=kmeans.cluster_centers_
     )
     ref_dispersions = np.zeros(n_refs)
 
@@ -199,7 +197,7 @@ def gap_score(x: np.ndarray, kmeans: KMeans, n_refs: int) -> float:
         random_data = np.random.random_sample(size=x.shape)
         kmeans.fit(random_data)
         dispersion = _dispersion(
-            x=random_data, labels=kmeans.labels_,
+            z=random_data, labels=kmeans.labels_,
             centroids=kmeans.cluster_centers_
         )
         ref_dispersions[i] = dispersion

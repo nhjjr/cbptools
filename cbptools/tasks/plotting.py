@@ -130,7 +130,7 @@ def plot_labeled_roi(input: dict, output: dict, params: dict) -> None:
     view = params.get('view')
 
     seed_img = nib.load(seed_img_file)
-    seed_data = seed_img.get_data()
+    seed_data = seed_img.get_fdata()
 
     labels = np.load(labels_file)['group_labels']
     labels += 1  # prevent 0-indexing
@@ -174,7 +174,7 @@ def plot_individual_labeled_roi(input: dict, output: dict,
     n_clusters = params.get('n_clusters')
     all_clusters = params.get('all_clusters')
     seed_img = nib.load(seed_img_file)
-    seed_data = seed_img.get_data()
+    seed_data = seed_img.get_fdata()
     template = '%scluster_labels' % n_clusters
     label_collection = np.load(labels_file)
     labels = label_collection.get(template)

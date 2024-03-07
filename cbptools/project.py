@@ -1,15 +1,15 @@
-from .utils import (readable_bytesize, CallCountDecorator, TColor, bytes_to,
-                    npy_header, npz_headers, build_workflow)
+from .utils import (
+    readable_bytesize, CallCountDecorator, TColor, bytes_to, npy_header,
+    npz_headers, build_workflow)
 from .exceptions import MaskError, SilentError
-from .image import imgs_equal_3d, extract_regions, get_default_target_mask
+from .image import (
+    imgs_equal_3d, extract_regions, get_default_target_mask, Image)
 from nibabel.filebasedimages import ImageFileError
-from nibabel.spatialimages import SpatialImage
 from pandas.errors import EmptyDataError
 from typing import Union, Tuple
 import nibabel as nib
 import pandas as pd
 import numpy as np
-import pkg_resources
 import itertools
 import logging
 import fnmatch
@@ -69,7 +69,7 @@ class DataSet:
         return list(set(ppids))
 
     @staticmethod
-    def load_img(file: str, level: str = None) -> Union[SpatialImage, None]:
+    def load_img(file: str, level: str = None) -> Union[Image, None]:
         """Attempt to load a NIfTI image"""
         try:
             return nib.load(file)
@@ -81,7 +81,7 @@ class DataSet:
             return None
 
     def _masks(self, seed: str, target: str,
-               space: str) -> Union[Tuple[SpatialImage, SpatialImage], None]:
+               space: str) -> Union[Tuple[Image, Image], None]:
         """Load and validate standard-space input masks"""
         level = 'warning' if space == 'native' else 'error'
         seed_img = self.load_img(seed, level=level)
@@ -111,7 +111,7 @@ class DataSet:
         # Ensure that masks have no weird values and can be binarized
         masks = (('seed', seed, seed_img), ('target', target, target_img))
         for name, file, img in masks:
-            data = img.get_data()
+            data = img.get_fdata()
             n_voxels = np.count_nonzero(data)
 
             # Get maximum seed/target size for size/memory estimation
@@ -371,7 +371,7 @@ class DataSet:
         """Validate connectivity matrix input data"""
         seed_file = self.data['masks']['seed']
         seed = self.load_img(seed_file, level='error')
-        seed_data = seed.get_data()
+        seed_data = seed.get_fdata()
         seed_coords_file = self.data['seed_coordinates']
         n_voxels = np.count_nonzero(seed_data)
         template_conn = self.data['connectivity']
@@ -567,10 +567,10 @@ class DataSet:
                 continue
 
             # Check if image covers the same voxels as the seed
-            data = img.get_data()
+            data = img.get_fdata()
             ref_coords = np.asarray(tuple(zip(*np.where(data > 0))))
             seed_coords = np.asarray(
-                tuple(zip(*np.where(seed.get_data() > 0))))
+                tuple(zip(*np.where(seed.get_fdata() > 0))))
 
             if not np.array_equal(ref_coords, seed_coords):
                 valid = False

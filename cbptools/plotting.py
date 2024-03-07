@@ -2,6 +2,7 @@ from .image import make_hollow
 from scipy.ndimage import find_objects
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.cluster import hierarchy
+
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
@@ -242,7 +243,7 @@ def plot_volumetric_roi(data: np.ndarray, out_file: str, view: str = 'orig',
     plt.ioff()
     fig = plt.figure(figsize=(30 / 2.54, 30 / 2.54))
     fig.tight_layout()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     ax.view_init(elev, azim)
     ax.voxels(data, facecolors=facecolors, edgecolors=edgecolors)
     dim = np.max(data.shape) / 2

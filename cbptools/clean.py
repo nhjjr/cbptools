@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""Data cleaning utilities"""
 from .exceptions import ShapeError
 import numpy as np
+
+"""Data cleaning utilities"""
 
 
 def fft_filter(x: np.ndarray, low_pass: float, high_pass: float,
@@ -55,4 +54,3 @@ def nuisance_signal_regression(data: np.ndarray, confounds: np.ndarray,
                          np.linalg.lstsq(confounds, data, rcond=-1)[0])
 
     return data.astype(np.float32)
-

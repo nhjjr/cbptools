@@ -43,10 +43,12 @@ def internal_validity(input: dict, output: dict, params: dict) -> None:
 
     for label in labels_files:
         label = np.load(label) + 1
-        df = df.append({
-            'participant_id': participant_id,
-            'n_clusters': len(set(label))
-        }, ignore_index=True)
+        df = pd.concat(
+            [df, pd.DataFrame(
+                {'participant_id': [participant_id],
+                 'n_clusters': [len(set(label))]})],
+            ignore_index=True)
+
         idx = df.iloc[-1].name
 
         for metric in validity_metrics:
@@ -179,18 +181,20 @@ def group_similarity(input: dict, output: dict, params: dict) -> None:
             raise ValueError('Could not derive cluster number from file name')
 
         # Group similarity & cophenetic correlation
-        df_reference = df_reference.append({
-            'clusters': n_clusters,
-            'cophenetic correlation': data.get('cophenetic_correlation')
-        }, ignore_index=True)
+        df_reference = pd.concat(
+            [df_reference,
+             pd.DataFrame({
+                 'clusters': [n_clusters],
+                 'cophenetic correlation': [data.get('cophenetic_correlation')]
+             })], ignore_index=True)
 
         for ppid, labels, acc in zip(participants, ilabels, accuracy):
-            df = df.append({
-                'participant_id': str(ppid),
-                'clusters': n_clusters,
-                'similarity': f(glabels, labels),
-                'relabel accuracy': acc
-            }, ignore_index=True)
+            df = pd.concat([df, pd.DataFrame({
+                'participant_id': [str(ppid)],
+                'clusters': [n_clusters],
+                'similarity': [f(glabels, labels)],
+                'relabel accuracy': [acc]
+            })], ignore_index=True)
 
     df_reference.clusters = df_reference.clusters.astype(int)
     df.clusters = df.clusters.astype(int)
@@ -229,7 +233,7 @@ def reference_similarity(input: dict, output: dict, params: dict) -> None:
 
     for reference_file in reference_files:
         reference = nib.load(reference_file)
-        reference = reference.get_data()
+        reference = reference.get_fdata()
         reference = reference[np.where(reference > 0)]
         scores = dict()
 
@@ -240,10 +244,10 @@ def reference_similarity(input: dict, output: dict, params: dict) -> None:
             n_clusters = np.unique(labels).size
             scores['k=%s' % n_clusters] = f(reference, labels)
 
-        df = df.append({
-            'reference': os.path.basename(reference_file),
+        df = pd.concat([df, pd.DataFrame({
+            'reference': [os.path.basename(reference_file)],
             **scores
-        }, ignore_index=True)
+        })], ignore_index=True)
 
     df.set_index('reference', inplace=True)
     df.to_csv(similarity_file, sep='\t')
